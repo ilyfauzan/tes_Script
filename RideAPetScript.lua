@@ -24,17 +24,10 @@ local player = game.Players.LocalPlayer
 -- instant teleport oleh server-side anti-cheat
 -- ============================================================
 local function SafeTeleport(hrp, targetCF)
-    local steps = 12
-    local startCF = hrp.CFrame
-    -- Tambah offset posisi random kecil agar tidak selalu sama persis
-    local randX = math.random(-2, 2)
-    local randZ = math.random(-2, 2)
-    local finalCF = targetCF + Vector3.new(randX, 3, randZ)
-    for i = 1, steps do
-        if not hrp or not hrp.Parent then break end
-        hrp.CFrame = startCF:Lerp(finalCF, i / steps)
-        task.wait(0.04) -- ~0.5 detik total jalan
-    end
+    -- Offset posisi random kecil agar tidak selalu koordinat yang sama persis
+    local randX = math.random(-3, 3)
+    local randZ = math.random(-3, 3)
+    hrp.CFrame = targetCF + Vector3.new(randX, 4, randZ)
 end
 
 -- ============================================================

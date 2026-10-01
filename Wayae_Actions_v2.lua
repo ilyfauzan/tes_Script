@@ -157,3 +157,30 @@ Wayae.UI.GetPosBtn.MouseButton1Click:Connect(function()
         10
     )
 end)
+
+Wayae.savedLocation = nil
+
+Wayae.UI.SaveLocBtn.MouseButton1Click:Connect(function()
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    Wayae.savedLocation = hrp.CFrame
+    Wayae.UI.Notify("💾 Lokasi Disimpan", "Berhasil menyimpan lokasimu saat ini!", 3)
+end)
+
+Wayae.UI.TpLocBtn.MouseButton1Click:Connect(function()
+    if not Wayae.savedLocation then
+        Wayae.UI.Notify("⚠️ Gagal", "Kamu belum menyimpan lokasi apapun! Klik Save Last Location dulu.", 4)
+        return
+    end
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.AssemblyAngularVelocity = Vector3.zero
+    char:PivotTo(Wayae.savedLocation)
+    Wayae.UI.Notify("🔙 Teleport Berhasil", "Berhasil kembali ke lokasi yang disimpan!", 3)
+end)

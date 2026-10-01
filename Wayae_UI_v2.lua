@@ -173,11 +173,14 @@ CloseBtn.MouseButton1Click:Connect(onClose)
 CloseBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch then onClose() end
 end)
-local ContentFrame = Instance.new("Frame")
+local ContentFrame = Instance.new("ScrollingFrame")
 ContentFrame.Name = "Content"
 ContentFrame.Size = UDim2.new(1, -24, 1, -68)
 ContentFrame.Position = UDim2.new(0, 12, 0, 58)
 ContentFrame.BackgroundTransparency = 1
+ContentFrame.ScrollBarThickness = 2
+ContentFrame.BorderSizePixel = 0
+ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 450)
 ContentFrame.Parent = MainFrame
 local ContentLayout = Instance.new("UIListLayout")
 ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -339,3 +342,23 @@ Wayae.UI.TeleportBtn = MakeButton(ContentFrame, "🚀  2. Teleport ke Lokasi Tel
 Wayae.UI.SellBtn = MakeButton(ContentFrame, "🏕️  3. Teleport ke My Plot / Ranch", 6)
 Wayae.UI.VolcanicTestBtn = MakeButton(ContentFrame, "🌋  4. Test Teleport Volcanic Egg", 7)
 Wayae.UI.GetPosBtn = MakeButton(ContentFrame, "📍  5. Ambil Posisi Saya Sekarang", 8)
+
+Wayae.UI.ToggleExtraBtn = MakeButton(ContentFrame, "🔽 Tampilkan Fitur Ekstra", 9)
+Wayae.UI.ToggleExtraBtn.BackgroundColor3 = Color3.fromRGB(50, 40, 100)
+
+Wayae.UI.SaveLocBtn = MakeButton(ContentFrame, "💾  6. Save Last Location", 10)
+Wayae.UI.TpLocBtn = MakeButton(ContentFrame, "🔙  7. Teleport Last Location", 11)
+
+Wayae.UI.SaveLocBtn.Visible = false
+Wayae.UI.TpLocBtn.Visible = false
+
+Wayae.UI.ToggleExtraBtn.MouseButton1Click:Connect(function()
+    local isVisible = not Wayae.UI.SaveLocBtn.Visible
+    Wayae.UI.SaveLocBtn.Visible = isVisible
+    Wayae.UI.TpLocBtn.Visible = isVisible
+    if isVisible then
+        Wayae.UI.ToggleExtraBtn.Text = "🔼 Sembunyikan Fitur Ekstra"
+    else
+        Wayae.UI.ToggleExtraBtn.Text = "🔽 Tampilkan Fitur Ekstra"
+    end
+end)

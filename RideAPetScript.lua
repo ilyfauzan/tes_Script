@@ -453,7 +453,7 @@ local function ScanSpecialEggs()
 
                 -- Posisi pasti untuk Volcanic Egg (2.5T)
                 if foundTierName == "2.5T - Volcanic Egg" then
-                    eggCFrame = CFrame.new(-5332, 40912, -3542)
+                    eggCFrame = CFrame.new(-5330.2, 40912.4, -3579.8)
                 end
 
                 local isDuplicate = false
@@ -681,8 +681,8 @@ VolcanicTestBtn.MouseButton1Click:Connect(function()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    -- Langsung teleport ke koordinat Volcanic Egg yang sudah pasti
-    local targetCFrame = CFrame.new(-5332, 40912, -3542)
+    -- KEMBALIKAN KE KOORDINAT ORIGINAL YANG BENAR BENAR TEPAT DI TELUR
+    local targetCFrame = CFrame.new(-5330.2, 40912.4, -3579.8)
     
     -- Teleport biasa tanpa anchor, tanpa blok lantai tambahan
     -- Ketinggian +3 pas untuk berdiri, tidak nabrak atap gua

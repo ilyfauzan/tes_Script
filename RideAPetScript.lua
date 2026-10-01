@@ -220,6 +220,100 @@ EggTab:CreateToggle({
    end,
 })
 
+local autoLegendaryTeleport = false
+
+local function FindLegendaryEgg()
+    local character = LocalPlayer.Character
+    if character then
+        for _, child in pairs(character:GetDescendants()) do
+            if child:IsA("Beam") and child.Attachment1 then
+                local targetPart = child.Attachment1.Parent
+                if targetPart then
+                    return targetPart:IsA("Model") and targetPart:GetPivot() or targetPart.CFrame
+                end
+            end
+        end
+    end
+
+    local eggFolder = workspace:FindFirstChild("Eggs") 
+        or workspace:FindFirstChild("EggSpawns") 
+        or workspace:FindFirstChild("Collectibles") 
+        or workspace
+
+    for _, obj in pairs(eggFolder:GetDescendants()) do
+        local nameLower = obj.Name:lower()
+        if nameLower:find("legend") or nameLower:find("mythic") or nameLower:find("eternal") or nameLower:find("special") then
+            if obj:IsA("Model") then
+                return obj:GetPivot()
+            elseif obj:IsA("BasePart") then
+                return obj.CFrame
+            end
+        end
+    end
+    return nil
+end
+
+EggTab:CreateButton({
+   Name = "🎯 Teleport ke Telur Legendary (Radar Target)",
+   Callback = function()
+       local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+       local hrp = character:FindFirstChild("HumanoidRootPart")
+
+       if not hrp then return end
+       local baseCFrame = hrp.CFrame
+
+       local legendaryCFrame = FindLegendaryEgg()
+       if legendaryCFrame then
+           Rayfield:Notify({
+               Title = "Telur Legendary Ditemukan!",
+               Content = "Meluncur ke posisi telur...",
+               Duration = 3,
+           })
+           SafeTweenTeleport(legendaryCFrame, 150)
+           task.wait(0.5)
+           SafeTweenTeleport(baseCFrame, 150)
+       else
+           Rayfield:Notify({
+               Title = "Radar / Telur Tidak Ditemukan",
+               Content = "Aktifkan Eternal Radar / Tunggu Telur Legendary spawn!",
+               Duration = 4,
+           })
+       end
+   end,
+})
+
+EggTab:CreateToggle({
+   Name = "⚡ Auto Teleport Saat Telur Legendary Spawn",
+   CurrentValue = false,
+   Flag = "AutoLegendaryToggle",
+   Callback = function(Value)
+       autoLegendaryTeleport = Value
+       task.spawn(function()
+           while autoLegendaryTeleport do
+               local character = LocalPlayer.Character
+               if character and character:FindFirstChild("HumanoidRootPart") then
+                   local hrp = character.HumanoidRootPart
+                   local baseCFrame = hrp.CFrame
+                   local legendaryCFrame = FindLegendaryEgg()
+                   
+                   if legendaryCFrame then
+                       Rayfield:Notify({
+                           Title = "⚡ Auto Teleport Telur Legendary!",
+                           Content = "Mengambil Telur Legendary...",
+                           Duration = 3,
+                       })
+                       SafeTweenTeleport(legendaryCFrame, 160)
+                       task.wait(0.5)
+                       SafeTweenTeleport(baseCFrame, 160)
+                       task.wait(5)
+                   end
+               end
+               task.wait(2)
+           end
+       end)
+   end,
+})
+
 local walkSpeedConnection = nil
 PlayerTab:CreateSlider({
    Name = "Kecepatan Jalan Safe (WalkSpeed)",

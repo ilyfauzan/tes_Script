@@ -8,6 +8,7 @@ end
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "WayaeHUB"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 ScreenGui.Parent = playerGui
 
 local MainFrame = Instance.new("Frame")
@@ -16,6 +17,7 @@ MainFrame.Size = UDim2.new(0, 320, 0, 360)
 MainFrame.Position = UDim2.new(0.5, -160, 0.5, -180)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 15, 45)
 MainFrame.BorderSizePixel = 0
+MainFrame.ZIndex = 10
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
@@ -351,7 +353,7 @@ Wayae.UI.Notify = function(title, msg, duration)
     notif.Position = UDim2.new(1, -8, 0, 165)
     notif.BackgroundColor3 = Color3.fromRGB(25, 18, 50)
     notif.BorderSizePixel = 0
-    notif.ZIndex = 50
+    notif.ZIndex = 100
     notif.Parent = ScreenGui
 
     local nc = Instance.new("UICorner")
@@ -372,6 +374,7 @@ Wayae.UI.Notify = function(title, msg, duration)
     nt.TextSize = 13
     nt.Font = Enum.Font.GothamBold
     nt.TextXAlignment = Enum.TextXAlignment.Left
+    nt.ZIndex = 101
     nt.Parent = notif
 
     local nm = Instance.new("TextLabel")
@@ -384,6 +387,7 @@ Wayae.UI.Notify = function(title, msg, duration)
     nm.Font = Enum.Font.Gotham
     nm.TextXAlignment = Enum.TextXAlignment.Left
     nm.TextWrapped = true
+    nm.ZIndex = 101
     nm.Parent = notif
 
     task.delay(duration or 4, function()

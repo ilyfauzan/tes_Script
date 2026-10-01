@@ -57,10 +57,10 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
             foundPlot = true
         end
 
-        -- 2. Cek dari TextLabel atau StringValue (misal: "Fauzan's Ranch")
+        -- 2. Cek dari TextLabel atau StringValue (misal: "Fauzan's Ranch" atau "Your Ranch")
         if not foundPlot and (obj:IsA("TextLabel") or obj:IsA("StringValue")) then
             local text = (obj:IsA("TextLabel") and obj.Text or tostring(obj.Value)):lower()
-            if text:find(playerName) or text:find(playerDisplayName) then
+            if text:find(playerName) or text:find(playerDisplayName) or text:find("your ranch") or text:find("my ranch") or text:find("your plot") or text:find("my plot") then
                 foundPlot = true
             end
         end

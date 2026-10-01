@@ -451,9 +451,9 @@ local function ScanSpecialEggs()
                     eggCFrame = obj.CFrame
                 end
 
-                -- Posisi pasti untuk Volcanic Egg (2.5T) (Y + 1.5 biar tidak tenggelam)
+                -- Posisi pasti untuk Volcanic Egg (2.5T)
                 if foundTierName == "2.5T - Volcanic Egg" then
-                    eggCFrame = CFrame.new(-5332, 40913.5, -3542)
+                    eggCFrame = CFrame.new(-5330.2, 40912.4, -3579.8)
                 end
 
                 local isDuplicate = false
@@ -681,10 +681,10 @@ VolcanicTestBtn.MouseButton1Click:Connect(function()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    -- KOORDINAT BENAR DI DALAM GUA (-5332, 40912, -3542)
-    -- Karena UI sebelumnya membulatkan angka, 40912 ternyata tenggelam di tanah (bikin kepental!)
-    -- Kita naikkan Y menjadi 40913.5 agar kaki pas di atas tanah
-    local targetCFrame = CFrame.new(-5332, 40913.5, -3542)
+    -- KOORDINAT ASLI TELUR (YANG PERTAMA KALI KAMU KIRIM)
+    -- Ternyata Z: -3542 itu lokasinya ada di luar gua, pantesan kamu spawn di luar!
+    -- Koordinat telur asli adalah Z: -3579.8
+    local targetCFrame = CFrame.new(-5330.2, 40912.4, -3579.8)
     
     hrp.AssemblyLinearVelocity = Vector3.zero
     hrp.AssemblyAngularVelocity = Vector3.zero

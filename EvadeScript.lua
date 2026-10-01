@@ -121,7 +121,6 @@ PlayEmoteBtn.MouseButton1Click:Connect(function()
     local emoteName = EmoteInput.Text
     if emoteName == "" then return end
     
-    local success = false
     local char = player.Character
     if not char then 
         Notify("❌ Gagal", "Karakter tidak ditemukan!")
@@ -132,18 +131,47 @@ PlayEmoteBtn.MouseButton1Click:Connect(function()
     if not hum then return end
     local animator = hum:FindFirstChildOfClass("Animator") or hum
     
-    -- 1. Coba Cari Object Animation-nya Langsung di Game Files (Evade biasanya nyimpen di ReplicatedStorage)
     local targetAnimation = nil
-    for _, obj in pairs(replicatedStorage:GetDescendants()) do
-        if obj:IsA("Animation") and obj.Name:lower() == emoteName:lower() then
-            targetAnimation = obj
-            break
+    
+    -- TAHAP 1: Cari di SELURUH GAME (bukan cuma ReplicatedStorage)
+    local searchRoots = {
+        game:GetService("ReplicatedStorage"),
+        game:GetService("ReplicatedFirst"),
+        game:GetService("Workspace"),
+        player.Character,
+        player:FindFirstChild("PlayerGui"),
+        player:FindFirstChild("Backpack"),
+    }
+    
+    for _, root in pairs(searchRoots) do
+        if root == nil then continue end
+        for _, obj in pairs(root:GetDescendants()) do
+            if obj:IsA("Animation") then
+                if obj.Name:lower() == emoteName:lower() or obj.Name:lower():find(emoteName:lower()) then
+                    targetAnimation = obj
+                    break
+                end
+            end
+            if obj:IsA("StringValue") or obj:IsA("Folder") or obj:IsA("ModuleScript") then
+                if obj.Name:lower():find(emoteName:lower()) then
+                    local anim = obj:FindFirstChildOfClass("Animation")
+                    if anim then targetAnimation = anim break end
+                end
+            end
         end
-        -- Kadang namanya dibungkus di dalam Folder/StringValue
-        if obj:IsA("StringValue") or obj:IsA("Folder") then
-            if obj.Name:lower() == emoteName:lower() then
-                local anim = obj:FindFirstChildOfClass("Animation")
-                if anim then
+        if targetAnimation then break end
+    end
+    
+    -- TAHAP 2: Cari dari HumanoidDescription (Emote yang sudah di-equip player)
+    if not targetAnimation then
+        local hd = hum:FindFirstChildOfClass("HumanoidDescription")
+        if hd then
+            local emoteSlots = {"Emote1","Emote2","Emote3","Emote4","Emote5","Emote6","Emote7","Emote8"}
+            for _, slot in pairs(emoteSlots) do
+                local val = hd:FindFirstChild(slot)
+                if val and tostring(val.Value):lower():find(emoteName:lower()) then
+                    local anim = Instance.new("Animation")
+                    anim.AnimationId = "rbxassetid://" .. tostring(val.Value)
                     targetAnimation = anim
                     break
                 end
@@ -151,46 +179,48 @@ PlayEmoteBtn.MouseButton1Click:Connect(function()
         end
     end
     
-    if targetAnimation then
-        -- KITA PLAY ANIMASINYA SECARA LOKAL (Roblox otomatis nge-broadcast ini ke player lain)
-        pcall(function()
-            -- Stop animasi yang lagi jalan (kayak lari/idle)
-            for _, track in pairs(animator:GetPlayingAnimationTracks()) do
-                track:Stop()
+    -- TAHAP 3: Cari di AnimationTracks yang pernah di-load (cached di Animator)
+    if not targetAnimation then
+        for _, track in pairs(animator:GetPlayingAnimationTracks()) do
+            if track.Animation and track.Animation.Name:lower():find(emoteName:lower()) then
+                targetAnimation = track.Animation
+                break
             end
-            local track = animator:LoadAnimation(targetAnimation)
-            track:Play()
-            success = true
-        end)
+        end
     end
     
-    -- 2. Kalau Animation Object ga ketemu, coba tembak Remote (Cara Brutal)
-    if not success then
-        for _, obj in pairs(replicatedStorage:GetDescendants()) do
-            local name = obj.Name:lower()
-            if name:find("emote") or name:find("dance") then
-                if obj:IsA("RemoteEvent") then
-                    pcall(function() obj:FireServer(emoteName) end)
-                    pcall(function() obj:FireServer("Play", emoteName) end)
-                    success = true
-                elseif obj:IsA("RemoteFunction") then
-                    task.spawn(function()
-                        pcall(function() obj:InvokeServer(emoteName) end)
-                    end)
-                    success = true
+    -- TAHAP 4: Kalau tetap tidak ketemu, print daftar semua animasi yang ada biar kita tau namanya
+    if not targetAnimation then
+        local found = {}
+        for _, root in pairs(searchRoots) do
+            if root == nil then continue end
+            for _, obj in pairs(root:GetDescendants()) do
+                if obj:IsA("Animation") then
+                    table.insert(found, obj.Name .. " | " .. obj.AnimationId)
                 end
             end
         end
+        if #found > 0 then
+            Notify("🔍 Daftar Animasi Tersedia:", table.concat(found, ", "):sub(1, 200))
+        else
+            Notify("❌ Tidak Ada Animasi", "Evade tidak nyimpen animasi di client. Coba nama emote lain.")
+        end
+        return
     end
     
-    if success then
-        if targetAnimation then
-            Notify("✅ Emote Berhasil!", "Memutar '" .. emoteName .. "' menggunakan Animation Bypass!")
-        else
-            Notify("⚠️ Sinyal Terkirim", "Sinyal emote dikirim, tapi animasi tidak ditemukan di client.")
+    -- MAIN: Play animasi yang ketemu
+    local ok, err = pcall(function()
+        for _, track in pairs(animator:GetPlayingAnimationTracks()) do
+            track:Stop()
         end
+        local track = animator:LoadAnimation(targetAnimation)
+        track:Play()
+    end)
+    
+    if ok then
+        Notify("✅ Emote Berhasil!", "'" .. emoteName .. "' sedang dimainkan via Animation Bypass!")
     else
-        Notify("❌ Gagal Total", "Animasi atau Sistem Emote tidak ditemukan sama sekali.")
+        Notify("❌ Error", tostring(err):sub(1, 100))
     end
 end)
 

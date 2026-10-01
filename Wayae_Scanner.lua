@@ -87,7 +87,8 @@ Wayae.ScanSpecialEggs = function()
                     end)
                     
                     if ok and cf and size then
-                        eggCFrame = cf - Vector3.new(0, size.Y/2, 0) + Vector3.new(0, 1.5, 0)
+                        local targetPos = cf.Position + Vector3.new(0, -size.Y/2 + 1.5, 0)
+                        eggCFrame = CFrame.new(targetPos) * cf.Rotation
                     elseif promptPart then
                         eggCFrame = promptPart.CFrame
                     elseif obj.PrimaryPart then

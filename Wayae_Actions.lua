@@ -29,7 +29,8 @@ Wayae.UI.TeleportBtn.MouseButton1Click:Connect(function()
         if target and target.CFrame then
             hrp.AssemblyLinearVelocity = Vector3.zero
             hrp.AssemblyAngularVelocity = Vector3.zero
-            character:PivotTo(target.CFrame + Vector3.new(0, 1.5, 0))
+            local targetPos = target.CFrame.Position + Vector3.new(0, 1.5, 0)
+            character:PivotTo(CFrame.new(targetPos) * target.CFrame.Rotation)
             Wayae.UI.Notify("🚀 Teleport Berhasil!", "Posisi: " .. target.Name, 4)
         end
     else
@@ -64,7 +65,8 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
     end
 
     if sellTarget then
-        hrp.CFrame = sellTarget + Vector3.new(0, 5, 0)
+        local targetPos = sellTarget.Position + Vector3.new(0, 5, 0)
+        hrp.CFrame = CFrame.new(targetPos) * sellTarget.Rotation
         Wayae.UI.Notify("🏪 Teleport ke Sell!", "Berhasil teleport ke area Sell!", 3)
     else
         Wayae.UI.Notify("⚠️ Sell Tidak Ditemukan", "Objek Sell tidak ada di map saat ini.", 5)

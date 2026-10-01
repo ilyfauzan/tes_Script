@@ -688,15 +688,11 @@ VolcanicTestBtn.MouseButton1Click:Connect(function()
     hrp.AssemblyLinearVelocity = Vector3.zero
     hrp.AssemblyAngularVelocity = Vector3.zero
     
-    hrp.Anchored = true
-    hrp.CFrame = targetCFrame
+    -- JANGAN PAKAI ANCHOR SAMA SEKALI! 
+    -- Anchor bikin pet/kendaraan numpuk force dan bikin mental pas dilepas.
+    char:PivotTo(targetCFrame)
     
-    Notify("🌋 Teleporting...", "Menahan posisi agar map ke-load...", 2)
-    
-    task.delay(1.5, function()
-        if hrp then hrp.Anchored = false end
-        Notify("✅ Selesai", "Teleport berhasil!", 3)
-    end)
+    Notify("✅ Volcanic Teleport", "Selesai tanpa anchor!", 3)
 end)
 GetPosBtn.MouseButton1Click:Connect(function()
     local char = player.Character

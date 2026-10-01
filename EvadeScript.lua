@@ -155,7 +155,10 @@ PlayEmoteBtn.MouseButton1Click:Connect(function()
             if obj:IsA("StringValue") or obj:IsA("Folder") or obj:IsA("ModuleScript") then
                 if obj.Name:lower():find(emoteName:lower()) then
                     local anim = obj:FindFirstChildOfClass("Animation")
-                    if anim then targetAnimation = anim break end
+                    if anim then
+                        targetAnimation = anim
+                        break
+                    end
                 end
             end
         end

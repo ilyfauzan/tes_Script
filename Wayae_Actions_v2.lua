@@ -47,59 +47,91 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
     local playerName = player.Name:lower()
     local playerDisplayName = player.DisplayName:lower()
 
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if char and obj:IsDescendantOf(char) then continue end
+    -- 0. Cek apakah game menggunakan fitur bawaan Roblox RespawnLocation
+    if player.RespawnLocation then
+        plotTarget = player.RespawnLocation.CFrame + Vector3.new(0, 5, 0)
+    end
 
-        local foundPlot = false
+    -- Jika belum ketemu, cari di workspace
+    if not plotTarget then
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if char and obj:IsDescendantOf(char) then continue end
 
-        -- 1. Cek dari nama objek (misal: "Plot_Fauzan")
-        if (obj:IsA("Model") or obj:IsA("Folder")) and (obj.Name:lower():find(playerName) or obj.Name:lower():find(playerDisplayName)) then
-            foundPlot = true
-        end
+            local foundPlot = false
 
-        -- 2. Cek dari TextLabel atau StringValue (misal: "Fauzan's Ranch" atau "Your Ranch")
-        if not foundPlot and (obj:IsA("TextLabel") or obj:IsA("StringValue")) then
-            local text = (obj:IsA("TextLabel") and obj.Text or tostring(obj.Value)):lower()
-            if text:find(playerName) or text:find(playerDisplayName) or text:find("your ranch") or text:find("my ranch") or text:find("your plot") or text:find("my plot") then
+            if (obj:IsA("Model") or obj:IsA("Folder")) and (obj.Name:lower():find(playerName) or obj.Name:lower():find(playerDisplayName)) then
                 foundPlot = true
             end
-        end
 
-        -- 3. Cek dari ObjectValue (misal: Owner = Player)
-        if not foundPlot and obj:IsA("ObjectValue") and obj.Value == player then
-            foundPlot = true
-        end
-
-        if foundPlot then
-            local current = (obj:IsA("Model") or obj:IsA("Folder")) and obj or obj.Parent
-            local plotModel = nil
-            
-            while current and current ~= workspace do
-                if current:IsA("Model") or current:IsA("Folder") then
-                    plotModel = current
+            if not foundPlot and (obj:IsA("TextLabel") or obj:IsA("StringValue")) then
+                local text = (obj:IsA("TextLabel") and obj.Text or tostring(obj.Value)):lower()
+                if text:find(playerName) or text:find(playerDisplayName) or text:find("your ranch") or text:find("my ranch") or text:find("your plot") or text:find("my plot") then
+                    foundPlot = true
                 end
-                current = current.Parent
             end
-            
-            if plotModel then
-                local spawnPad = nil
-                for _, child in pairs(plotModel:GetDescendants()) do
-                    if child:IsA("SpawnLocation") or (child:IsA("BasePart") and child.Name:lower():find("spawn")) then
-                        spawnPad = child
+
+            if not foundPlot and obj:IsA("ObjectValue") and obj.Value == player then
+                foundPlot = true
+            end
+
+            if foundPlot then
+                local current = (obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("BasePart")) and obj or obj.Parent
+                local plotModel = nil
+                
+                local temp = current
+                while temp and temp ~= workspace do
+                    if temp:IsA("Model") or temp:IsA("Folder") then
+                        plotModel = temp
+                    end
+                    temp = temp.Parent
+                end
+                
+                -- Fallback: Kalau tidak ada Model/Folder pembungkus, gunakan objek itu sendiri (biasanya Part)
+                plotModel = plotModel or current
+                
+                if plotModel then
+                    local spawnPad = nil
+                    for _, child in pairs(plotModel:GetDescendants()) do
+                        if child:IsA("SpawnLocation") or (child:IsA("BasePart") and child.Name:lower():find("spawn")) then
+                            spawnPad = child
+                            break
+                        end
+                    end
+
+                    if spawnPad and spawnPad:IsA("BasePart") then
+                        plotTarget = spawnPad.CFrame + Vector3.new(0, 5, 0)
+                        break
+                    end
+
+                    local ok, cf, size = pcall(function()
+                        if plotModel:IsA("Model") then return plotModel:GetBoundingBox() end
+                        return plotModel.CFrame, plotModel.Size
+                    end)
+                    if ok and cf and size then
+                        local groundY = cf.Position.Y - (size.Y/2) + 5
+                        plotTarget = CFrame.new(cf.Position.X, groundY, cf.Position.Z) * cf.Rotation
                         break
                     end
                 end
+            end
+        end
+    end
 
-                if spawnPad and spawnPad:IsA("BasePart") then
-                    plotTarget = spawnPad.CFrame + Vector3.new(0, 5, 0)
-                    break
-                end
-
-                local ok, cf, size = pcall(function() return plotModel:GetBoundingBox() end)
-                if ok and cf and size then
-                    local groundY = cf.Position.Y - (size.Y/2) + 5
-                    plotTarget = CFrame.new(cf.Position.X, groundY, cf.Position.Z) * cf.Rotation
-                    break
+    -- Jika masih belum ketemu, coba cari UI "Your Ranch" di PlayerGui (karena beberapa game menyembunyikan tulisan ini di client-side)
+    if not plotTarget then
+        local playerGui = player:FindFirstChild("PlayerGui")
+        if playerGui then
+            for _, obj in pairs(playerGui:GetDescendants()) do
+                if obj:IsA("TextLabel") then
+                    local text = obj.Text:lower()
+                    if text:find("your ranch") or text:find("my ranch") then
+                        local gui = obj:FindFirstAncestorOfClass("BillboardGui")
+                        if gui and gui.Adornee and gui.Adornee:IsA("BasePart") then
+                            -- Ketemu part yang ditempelin UI "Your Ranch"
+                            plotTarget = gui.Adornee.CFrame + Vector3.new(0, 5, 0)
+                            break
+                        end
+                    end
                 end
             end
         end

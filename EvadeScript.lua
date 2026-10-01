@@ -739,49 +739,16 @@ end)
 -- ========================================================
 -- 🎃 HALLOWEEN 2022 EVENT ROLLBACK & BYPASS
 -- ========================================================
--- ========================================================
--- 🎃 HALLOWEEN 2022 EMOTE UNLOCKER (ALL EMOTES)
--- ========================================================
+
 local LabelHalloween = Instance.new("TextLabel")
 LabelHalloween.Size = UDim2.new(1, 0, 0, 20)
 LabelHalloween.BackgroundTransparency = 1
-LabelHalloween.Text = "🎃 HALLOWEEN 2022 EMOTE UNLOCKER"
+LabelHalloween.Text = "🎃 HALLOWEEN 2022 EVENT BYPASS"
 LabelHalloween.TextColor3 = Color3.fromRGB(255, 120, 0)
 LabelHalloween.Font = Enum.Font.GothamBold
 LabelHalloween.TextSize = 14
 LabelHalloween.TextXAlignment = Enum.TextXAlignment.Left
 LabelHalloween.Parent = ScrollingFrame
-
--- Daftar Emote Halloween & Popular Evade Lengkap
-local halloweenEmotes = {
-    {Name = "🎸 Play Emote Rockin' Stride", Id = "12686575749", Color = Color3.fromRGB(200, 40, 120)},
-    {Name = "🕺 Spooky Scary Skeleton Dance", Id = "11370221379", Color = Color3.fromRGB(180, 80, 0)},
-    {Name = "🧟 Zombie Walk / Monster Mash", Id = "3360689775", Color = Color3.fromRGB(140, 60, 0)},
-    {Name = "👻 Ghost Levitating / Headless", Id = "3360690911", Color = Color3.fromRGB(120, 50, 0)},
-    {Name = "🐱 Catjam Special Emote", Id = "12686575749", Color = Color3.fromRGB(160, 40, 100)},
-    {Name = "💃 Thriller Night Dance", Id = "3360686498", Color = Color3.fromRGB(100, 30, 120)},
-    {Name = "💀 Skeleton Shuffle Dance", Id = "4841397146", Color = Color3.fromRGB(130, 70, 0)},
-    {Name = "🎃 Pumpkin Jam / Jack-o'-Lantern", Id = "3695333480", Color = Color3.fromRGB(190, 90, 0)},
-    {Name = "🦇 Vampire Fly / Bat Dance", Id = "3360690020", Color = Color3.fromRGB(90, 20, 90)},
-    {Name = "🔮 Witch Spell Cast Emote", Id = "3360691500", Color = Color3.fromRGB(70, 20, 110)},
-}
-
-for _, emoteData in ipairs(halloweenEmotes) do
-    local btn = CreateButton(emoteData.Name, ScrollingFrame)
-    btn.BackgroundColor3 = emoteData.Color
-    
-    local animId = emoteData.Id
-    local animName = emoteData.Name
-    btn.MouseButton1Click:Connect(function()
-        if IDInput then IDInput.Text = animId end
-        local ok = PlayAnimNow(animId)
-        if ok then
-            Notify("🎃 Emote Halloween 2022!", animName .. " berhasil diputar!")
-        else
-            Notify("❌ Gagal", "Karakter tidak siap diputar animasi.")
-        end
-    end)
-end
 
 local HallowSpoofBtn = CreateButton("🕵️ AKTIFKAN SPOOFER EMOTE (Paling Ampuh!)", ScrollingFrame)
 HallowSpoofBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 0)
@@ -883,16 +850,29 @@ local VisualEmoteBtn = CreateButton("👀 VISUAL ONLY: Putar Rockin' Stride (Klo
 VisualEmoteBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
 
 VisualEmoteBtn.MouseButton1Click:Connect(function()
+    Notify("⏳ Mencari...", "Sedang mencari file animasi Rockin' Stride di dalam memori game...")
+    task.wait(0.1)
+    
     local foundAnimId = nil
-    -- Cari animasi internal asli milik Evade (bukan ID gambar decal)
-    for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("Animation") then
-            local name = obj.Name:lower()
-            if name:match("rockin") or name:match("stride") then
-                foundAnimId = obj.AnimationId
-                break
+    local searchRoots = {
+        game:GetService("ReplicatedStorage"),
+        game:GetService("ReplicatedFirst"),
+        game.Players.LocalPlayer:FindFirstChild("PlayerGui")
+    }
+    
+    for _, root in pairs(searchRoots) do
+        if root then
+            for _, obj in pairs(root:GetDescendants()) do
+                if obj:IsA("Animation") then
+                    local name = obj.Name:lower()
+                    if name:match("rockin") or name:match("stride") then
+                        foundAnimId = obj.AnimationId
+                        break
+                    end
+                end
             end
         end
+        if foundAnimId then break end
     end
     
     if foundAnimId then
@@ -900,15 +880,15 @@ VisualEmoteBtn.MouseButton1Click:Connect(function()
         if numId then
             local ok = PlayAnimNow(numId)
             if ok then
-                Notify("👀 Berhasil!", "Animasi Rockin' Stride internal ditemukan dan diputar via Kloning!")
+                Notify("👀 Berhasil!", "Animasi Rockin' Stride internal (" .. numId .. ") ditemukan dan diputar via Kloning!")
             else
                 Notify("❌ Gagal", "Kloning gagal memutar animasi internal.")
             end
         else
-            Notify("❌ Gagal", "ID internal tidak valid.")
+            Notify("❌ Gagal", "ID internal tidak valid: " .. tostring(foundAnimId))
         end
     else
-        Notify("❌ Tidak Ditemukan", "File animasi Rockin' Stride tidak ada di map ini, atau disembunyikan developer.")
+        Notify("❌ Tidak Ditemukan", "File animasi Rockin' Stride disembunyikan kuat oleh developer.")
     end
 end)
 

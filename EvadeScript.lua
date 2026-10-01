@@ -115,94 +115,87 @@ local cornerID = Instance.new("UICorner")
 cornerID.CornerRadius = UDim.new(0, 6)
 cornerID.Parent = IDInput
 
-local PlayByIDBtn = CreateButton("🎸 Play Rockin' Stride (by ID)", ScrollingFrame)
+local loopActive = false
+local loopThread = nil
+
+local PlayByIDBtn = CreateButton("🎸 Play Animasi (by ID)", ScrollingFrame)
 PlayByIDBtn.BackgroundColor3 = Color3.fromRGB(100, 40, 120)
 
-PlayByIDBtn.MouseButton1Click:Connect(function()
+local LoopBtn = CreateButton("🔁 Loop Mode: OFF", ScrollingFrame)
+LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+
+local StopBtn = CreateButton("⛔ Stop Animasi", ScrollingFrame)
+StopBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
+
+local function PlayAnimNow(idStr)
     local char = player.Character
-    if not char then Notify("❌", "Karakter tidak ada!") return end
+    if not char then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return false end
+    local animator = hum:FindFirstChildOfClass("Animator") or hum
     
+    local ok = pcall(function()
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://" .. idStr
+        local track = animator:LoadAnimation(anim)
+        track.Priority = Enum.AnimationPriority.Action4
+        track:Play()
+    end)
+    return ok
+end
+
+LoopBtn.MouseButton1Click:Connect(function()
+    loopActive = not loopActive
+    if loopActive then
+        LoopBtn.Text = "🔁 Loop Mode: ON"
+        LoopBtn.BackgroundColor3 = Color3.fromRGB(30, 100, 30)
+        
+        local idStr = IDInput.Text:match("%d+") or "3360686498"
+        loopThread = task.spawn(function()
+            while loopActive do
+                PlayAnimNow(idStr)
+                task.wait(0.3)
+            end
+        end)
+        Notify("🔁 Loop Aktif!", "Animasi akan terus diputar ulang tiap 0.3 detik!")
+    else
+        loopActive = false
+        LoopBtn.Text = "🔁 Loop Mode: OFF"
+        LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        Notify("⏹️ Loop Berhenti", "Loop animasi dihentikan.")
+    end
+end)
+
+StopBtn.MouseButton1Click:Connect(function()
+    loopActive = false
+    LoopBtn.Text = "🔁 Loop Mode: OFF"
+    LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local animator = hum and (hum:FindFirstChildOfClass("Animator") or hum)
+        if animator then
+            for _, track in pairs(animator:GetPlayingAnimationTracks()) do
+                pcall(function() track:Stop(0) end)
+            end
+        end
+    end
+    Notify("⛔ Animasi Dihentikan", "Semua animasi paksa sudah di-stop.")
+end)
+
+PlayByIDBtn.MouseButton1Click:Connect(function()
     local idStr = IDInput.Text:match("%d+")
     if not idStr then
         Notify("❌ ID Salah", "Masukkan angka ID animasi yang valid!")
         return
     end
     
-    local newId = "rbxassetid://" .. idStr
-    
-    -- CARI LocalScript CUSTOM EVADE di dalam karakter
-    local foundScripts = {}
-    for _, obj in pairs(char:GetDescendants()) do
-        if obj:IsA("LocalScript") or obj:IsA("Script") then
-            table.insert(foundScripts, obj.Name)
-        end
-    end
-    
-    -- Cari juga di PlayerGui (Evade mungkin taruh controller di sini)
-    local playerGui = player:FindFirstChild("PlayerGui")
-    if playerGui then
-        for _, obj in pairs(playerGui:GetDescendants()) do
-            if obj:IsA("LocalScript") then
-                table.insert(foundScripts, "PlayerGui/" .. obj.Name)
-            end
-        end
-    end
-    
-    -- Coba akses AnimationController (alternatif Humanoid untuk animasi custom)
-    local animController = char:FindFirstChildOfClass("AnimationController")
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    local animator = nil
-    
-    if animController then
-        animator = animController:FindFirstChildOfClass("Animator")
-        Notify("🎯 AnimController Ditemukan!", "Evade pakai AnimationController bukan Humanoid!")
-    elseif hum then
-        animator = hum:FindFirstChildOfClass("Animator") or hum
-    end
-    
-    -- Coba play via AnimationController jika ada
-    if animator then
-        local ok, err = pcall(function()
-            for _, track in pairs(animator:GetPlayingAnimationTracks()) do
-                track:Stop(0)
-            end
-            local anim = Instance.new("Animation")
-            anim.AnimationId = newId
-            local track = animator:LoadAnimation(anim)
-            track.Priority = Enum.AnimationPriority.Action4
-            track:Play()
-        end)
-        if ok then
-            Notify("✅ Animasi diputar via " .. (animController and "AnimController" or "Humanoid"), "Cek karaktermu!")
-            return
-        end
-    end
-    
-    -- Coba cari via getgenv() / getfenv() - akses global Evade
-    if getgenv then
-        local genv = getgenv()
-        local emoteFuncs = {}
-        for k, v in pairs(genv) do
-            if type(v) == "function" then
-                local kl = tostring(k):lower()
-                if kl:find("emote") or kl:find("anim") or kl:find("dance") then
-                    table.insert(emoteFuncs, tostring(k))
-                    pcall(function() v(idStr) end)
-                    pcall(function() v(newId) end)
-                end
-            end
-        end
-        if #emoteFuncs > 0 then
-            Notify("🎯 Global Func Ketemu!", table.concat(emoteFuncs, ", "):sub(1, 150))
-            return
-        end
-    end
-    
-    -- Hasil debug
-    if #foundScripts > 0 then
-        Notify("🔍 Script Evade di Karakter:", table.concat(foundScripts, ", "):sub(1, 200))
+    local ok = PlayAnimNow(idStr)
+    if ok then
+        Notify("✅ ID " .. idStr .. " diputar!", "Kalau karakter masih diam, aktifkan Loop Mode!")
     else
-        Notify("❌ Sistem Animasi Evade", "Tidak ada LocalScript, AnimController, atau global func. Animasi dikontrol server penuh.")
+        Notify("❌ Gagal", "Error saat memutar ID " .. idStr)
     end
 end)
 

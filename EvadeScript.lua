@@ -131,20 +131,54 @@ PlayByIDBtn.MouseButton1Click:Connect(function()
         return
     end
     
+    -- TEKNIK 1: Ganti AnimationId di object WalkAnim asli punya karakter
+    -- Ini bypass Anti-Override karena kita modif sumber animasinya langsung
+    local swapped = false
+    for _, obj in pairs(char:GetDescendants()) do
+        if obj:IsA("Animation") then
+            local nameLower = obj.Name:lower()
+            if nameLower == "walkanim" or nameLower == "walk" or nameLower:find("walk") or nameLower == "cheeranim" then
+                obj.AnimationId = "rbxassetid://" .. idStr
+                swapped = true
+            end
+        end
+    end
+    
+    -- TEKNIK 2: Stop semua animasi yang ada, play milik kita dengan priority tertinggi
+    for _, track in pairs(animator:GetPlayingAnimationTracks()) do
+        pcall(function() track:Stop(0) end)
+    end
+    
     local anim = Instance.new("Animation")
     anim.AnimationId = "rbxassetid://" .. idStr
-    
-    local ok, err = pcall(function()
+    local ok = pcall(function()
         local track = animator:LoadAnimation(anim)
         track.Priority = Enum.AnimationPriority.Action4
         track:Play()
     end)
     
-    if ok then
-        Notify("✅ ID " .. idStr .. " Dimainkan!", "Cek karakter kamu sekarang!")
-    else
-        Notify("❌ Error", tostring(err):sub(1, 100))
-    end
+    -- TEKNIK 3: Loop paksa tiap 0.2 detik selama 10 detik buat ngalahin anti-override
+    task.spawn(function()
+        for i = 1, 50 do
+            if not char or not char.Parent then break end
+            pcall(function()
+                -- Re-swap WalkAnim terus biar ga ke-reset
+                for _, obj in pairs(char:GetDescendants()) do
+                    if obj:IsA("Animation") and obj.Name:lower():find("walk") then
+                        obj.AnimationId = "rbxassetid://" .. idStr
+                    end
+                end
+                local loopAnim = Instance.new("Animation")
+                loopAnim.AnimationId = "rbxassetid://" .. idStr
+                local t = animator:LoadAnimation(loopAnim)
+                t.Priority = Enum.AnimationPriority.Action4
+                t:Play()
+            end)
+            task.wait(0.2)
+        end
+    end)
+    
+    Notify("✅ Semua teknik diaktifkan!", swapped and "WalkAnim di-swap + loop paksa aktif!" or "Loop paksa aktif selama 10 detik!")
 end)
 
 local LabelScan = Instance.new("TextLabel")

@@ -270,6 +270,82 @@ FireRemoteBtn.MouseButton1Click:Connect(function()
     Notify("🚀 " .. fired .. " variasi dikirim ke '" .. remote.Name .. "'!", "Cek emote slot kamu!")
 end)
 
+local DeepScanBtn = CreateButton("🧠 Deep Memory Scan (Cari ID Asli)", ScrollingFrame)
+DeepScanBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 50)
+
+DeepScanBtn.MouseButton1Click:Connect(function()
+    local emoteName = EmoteNameInput.Text:lower()
+    Notify("🧠 Memulai Scan Dalam...", "Mencari data '" .. EmoteNameInput.Text .. "' di memory game...")
+    
+    local foundIds = {}
+    local scanned = 0
+    
+    -- 1. Scan ModuleScripts (Config files)
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("ModuleScript") then
+            pcall(function()
+                local mod = require(obj)
+                if type(mod) == "table" then
+                    -- Telusuri table
+                    for k, v in pairs(mod) do
+                        if type(k) == "string" and k:lower():find(emoteName) then
+                            if type(v) == "table" and (v.AnimationId or v.Id or v.ID) then
+                                table.insert(foundIds, tostring(v.AnimationId or v.Id or v.ID))
+                            elseif type(v) == "number" or type(v) == "string" then
+                                table.insert(foundIds, tostring(v))
+                            end
+                        end
+                        if type(v) == "table" and type(v.Name) == "string" and v.Name:lower():find(emoteName) then
+                             if v.AnimationId or v.Id or v.ID then
+                                table.insert(foundIds, tostring(v.AnimationId or v.Id or v.ID))
+                             end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+    
+    -- 2. Scan GC (Garbage Collection) - Akses memori mentah
+    if getgc then
+        local gc = getgc(true)
+        for _, v in pairs(gc) do
+            scanned = scanned + 1
+            if type(v) == "table" then
+                local hasEmote = false
+                local id = nil
+                for tk, tv in pairs(v) do
+                    if type(tv) == "string" and tv:lower() == emoteName then
+                        hasEmote = true
+                    end
+                    if type(tk) == "string" and (tk:lower() == "animationid" or tk:lower() == "anim" or tk:lower() == "id") then
+                        id = tostring(tv):match("%d+")
+                    end
+                end
+                if hasEmote and id then
+                    table.insert(foundIds, id)
+                end
+            end
+            if scanned % 5000 == 0 then task.wait() end -- Jangan lag
+        end
+    end
+    
+    if #foundIds > 0 then
+        -- Coba mainkan ID pertama yang ketemu pakai fungsi PlayAnimNow yang sudah ada
+        local targetId = foundIds[1]:match("%d+")
+        if targetId then
+            Notify("🎯 ID ASLI KETEMU: " .. targetId, "Mencoba memutar animasi secara lokal!")
+            if IDInput then IDInput.Text = targetId end
+            local ok = PlayAnimNow(targetId)
+            if ok then
+                Notify("✅ Animasi Asli Diputar!", "Jika macet, nyalakan Loop Mode!")
+            end
+        end
+    else
+        Notify("❌ Tidak Ketemu", "ID Asli dari '" .. EmoteNameInput.Text .. "' disembunyikan sangat rapat di server.")
+    end
+end)
+
 
 PlayByIDBtn.BackgroundColor3 = Color3.fromRGB(100, 40, 120)
 

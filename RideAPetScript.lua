@@ -451,11 +451,7 @@ local function ScanSpecialEggs()
                     eggCFrame = obj.CFrame
                 end
 
-                -- Posisi pasti untuk Volcanic Egg (2.5T)
-                if foundTierName == "2.5T - Volcanic Egg" then
-                    eggCFrame = CFrame.new(-5330.2, 40912.4, -3579.8)
-                end
-
+                -- Kita pakai CFrame asli dari game, jangan pakai koordinat paksa biar nggak nyangkut dinding
                 local isDuplicate = false
                 for _, existing in ipairs(detectedEggsList) do
                     if existing.CFrame and eggCFrame then
@@ -681,19 +677,26 @@ VolcanicTestBtn.MouseButton1Click:Connect(function()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    -- KOORDINAT ASLI TELUR (YANG PERTAMA KALI KAMU KIRIM)
-    -- Ternyata Z: -3542 itu lokasinya ada di luar gua, pantesan kamu spawn di luar!
-    -- Koordinat telur asli adalah Z: -3579.8
-    local targetCFrame = CFrame.new(-5330.2, 40912.4, -3579.8)
+    -- Kita pakai sistem scan yang SAMA PERSIS dengan telur lain!
+    -- Supaya tidak nyangkut dinding, kita harus ambil koordinat dari model telurnya langsung.
+    local eggs = ScanSpecialEggs()
+    local targetVolcanic = nil
     
-    hrp.AssemblyLinearVelocity = Vector3.zero
-    hrp.AssemblyAngularVelocity = Vector3.zero
+    for _, egg in ipairs(eggs) do
+        if egg.Name:lower():find("volcanic") then
+            targetVolcanic = egg
+            break
+        end
+    end
     
-    -- JANGAN PAKAI ANCHOR SAMA SEKALI! 
-    -- Anchor bikin pet/kendaraan numpuk force dan bikin mental pas dilepas.
-    char:PivotTo(targetCFrame)
-    
-    Notify("✅ Volcanic Teleport", "Selesai tanpa anchor!", 3)
+    if targetVolcanic and targetVolcanic.CFrame then
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+        char:PivotTo(targetVolcanic.CFrame + Vector3.new(0, 3, 0))
+        Notify("🌋 Volcanic Teleport", "Berhasil teleport ke telur Volcanic!", 4)
+    else
+        Notify("❌ Volcanic Tidak Ada", "Telur Volcanic belum spawn. Teleport dibatalkan agar tidak nyangkut dinding gua.", 5)
+    end
 end)
 GetPosBtn.MouseButton1Click:Connect(function()
     local char = player.Character

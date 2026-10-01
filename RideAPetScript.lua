@@ -280,7 +280,7 @@ end
 -- ════════════════════════════════════════
 local function Notify(title, msg, duration)
     local notif = Instance.new("Frame")
-    notif.Size = UDim2.new(0, 280, 0, 72)
+    notif.Size = UDim2.new(0, 280, 0, 90)
     -- AnchorPoint kanan = selalu nempel di kanan layar, apapun ukuran screen
     notif.AnchorPoint = Vector2.new(1, 0)
     notif.Position = UDim2.new(1, -8, 0, 165) -- 8px dari kanan, di bawah display uang
@@ -310,7 +310,7 @@ local function Notify(title, msg, duration)
     nt.Parent = notif
 
     local nm = Instance.new("TextLabel")
-    nm.Size = UDim2.new(1, -12, 0, 28)
+    nm.Size = UDim2.new(1, -12, 0, 50)
     nm.Position = UDim2.new(0, 10, 0, 28)
     nm.BackgroundTransparency = 1
     nm.Text = msg
@@ -682,7 +682,7 @@ VolcanicTestBtn.MouseButton1Click:Connect(function()
     if not hrp then return end
 
     -- Langsung teleport ke koordinat Volcanic Egg yang sudah pasti
-    local targetCFrame = CFrame.new(-5330.2, 40912.4, -3579.8)
+    local targetCFrame = CFrame.new(-5337, 40912, -3579)
     
     -- Anchor karakter supaya map sempat ke-load dan tidak tembus ke bawah
     hrp.Anchored = true

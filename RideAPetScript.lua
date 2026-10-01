@@ -7,12 +7,12 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- 2. Create Main Window
 local Window = Rayfield:CreateWindow({
-   Name = "Ride A Pet - Egg Hunt Hub",
-   LoadingTitle = "Memuat Skrip...",
+   Name = "WayaeHUB",
+   LoadingTitle = "Memuat WayaeHUB...",
    LoadingSubtitle = "by Antigravity",
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = "RideAPetHub",
+      FolderName = "WayaeHUBConfig",
       FileName = "Config"
    },
    Discord = {

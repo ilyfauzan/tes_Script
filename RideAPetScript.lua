@@ -1,12 +1,13 @@
 local pcall = pcall
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
 pcall(function()
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    
     local oldNamecall
     oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
         local method = getnamecallmethod()
-        if method == "Kick" or method == "kick" then
+        if method == "Kick" or method == "kick" or method == "Ban" or method == "ban" then
             if self == LocalPlayer then
                 return nil
             end
@@ -15,11 +16,25 @@ pcall(function()
     end)
 end)
 
+local function SafeTweenTeleport(targetCFrame, speedMultiplier)
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = character.HumanoidRootPart
+    
+    local distance = (hrp.Position - targetCFrame.Position).Magnitude
+    local duration = math.clamp(distance / (speedMultiplier or 120), 0.1, 1.5)
+    
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+    tween:Play()
+    tween.Completed:Wait()
+end
+
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "WayaeHUB",
-   LoadingTitle = "Memuat WayaeHUB...",
+   LoadingTitle = "Memuat WayaeHUB (Safe Mode)...",
    LoadingSubtitle = "by Antigravity",
    ConfigurationSaving = {
       Enabled = true,
@@ -33,7 +48,6 @@ local Window = Rayfield:CreateWindow({
 })
 
 local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
 
 if CoreGui:FindFirstChild("RideAPetToggleButton") then
     CoreGui.RideAPetToggleButton:Destroy()
@@ -80,16 +94,15 @@ ToggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
-local EggTab = Window:CreateTab("Egg Hunt", 4483362458)
+local EggTab = Window:CreateTab("Egg Hunt (Safe)", 4483362458)
 local PlayerTab = Window:CreateTab("Pemain & Speed", 4483362458)
 
 local autoEggHunt = false
 
 EggTab:CreateButton({
-   Name = "Ambil Telur Terdekat & Balik ke Base",
+   Name = "Ambil Telur Terdekat & Balik ke Base (Safe Tween)",
    Callback = function()
-       local player = game.Players.LocalPlayer
-       local character = player.Character or player.CharacterAdded:Wait()
+       local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
        local hrp = character:FindFirstChild("HumanoidRootPart")
 
        if not hrp then
@@ -117,28 +130,28 @@ EggTab:CreateButton({
 
            if targetEgg then
                local eggPosition = targetEgg:IsA("Model") and targetEgg:GetPivot() or targetEgg.CFrame
-               hrp.CFrame = eggPosition
                
+               SafeTweenTeleport(eggPosition, 150)
                task.wait(0.3)
 
-               hrp.CFrame = baseCFrame
+               SafeTweenTeleport(baseCFrame, 150)
                
                Rayfield:Notify({
                   Title = "Berhasil!",
-                  Content = "Berhasil mengambil telur dan kembali ke Base.",
+                  Content = "Berhasil mengambil telur secara aman!",
                   Duration = 3,
                })
            else
                Rayfield:Notify({
                   Title = "Informasi",
-                  Content = "Tidak ada telur yang ditemukan di folder map!",
+                  Content = "Tidak ada telur yang ditemukan!",
                   Duration = 3,
                })
            end
        else
            Rayfield:Notify({
                Title = "Peringatan",
-               Content = "Folder telur ('Eggs') tidak ditemukan di Workspace!",
+               Content = "Folder telur ('Eggs') tidak ditemukan!",
                Duration = 3,
            })
        end
@@ -146,20 +159,17 @@ EggTab:CreateButton({
 })
 
 EggTab:CreateToggle({
-   Name = "Auto Loop Hunt All Eggs to Base",
+   Name = "Auto Loop Hunt All Eggs (Safe Mode)",
    CurrentValue = false,
    Flag = "AutoEggHuntToggle",
    Callback = function(Value)
        autoEggHunt = Value
 
        task.spawn(function()
-           local player = game.Players.LocalPlayer
-           
            while autoEggHunt do
-               local character = player.Character
+               local character = LocalPlayer.Character
                if character and character:FindFirstChild("HumanoidRootPart") then
-                   local hrp = character.HumanoidRootPart
-                   local baseCFrame = hrp.CFrame
+                   local baseCFrame = character.HumanoidRootPart.CFrame
                    local eggFolder = workspace:FindFirstChild("Eggs") 
                        or workspace:FindFirstChild("EggSpawns") 
                        or workspace:FindFirstChild("Collectibles")
@@ -169,12 +179,12 @@ EggTab:CreateToggle({
                            if not autoEggHunt then break end
                            
                            local eggPos = egg:IsA("Model") and egg:GetPivot() or egg.CFrame
-                           hrp.CFrame = eggPos
                            
-                           task.wait(0.25)
-                           
-                           hrp.CFrame = baseCFrame
+                           SafeTweenTeleport(eggPos, 140)
                            task.wait(0.3)
+                           
+                           SafeTweenTeleport(baseCFrame, 140)
+                           task.wait(0.4)
                        end
                    end
                end
@@ -184,37 +194,36 @@ EggTab:CreateToggle({
    end,
 })
 
+local walkSpeedConnection = nil
 PlayerTab:CreateSlider({
-   Name = "Kecepatan Jalan (WalkSpeed)",
-   Range = {16, 200},
+   Name = "Kecepatan Jalan Safe (WalkSpeed)",
+   Range = {16, 120},
    Increment = 1,
    Suffix = "Speed",
    CurrentValue = 16,
    Flag = "WalkSpeedSlider",
    Callback = function(Value)
-       local player = game.Players.LocalPlayer
-       if player.Character and player.Character:FindFirstChild("Humanoid") then
-           player.Character.Humanoid.WalkSpeed = Value
+       if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+           LocalPlayer.Character.Humanoid.WalkSpeed = Value
        end
    end,
 })
 
 PlayerTab:CreateSlider({
    Name = "Kekuatan Lompat (JumpPower)",
-   Range = {50, 300},
+   Range = {50, 250},
    Increment = 5,
    Suffix = "Power",
    CurrentValue = 50,
    Flag = "JumpPowerSlider",
    Callback = function(Value)
-       local player = game.Players.LocalPlayer
-       if player.Character and player.Character:FindFirstChild("Humanoid") then
-           player.Character.Humanoid.UseJumpPower = true
-           player.Character.Humanoid.JumpPower = Value
+       if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+           LocalPlayer.Character.Humanoid.UseJumpPower = true
+           LocalPlayer.Character.Humanoid.JumpPower = Value
        end
    end,
 })
 
 Rayfield:LoadConfiguration()
 
-print("[WayaeHUB] Skrip berhasil dimuat!")
+print("[WayaeHUB] Skrip Safe-Mode 100% berhasil dimuat!")

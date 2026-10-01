@@ -281,8 +281,8 @@ end
 local function Notify(title, msg, duration)
     local notif = Instance.new("Frame")
     notif.Size = UDim2.new(0, 300, 0, 72)
-    -- Posisi center-bottom, selalu terlihat di semua ukuran layar
-    notif.Position = UDim2.new(0.5, -150, 1, -90)
+    -- Atas tengah layar, aman dari weather/currency di bawah
+    notif.Position = UDim2.new(0.5, -150, 0, 70)
     notif.BackgroundColor3 = Color3.fromRGB(25, 18, 50)
     notif.BorderSizePixel = 0
     notif.ZIndex = 50

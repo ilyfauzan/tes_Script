@@ -28,7 +28,7 @@ MainFrame.Position = UDim2.new(0.5, -170, 0.5, -200)
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
-MainFrame.Draggable = true
+MainFrame.Draggable = false  -- Matikan agar tombol di dalam bisa diklik di emulator
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
@@ -86,6 +86,38 @@ CloseBtn.Parent = Header
 local CloseBtnCorner = Instance.new("UICorner")
 CloseBtnCorner.CornerRadius = UDim.new(0, 8)
 CloseBtnCorner.Parent = CloseBtn
+
+-- Drag window via Header
+local UISwin = game:GetService("UserInputService")
+local winDragActive = false
+local winDragStartPos = nil
+local winDragStartFramePos = nil
+
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or
+       input.UserInputType == Enum.UserInputType.Touch then
+        winDragActive = true
+        winDragStartPos = input.Position
+        winDragStartFramePos = MainFrame.Position
+    end
+end)
+UISwin.InputChanged:Connect(function(input)
+    if not winDragActive or not winDragStartPos then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement and
+       input.UserInputType ~= Enum.UserInputType.Touch then return end
+    local delta = input.Position - winDragStartPos
+    MainFrame.Position = UDim2.new(
+        winDragStartFramePos.X.Scale, winDragStartFramePos.X.Offset + delta.X,
+        winDragStartFramePos.Y.Scale, winDragStartFramePos.Y.Offset + delta.Y
+    )
+end)
+UISwin.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or
+       input.UserInputType == Enum.UserInputType.Touch then
+        winDragActive = false
+        winDragStartPos = nil
+    end
+end)
 
 -- ════════════════════════════════════════
 --  FLOATING TOGGLE BUTTON (draggable + tappable)
@@ -248,10 +280,12 @@ end
 -- ════════════════════════════════════════
 local function Notify(title, msg, duration)
     local notif = Instance.new("Frame")
-    notif.Size = UDim2.new(0, 280, 0, 64)
-    notif.Position = UDim2.new(1, -296, 1, -80)
+    notif.Size = UDim2.new(0, 300, 0, 72)
+    -- Posisi center-bottom, selalu terlihat di semua ukuran layar
+    notif.Position = UDim2.new(0.5, -150, 1, -90)
     notif.BackgroundColor3 = Color3.fromRGB(25, 18, 50)
     notif.BorderSizePixel = 0
+    notif.ZIndex = 50
     notif.Parent = ScreenGui
 
     local nc = Instance.new("UICorner")

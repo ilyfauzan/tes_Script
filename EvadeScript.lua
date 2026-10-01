@@ -821,12 +821,13 @@ LabelHalloween.TextSize = 14
 LabelHalloween.TextXAlignment = Enum.TextXAlignment.Left
 LabelHalloween.Parent = ScrollingFrame
 
--- Daftar Emote Halloween 2022 Lengkap
+-- Daftar Emote Halloween & Popular Evade Lengkap
 local halloweenEmotes = {
+    {Name = "🎸 Play Emote Rockin' Stride", Id = "12686575749", Color = Color3.fromRGB(200, 40, 120)},
     {Name = "🕺 Spooky Scary Skeleton Dance", Id = "11370221379", Color = Color3.fromRGB(180, 80, 0)},
     {Name = "🧟 Zombie Walk / Monster Mash", Id = "3360689775", Color = Color3.fromRGB(140, 60, 0)},
     {Name = "👻 Ghost Levitating / Headless", Id = "3360690911", Color = Color3.fromRGB(120, 50, 0)},
-    {Name = "🐱 Catjam Halloween Special", Id = "12686575749", Color = Color3.fromRGB(160, 40, 100)},
+    {Name = "🐱 Catjam Special Emote", Id = "12686575749", Color = Color3.fromRGB(160, 40, 100)},
     {Name = "💃 Thriller Night Dance", Id = "3360686498", Color = Color3.fromRGB(100, 30, 120)},
     {Name = "💀 Skeleton Shuffle Dance", Id = "4841397146", Color = Color3.fromRGB(130, 70, 0)},
     {Name = "🎃 Pumpkin Jam / Jack-o'-Lantern", Id = "3695333480", Color = Color3.fromRGB(190, 90, 0)},

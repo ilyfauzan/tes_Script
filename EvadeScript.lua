@@ -273,6 +273,7 @@ end)
 local DeepScanBtn = CreateButton("🧠 Deep Memory Scan (Cari ID Asli)", ScrollingFrame)
 DeepScanBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 50)
 
+DeepScanBtn.MouseButton1Click:Connect(function()
     Notify("🧠 Deep Scan Tidak Tersedia", "Gunakan Radar Pencuri Emote di bawah!")
 end)
 

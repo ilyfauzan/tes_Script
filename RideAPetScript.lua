@@ -92,18 +92,19 @@ CloseBtnCorner.Parent = CloseBtn
 -- ════════════════════════════════════════
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Name = "WayaeToggle"
-ToggleBtn.Size = UDim2.new(0, 54, 0, 54)
-ToggleBtn.Position = UDim2.new(0, 16, 0.5, -27)
+ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
+-- Pojok kiri tengah, di area yang aman dari UI game
+ToggleBtn.Position = UDim2.new(0, 10, 0.45, 0)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 30, 110)
 ToggleBtn.Text = "🥚"
-ToggleBtn.TextSize = 26
+ToggleBtn.TextSize = 28
 ToggleBtn.Font = Enum.Font.GothamBold
 ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleBtn.BorderSizePixel = 0
 ToggleBtn.Visible = false
-ToggleBtn.ZIndex = 20
+ToggleBtn.ZIndex = 100
 ToggleBtn.Active = true
-ToggleBtn.Draggable = true
+ToggleBtn.Draggable = false -- Matikan Draggable agar klik/touch bekerja di mobile
 ToggleBtn.Parent = ScreenGui
 
 local ToggleCorner = Instance.new("UICorner")
@@ -112,44 +113,49 @@ ToggleCorner.Parent = ToggleBtn
 
 local ToggleStroke = Instance.new("UIStroke")
 ToggleStroke.Color = Color3.fromRGB(140, 80, 255)
-ToggleStroke.Thickness = 2
+ToggleStroke.Thickness = 2.5
 ToggleStroke.Parent = ToggleBtn
 
--- Glow effect
-local ToggleGlow = Instance.new("ImageLabel")
-ToggleGlow.Size = UDim2.new(1, 30, 1, 30)
-ToggleGlow.Position = UDim2.new(0, -15, 0, -15)
-ToggleGlow.BackgroundTransparency = 1
-ToggleGlow.Image = "rbxassetid://5028857084"
-ToggleGlow.ImageColor3 = Color3.fromRGB(120, 60, 240)
-ToggleGlow.ImageTransparency = 0.5
-ToggleGlow.ZIndex = 19
-ToggleGlow.Parent = ToggleBtn
-
--- Animasi glow berdenyut
+-- Glow berdenyut sederhana (tanpa ImageLabel agar tidak error)
 task.spawn(function()
+    local colors = {
+        Color3.fromRGB(100, 50, 220),
+        Color3.fromRGB(160, 90, 255),
+        Color3.fromRGB(100, 50, 220),
+    }
+    local i = 1
     while true do
-        for i = 1, 20 do
-            if not ToggleBtn.Visible then task.wait(0.5) break end
-            ToggleGlow.ImageTransparency = 0.3 + (i / 20) * 0.5
-            task.wait(0.05)
-        end
-        for i = 20, 1, -1 do
-            if not ToggleBtn.Visible then task.wait(0.5) break end
-            ToggleGlow.ImageTransparency = 0.3 + (i / 20) * 0.5
-            task.wait(0.05)
+        task.wait(0.6)
+        if ToggleBtn and ToggleBtn.Parent then
+            ToggleStroke.Color = colors[i]
+            i = (i % #colors) + 1
         end
     end
 end)
 
-ToggleBtn.MouseButton1Click:Connect(function()
+-- Tangani klik DAN touch (penting untuk mobile)
+local function onToggleOpen()
     MainFrame.Visible = true
     ToggleBtn.Visible = false
+end
+
+ToggleBtn.MouseButton1Click:Connect(onToggleOpen)
+ToggleBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        onToggleOpen()
+    end
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
     ToggleBtn.Visible = true
+end)
+
+CloseBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        MainFrame.Visible = false
+        ToggleBtn.Visible = true
+    end
 end)
 
 -- CONTENT AREA

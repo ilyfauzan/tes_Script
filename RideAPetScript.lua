@@ -65,24 +65,58 @@ local function ScanSpecialEggs()
 
             if foundTierName then
                 local eggCFrame
+
+                -- Cari BasePart paling tinggi di dalam model (= telur, bukan alas platform)
+                local function GetHighestPart(model)
+                    local highestPart = nil
+                    local highestY = -math.huge
+                    for _, part in pairs(model:GetDescendants()) do
+                        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                            local partY = part.Position.Y
+                            if partY > highestY then
+                                highestY = partY
+                                highestPart = part
+                            end
+                        end
+                    end
+                    return highestPart
+                end
+
                 if obj:IsA("Model") then
-                    -- Cari PrimaryPart dulu (lebih akurat)
-                    if obj.PrimaryPart then
+                    local topPart = GetHighestPart(obj)
+                    if topPart then
+                        eggCFrame = topPart.CFrame
+                    elseif obj.PrimaryPart then
                         eggCFrame = obj.PrimaryPart.CFrame
                     else
-                        -- Pakai BoundingBox biar dapat posisi tengah model (bukan alas)
-                        local cf, size = obj:GetBoundingBox()
+                        local cf, _ = obj:GetBoundingBox()
                         eggCFrame = cf
                     end
                 else
                     eggCFrame = obj.CFrame
                 end
-                table.insert(detectedEggsList, {
-                    Name = foundTierName .. " [" .. obj.Name .. "]",
-                    Instance = obj,
-                    CFrame = eggCFrame
-                })
+
+                -- Hindari duplikat posisi yang sangat berdekatan
+                local isDuplicate = false
+                for _, existing in ipairs(detectedEggsList) do
+                    if existing.CFrame and eggCFrame then
+                        local dist = (existing.CFrame.Position - eggCFrame.Position).Magnitude
+                        if dist < 5 then
+                            isDuplicate = true
+                            break
+                        end
+                    end
+                end
+
+                if not isDuplicate then
+                    table.insert(detectedEggsList, {
+                        Name = foundTierName .. " [" .. obj.Name .. "]",
+                        Instance = obj,
+                        CFrame = eggCFrame
+                    })
+                end
             end
+
         end
     end
 

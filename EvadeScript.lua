@@ -177,23 +177,23 @@ local function PlayAnimNow(idStr)
     local ok = pcall(function()
         if currentTrack then currentTrack:Stop() end
         
-        -- Hentikan SEMUA animasi bawaan Evade yang sedang main (idle/jalan)
-        for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
-            track:Stop()
-        end
-        
-        -- Matikan skrip bawaan sementara biar gak numpuk
-        animateScript = char:FindFirstChild("Animate") or char:FindFirstChild("animate")
-        if animateScript and animateScript:IsA("LocalScript") then
-            animateScript.Disabled = true
-        end
+        -- Kita TIDAK LAGI mematikan semua animasi bawaan secara paksa.
+        -- Cukup set Priority ke Action4, biarkan Roblox yang ngatur penimpakan animasinya.
+        -- Ini mencegah karakter tiba-tiba kaku/freeze kalau ID-nya salah atau beda Rig (R6/R15).
         
         local anim = Instance.new("Animation")
-        anim.AnimationId = "rbxassetid://" .. trueId
+        
+        -- Cek kalau ID-nya emang udah format rbxassetid
+        if not tostring(trueId):find("rbxassetid://") then
+            anim.AnimationId = "rbxassetid://" .. trueId
+        else
+            anim.AnimationId = trueId
+        end
+        
         currentTrack = animator:LoadAnimation(anim)
         currentTrack.Priority = Enum.AnimationPriority.Action4
         currentTrack.Looped = loopActive
-        currentTrack:Play(0.1, 1, 1) -- Force play weight 1
+        currentTrack:Play() -- Play normal tanpa argumen aneh-aneh
     end)
     return ok
 end

@@ -7,105 +7,74 @@ end
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "WayaeHUB"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = playerGui
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainFrame.Size = UDim2.new(0.85, 0, 0.85, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+MainFrame.Size = UDim2.new(0, 320, 0, 420)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -210)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 15, 45)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
-MainFrame.Draggable = false
+MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
-local SizeConstraint = Instance.new("UISizeConstraint")
-SizeConstraint.MaxSize = Vector2.new(340, 480)
-SizeConstraint.MinSize = Vector2.new(240, 300)
-SizeConstraint.Parent = MainFrame
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
-MainCorner.Parent = MainFrame
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(80, 60, 200)
-MainStroke.Thickness = 1.5
-MainStroke.Parent = MainFrame
-local Header = Instance.new("Frame")
-Header.Name = "Header"
-Header.Size = UDim2.new(1, 0, 0, 48)
-Header.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
-Header.BorderSizePixel = 0
-Header.Parent = MainFrame
-local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 12)
-HeaderCorner.Parent = Header
-local HeaderFix = Instance.new("Frame")
-HeaderFix.Size = UDim2.new(1, 0, 0, 12)
-HeaderFix.Position = UDim2.new(0, 0, 1, -12)
-HeaderFix.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
-HeaderFix.BorderSizePixel = 0
-HeaderFix.Parent = Header
-local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Size = UDim2.new(1, -60, 1, 0)
-TitleLabel.Position = UDim2.new(0, 16, 0, 0)
-TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "🥚  WayaeHUB"
-TitleLabel.TextColor3 = Color3.fromRGB(220, 200, 255)
-TitleLabel.TextSize = 18
-TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-TitleLabel.Parent = Header
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = MainFrame
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(120, 80, 255)
+UIStroke.Thickness = 2
+UIStroke.Parent = MainFrame
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Size = UDim2.new(1, 0, 0, 40)
+TitleBar.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 12)
+TitleCorner.Parent = TitleBar
+local TitleBlocker = Instance.new("Frame")
+TitleBlocker.Size = UDim2.new(1, 0, 0, 10)
+TitleBlocker.Position = UDim2.new(0, 0, 1, -10)
+TitleBlocker.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
+TitleBlocker.BorderSizePixel = 0
+TitleBlocker.Parent = TitleBar
+local TitleIcon = Instance.new("TextLabel")
+TitleIcon.Size = UDim2.new(0, 30, 0, 30)
+TitleIcon.Position = UDim2.new(0, 10, 0, 5)
+TitleIcon.BackgroundTransparency = 1
+TitleIcon.Text = "🥚"
+TitleIcon.TextSize = 20
+TitleIcon.Parent = TitleBar
+local TitleText = Instance.new("TextLabel")
+TitleText.Size = UDim2.new(1, -90, 1, 0)
+TitleText.Position = UDim2.new(0, 45, 0, 0)
+TitleText.BackgroundTransparency = 1
+TitleText.Text = "WayaeHUB"
+TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleText.TextSize = 18
+TitleText.Font = Enum.Font.GothamBold
+TitleText.TextXAlignment = Enum.TextXAlignment.Left
+TitleText.Parent = TitleBar
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 32, 0, 32)
-CloseBtn.Position = UDim2.new(1, -42, 0, 8)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 80)
-CloseBtn.Text = "✕"
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -40, 0, 5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 70)
+CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.TextSize = 14
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.BorderSizePixel = 0
-CloseBtn.Parent = Header
-local CloseBtnCorner = Instance.new("UICorner")
-CloseBtnCorner.CornerRadius = UDim.new(0, 8)
-CloseBtnCorner.Parent = CloseBtn
-local UISwin = game:GetService("UserInputService")
-local winDragActive = false
-local winDragStartPos = nil
-local winDragStartFramePos = nil
-Header.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        winDragActive = true
-        winDragStartPos = input.Position
-        winDragStartFramePos = MainFrame.Position
-    end
-end)
-UISwin.InputChanged:Connect(function(input)
-    if not winDragActive or not winDragStartPos then return end
-    if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then return end
-    local delta = input.Position - winDragStartPos
-    MainFrame.Position = UDim2.new(
-        winDragStartFramePos.X.Scale, winDragStartFramePos.X.Offset + delta.X,
-        winDragStartFramePos.Y.Scale, winDragStartFramePos.Y.Offset + delta.Y
-    )
-end)
-UISwin.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        winDragActive = false
-        winDragStartPos = nil
-    end
-end)
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Name = "WayaeToggle"
-ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
-ToggleBtn.Position = UDim2.new(1, -75, 0, 130)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 30, 110)
-ToggleBtn.Text = "🥚"
-ToggleBtn.TextSize = 28
-ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBtn.BorderSizePixel = 0
+CloseBtn.TextSize = 14
+CloseBtn.Parent = TitleBar
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseBtn
+local ToggleBtn = Instance.new("ImageButton")
+ToggleBtn.Name = "ToggleWayaeHUB"
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.Position = UDim2.new(0.5, -25, 0, 10)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
+ToggleBtn.Image = "rbxassetid://134720935532299"
 ToggleBtn.Visible = false
-ToggleBtn.ZIndex = 100
 ToggleBtn.Active = true
 ToggleBtn.Draggable = false
 ToggleBtn.Parent = ScreenGui
@@ -138,7 +107,6 @@ ToggleBtn.InputBegan:Connect(function(input)
         dragActive = true
         dragStartPos = input.Position
         dragStartBtnPos = ToggleBtn.Position
-        isDragging = false
     end
 end)
 UIS.InputChanged:Connect(function(input)
@@ -173,19 +141,87 @@ CloseBtn.MouseButton1Click:Connect(onClose)
 CloseBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch then onClose() end
 end)
+
+local TabBar = Instance.new("Frame")
+TabBar.Name = "TabBar"
+TabBar.Size = UDim2.new(1, -24, 0, 30)
+TabBar.Position = UDim2.new(0, 12, 0, 52)
+TabBar.BackgroundTransparency = 1
+TabBar.Parent = MainFrame
+
+local MainTabBtn = Instance.new("TextButton")
+MainTabBtn.Size = UDim2.new(0.48, 0, 1, 0)
+MainTabBtn.Position = UDim2.new(0, 0, 0, 0)
+MainTabBtn.BackgroundColor3 = Color3.fromRGB(70, 50, 140)
+MainTabBtn.Text = "Utama"
+MainTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MainTabBtn.Font = Enum.Font.GothamBold
+MainTabBtn.TextSize = 13
+MainTabBtn.Parent = TabBar
+local MainTabCorner = Instance.new("UICorner")
+MainTabCorner.CornerRadius = UDim.new(0, 6)
+MainTabCorner.Parent = MainTabBtn
+
+local ExtraTabBtn = Instance.new("TextButton")
+ExtraTabBtn.Size = UDim2.new(0.48, 0, 1, 0)
+ExtraTabBtn.Position = UDim2.new(0.52, 0, 0, 0)
+ExtraTabBtn.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
+ExtraTabBtn.Text = "Ekstra"
+ExtraTabBtn.TextColor3 = Color3.fromRGB(150, 130, 200)
+ExtraTabBtn.Font = Enum.Font.GothamBold
+ExtraTabBtn.TextSize = 13
+ExtraTabBtn.Parent = TabBar
+local ExtraTabCorner = Instance.new("UICorner")
+ExtraTabCorner.CornerRadius = UDim.new(0, 6)
+ExtraTabCorner.Parent = ExtraTabBtn
+
 local ContentFrame = Instance.new("ScrollingFrame")
 ContentFrame.Name = "Content"
-ContentFrame.Size = UDim2.new(1, -24, 1, -68)
-ContentFrame.Position = UDim2.new(0, 12, 0, 58)
+ContentFrame.Size = UDim2.new(1, -24, 1, -94)
+ContentFrame.Position = UDim2.new(0, 12, 0, 88)
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.ScrollBarThickness = 2
 ContentFrame.BorderSizePixel = 0
-ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 450)
+ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 300)
 ContentFrame.Parent = MainFrame
 local ContentLayout = Instance.new("UIListLayout")
 ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 ContentLayout.Padding = UDim.new(0, 8)
 ContentLayout.Parent = ContentFrame
+
+local ExtraFrame = Instance.new("ScrollingFrame")
+ExtraFrame.Name = "ExtraContent"
+ExtraFrame.Size = UDim2.new(1, -24, 1, -94)
+ExtraFrame.Position = UDim2.new(0, 12, 0, 88)
+ExtraFrame.BackgroundTransparency = 1
+ExtraFrame.ScrollBarThickness = 2
+ExtraFrame.BorderSizePixel = 0
+ExtraFrame.CanvasSize = UDim2.new(0, 0, 0, 300)
+ExtraFrame.Visible = false
+ExtraFrame.Parent = MainFrame
+local ExtraLayout = Instance.new("UIListLayout")
+ExtraLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ExtraLayout.Padding = UDim.new(0, 8)
+ExtraLayout.Parent = ExtraFrame
+
+MainTabBtn.MouseButton1Click:Connect(function()
+    MainTabBtn.BackgroundColor3 = Color3.fromRGB(70, 50, 140)
+    MainTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ExtraTabBtn.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
+    ExtraTabBtn.TextColor3 = Color3.fromRGB(150, 130, 200)
+    ContentFrame.Visible = true
+    ExtraFrame.Visible = false
+end)
+
+ExtraTabBtn.MouseButton1Click:Connect(function()
+    ExtraTabBtn.BackgroundColor3 = Color3.fromRGB(70, 50, 140)
+    ExtraTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MainTabBtn.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
+    MainTabBtn.TextColor3 = Color3.fromRGB(150, 130, 200)
+    ContentFrame.Visible = false
+    ExtraFrame.Visible = true
+end)
+
 local function MakeButton(parent, text, order)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, 0, 0, 42)
@@ -337,28 +373,12 @@ Wayae.UI.DropBtn.MouseButton1Click:Connect(function()
     end
 end)
 Wayae.UI.RefreshDropdown(Wayae.UI.dropdownOptions)
-Wayae.UI.ScanBtn = MakeButton(ContentFrame, "🔍  1. Lacak Telur Special (100B - 2.5T)", 1)
+
+Wayae.UI.ScanBtn = MakeButton(ContentFrame, "🔍  1. Lacak Telur Special", 1)
 Wayae.UI.TeleportBtn = MakeButton(ContentFrame, "🚀  2. Teleport ke Lokasi Telur", 5)
 Wayae.UI.SellBtn = MakeButton(ContentFrame, "🏕️  3. Teleport ke My Plot / Ranch", 6)
-Wayae.UI.VolcanicTestBtn = MakeButton(ContentFrame, "🌋  4. Test Teleport Volcanic Egg", 7)
-Wayae.UI.GetPosBtn = MakeButton(ContentFrame, "📍  5. Ambil Posisi Saya Sekarang", 8)
 
-Wayae.UI.ToggleExtraBtn = MakeButton(ContentFrame, "🔽 Tampilkan Fitur Ekstra", 9)
-Wayae.UI.ToggleExtraBtn.BackgroundColor3 = Color3.fromRGB(50, 40, 100)
-
-Wayae.UI.SaveLocBtn = MakeButton(ContentFrame, "💾  6. Save Last Location", 10)
-Wayae.UI.TpLocBtn = MakeButton(ContentFrame, "🔙  7. Teleport Last Location", 11)
-
-Wayae.UI.SaveLocBtn.Visible = false
-Wayae.UI.TpLocBtn.Visible = false
-
-Wayae.UI.ToggleExtraBtn.MouseButton1Click:Connect(function()
-    local isVisible = not Wayae.UI.SaveLocBtn.Visible
-    Wayae.UI.SaveLocBtn.Visible = isVisible
-    Wayae.UI.TpLocBtn.Visible = isVisible
-    if isVisible then
-        Wayae.UI.ToggleExtraBtn.Text = "🔼 Sembunyikan Fitur Ekstra"
-    else
-        Wayae.UI.ToggleExtraBtn.Text = "🔽 Tampilkan Fitur Ekstra"
-    end
-end)
+Wayae.UI.VolcanicTestBtn = MakeButton(ExtraFrame, "🌋  Test Teleport Volcanic", 1)
+Wayae.UI.GetPosBtn = MakeButton(ExtraFrame, "📍  Ambil Posisi Saya Sekarang", 2)
+Wayae.UI.SaveLocBtn = MakeButton(ExtraFrame, "💾  Save Last Location", 3)
+Wayae.UI.TpLocBtn = MakeButton(ExtraFrame, "🔙  Teleport Last Location", 4)

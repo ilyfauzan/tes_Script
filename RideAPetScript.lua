@@ -682,18 +682,18 @@ VolcanicTestBtn.MouseButton1Click:Connect(function()
     if not hrp then return end
 
     -- KOORDINAT BENAR DI DALAM GUA (-5332, 40912, -3542)
+    -- Angka ini sudah posisi perut (HRP) dari tombol GetPos, jadi JANGAN ditambah ketinggian lagi!
     local targetCFrame = CFrame.new(-5332, 40912, -3542)
     
     hrp.AssemblyLinearVelocity = Vector3.zero
     hrp.AssemblyAngularVelocity = Vector3.zero
     
-    -- Ketinggian HANYA +3 (biar kepala tidak nabrak atap gua pas di-unanchor)
     hrp.Anchored = true
-    hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
+    hrp.CFrame = targetCFrame
     
     Notify("🌋 Teleporting...", "Menahan posisi agar map ke-load...", 2)
     
-    task.delay(2, function()
+    task.delay(1.5, function()
         if hrp then hrp.Anchored = false end
         Notify("✅ Selesai", "Teleport berhasil!", 3)
     end)

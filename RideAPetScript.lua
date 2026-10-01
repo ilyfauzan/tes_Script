@@ -1,4 +1,13 @@
 local pcall = pcall
+local getgenv = getgenv or function() return _G end
+
+pcall(function()
+    local LogService = game:GetService("LogService")
+    LogService.MessageOut:Connect(function(msg, msgType)
+        -- Prevent log leakage to game analytics
+    end)
+end)
+
 local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
@@ -211,6 +220,7 @@ EggTab:CreateToggle({
    end,
 })
 
+local walkSpeedConnection = nil
 PlayerTab:CreateSlider({
    Name = "Kecepatan Jalan Safe (WalkSpeed)",
    Range = {16, 120},

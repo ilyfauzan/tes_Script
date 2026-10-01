@@ -44,6 +44,24 @@ local function ScanSpecialEggs()
         return false
     end
 
+    -- Keyword nama folder/model yang biasanya adalah base/plot milik pemain
+    local plotKeywords = {"plot", "base", "pen", "farm", "yard", "house", "home", "island", "territory"}
+
+    -- Cek apakah objek berada di dalam base/plot pemain
+    local function IsInsidePlot(obj)
+        local current = obj.Parent
+        while current and current ~= workspace do
+            local nameLower = current.Name:lower()
+            for _, kw in ipairs(plotKeywords) do
+                if nameLower:find(kw) then
+                    return true
+                end
+            end
+            current = current.Parent
+        end
+        return false
+    end
+
     local specialNames = {
         ["blackhole"] = "100B - Blackhole Egg",
         ["solaris"] = "300B - Solaris Egg",
@@ -54,6 +72,8 @@ local function ScanSpecialEggs()
     for _, obj in pairs(workspace:GetDescendants()) do
         -- SKIP jika objek ada di dalam karakter pemain
         if IsInsideCharacter(obj) then continue end
+        -- SKIP jika objek ada di dalam base/plot milik pemain
+        if IsInsidePlot(obj) then continue end
 
         if obj:IsA("Model") or obj:IsA("BasePart") then
             local nameLower = obj.Name:lower()

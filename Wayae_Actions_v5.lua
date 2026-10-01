@@ -1,5 +1,107 @@
 local Wayae = getgenv().Wayae
 local player = Wayae.player
+
+Wayae.TeleportToPlot = function()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    
+    local plotTarget = nil
+    local playerName = player.Name:lower()
+    local playerDisplayName = player.DisplayName:lower()
+    local possibleFolders = {"plots", "tycoons", "ranches", "bases", "islands", "playerplots"}
+    local plotContainer = nil
+    for _, child in pairs(workspace:GetChildren()) do
+        if child:IsA("Folder") or child:IsA("Model") then
+            local name = child.Name:lower()
+            for _, pName in ipairs(possibleFolders) do
+                if name:find(pName) then
+                    plotContainer = child
+                    break
+                end
+            end
+        end
+        if plotContainer then break end
+    end
+    local searchArea = plotContainer and plotContainer:GetDescendants() or workspace:GetDescendants()
+    for _, obj in pairs(searchArea) do
+        if char and (obj == char or obj:IsDescendantOf(char)) then continue end
+        local foundPlot = false
+        if obj:IsA("TextLabel") or obj:IsA("StringValue") then
+            local text = (obj:IsA("TextLabel") and obj.Text or tostring(obj.Value)):lower()
+            if text:find("ranch") or text:find("plot") or text:find("tycoon") or text:find("base") then
+                if text:find(playerName) or text:find(playerDisplayName) or text:find("your") or text:find("my") then
+                    foundPlot = true
+                end
+            end
+        end
+        if not foundPlot and obj:IsA("ObjectValue") and obj.Value == player then
+            foundPlot = true
+        end
+        if foundPlot then
+            local current = (obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("BasePart")) and obj or obj.Parent
+            local plotModel = current
+            local temp = current
+            while temp and temp ~= workspace and temp ~= plotContainer do
+                if temp:IsA("Model") or temp:IsA("Folder") then
+                    plotModel = temp
+                end
+                temp = temp.Parent
+            end
+            if plotModel then
+                local spawnPad = nil
+                for _, child in pairs(plotModel:GetDescendants()) do
+                    if child:IsA("SpawnLocation") or (child:IsA("BasePart") and child.Name:lower():find("spawn")) then
+                        spawnPad = child
+                        break
+                    end
+                end
+                if spawnPad and spawnPad:IsA("BasePart") then
+                    plotTarget = spawnPad.CFrame + Vector3.new(0, 5, 0)
+                    break
+                end
+                local ok, cf, size = pcall(function()
+                    if plotModel:IsA("Model") then return plotModel:GetBoundingBox() end
+                    return plotModel.CFrame, plotModel.Size
+                end)
+                if ok and cf and size then
+                    local groundY = cf.Position.Y - (size.Y/2) + 5
+                    plotTarget = CFrame.new(cf.Position.X, groundY, cf.Position.Z) * cf.Rotation
+                    break
+                end
+            end
+        end
+    end
+    if not plotTarget then
+        local playerGui = player:FindFirstChild("PlayerGui")
+        if playerGui then
+            for _, obj in pairs(playerGui:GetDescendants()) do
+                if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+                    local text = ""
+                    if obj:IsA("TextButton") then text = obj.Text:lower() end
+                    if obj.Name:lower():find("teleport") or obj.Name:lower():find("home") or obj.Name:lower():find("ranch") or text:find("ranch") or text:find("plot") then
+                        if getconnections then
+                            for _, conn in pairs(getconnections(obj.MouseButton1Click)) do
+                                pcall(function() conn:Function() end)
+                            end
+                            for _, conn in pairs(getconnections(obj.Activated)) do
+                                pcall(function() conn:Function() end)
+                            end
+                            return true
+                        end
+                    end
+                end
+            end
+        end
+    end
+    if plotTarget then
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+        char:PivotTo(plotTarget)
+        return true
+    end
+    return false
+end
 Wayae.UI.ScanBtn.MouseButton1Click:Connect(function()
     local eggs = Wayae.ScanSpecialEggs()
     if #eggs > 0 then
@@ -202,50 +304,6 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                 local eggs = Wayae.ScanSpecialEggs()
                 
                 if #eggs > 0 and hrp then
-                    -- Eksekusi logic pencarian plot (cukup cari 1 kali di awal)
-                    local plotTarget = nil
-                    local possibleFolders = {"plots", "tycoons", "ranches", "bases", "islands", "playerplots"}
-                    local plotContainer = nil
-                    for _, child in pairs(workspace:GetChildren()) do
-                        if child:IsA("Folder") or child:IsA("Model") then
-                            local name = child.Name:lower()
-                            for _, pName in ipairs(possibleFolders) do
-                                if name:find(pName) then
-                                    plotContainer = child
-                                    break
-                                end
-                            end
-                        end
-                        if plotContainer then break end
-                    end
-                    local searchArea = plotContainer and plotContainer:GetDescendants() or workspace:GetDescendants()
-                    for _, obj in pairs(searchArea) do
-                        if char and (obj == char or obj:IsDescendantOf(char)) then continue end
-                        local foundPlot = false
-                        if obj:IsA("Model") or obj:IsA("Folder") then
-                            local nameLower = obj.Name:lower()
-                            local ownerValue = obj:FindFirstChild("Owner")
-                            if (nameLower:find(player.Name:lower()) or nameLower:find(player.DisplayName:lower())) or (ownerValue and ownerValue:IsA("ObjectValue") and ownerValue.Value == player) or (ownerValue and ownerValue:IsA("StringValue") and ownerValue.Value == player.Name) then
-                                foundPlot = obj
-                            end
-                        end
-                        if foundPlot then
-                            local spawnPad = foundPlot:FindFirstChild("Spawn") or foundPlot:FindFirstChild("SpawnLocation") or foundPlot:FindFirstChild("Base") or foundPlot:FindFirstChild("Floor")
-                            if spawnPad and spawnPad:IsA("BasePart") then
-                                plotTarget = spawnPad
-                                break
-                            else
-                                for _, part in ipairs(foundPlot:GetDescendants()) do
-                                    if part:IsA("BasePart") then
-                                        plotTarget = part
-                                        break
-                                    end
-                                end
-                                if plotTarget then break end
-                            end
-                        end
-                    end
-                    
                     Wayae.UI.Notify("🤖 Auto Farm", "Menemukan " .. #eggs .. " telur! Mengambil...", 3)
                     for _, eggData in ipairs(eggs) do
                         if not Wayae.autoFarmRunning then break end
@@ -291,12 +349,14 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                 task.wait(1.5)
                                 
                                 -- Langsung pulang ke plot setelah ambil 1 telur agar bisa disetorkan
-                                if plotTarget and hrp and Wayae.autoFarmRunning then
-                                    hrp.AssemblyLinearVelocity = Vector3.zero
-                                    hrp.AssemblyAngularVelocity = Vector3.zero
-                                    char:PivotTo(plotTarget.CFrame + Vector3.new(0, 10, 0))
-                                    -- Tunggu 1.5 detik biar telurnya otomatis disetor ke plot
-                                    task.wait(1.5)
+                                if Wayae.autoFarmRunning then
+                                    local tpSuccess = Wayae.TeleportToPlot()
+                                    if tpSuccess then
+                                        -- Tunggu 1.5 detik biar telurnya otomatis disetor ke plot
+                                        task.wait(1.5)
+                                    else
+                                        Wayae.UI.Notify("⚠️ Auto Farm", "Gagal teleport ke Plot!", 3)
+                                    end
                                 end
                             end
                         end

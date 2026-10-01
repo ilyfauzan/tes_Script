@@ -335,6 +335,7 @@ Wayae.UI.RefreshDropdown(Wayae.UI.dropdownOptions)
 Wayae.UI.ScanBtn = MakeButton(EggMenu, "🔍 1. Lacak Telur Special", 1)
 Wayae.UI.TeleportBtn = MakeButton(EggMenu, "🚀 2. Teleport ke Lokasi Telur", 5)
 Wayae.UI.SellBtn = MakeButton(EggMenu, "🏕️ 3. Teleport ke My Plot / Ranch", 6)
+Wayae.UI.AutoFarmBtn = MakeButton(EggMenu, "🤖 4. Auto Farm Egg (7 Menit): OFF", 7, Color3.fromRGB(60, 30, 30))
 
 Wayae.UI.GetPosBtn = MakeButton(ExtraMenu, "📍 Ambil Posisi Saya Sekarang", 1)
 Wayae.UI.SaveLocBtn = MakeButton(ExtraMenu, "💾 Save Last Location", 2)

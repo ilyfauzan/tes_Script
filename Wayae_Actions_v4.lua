@@ -184,3 +184,105 @@ Wayae.UI.TpLocBtn.MouseButton1Click:Connect(function()
     char:PivotTo(Wayae.savedLocation)
     Wayae.UI.Notify("🔙 Teleport Berhasil", "Berhasil kembali ke lokasi yang disimpan!", 3)
 end)
+
+Wayae.autoFarmRunning = false
+Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
+    Wayae.autoFarmRunning = not Wayae.autoFarmRunning
+    if Wayae.autoFarmRunning then
+        Wayae.UI.AutoFarmBtn.Text = "🤖 4. Auto Farm Egg: ON"
+        Wayae.UI.AutoFarmBtn.BackgroundColor3 = Color3.fromRGB(30, 60, 30)
+        Wayae.UI.Notify("🤖 Auto Farm Aktif", "Akan teleport otomatis setiap 7 Menit!", 4)
+        
+        task.spawn(function()
+            while Wayae.autoFarmRunning do
+                local char = player.Character or player.CharacterAdded:Wait()
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                
+                -- Cari Telur
+                local eggs = Wayae.ScanSpecialEggs()
+                if #eggs > 0 and hrp then
+                    Wayae.UI.Notify("🤖 Auto Farm", "Menemukan " .. #eggs .. " telur! Mengambil...", 3)
+                    for _, egg in ipairs(eggs) do
+                        if not Wayae.autoFarmRunning then break end
+                        if egg and egg.CFrame then
+                            -- Teleport ke Telur
+                            hrp.AssemblyLinearVelocity = Vector3.zero
+                            hrp.AssemblyAngularVelocity = Vector3.zero
+                            local targetPos = egg.CFrame.Position + Vector3.new(0, 1.5, 0)
+                            char:PivotTo(CFrame.new(targetPos) * egg.CFrame.Rotation)
+                            
+                            -- Tunggu 2 detik untuk animasi ambil/pickup
+                            task.wait(2)
+                        end
+                    end
+                    
+                    -- Pulang ke Plot
+                    if Wayae.autoFarmRunning then
+                        Wayae.UI.Notify("🤖 Auto Farm", "Semua telur diambil! Balik ke Plot...", 3)
+                        -- Eksekusi logic teleport ke plot
+                        local plotTarget = nil
+                        local possibleFolders = {"plots", "tycoons", "ranches", "bases", "islands", "playerplots"}
+                        local plotContainer = nil
+                        for _, child in pairs(workspace:GetChildren()) do
+                            if child:IsA("Folder") or child:IsA("Model") then
+                                local name = child.Name:lower()
+                                for _, pName in ipairs(possibleFolders) do
+                                    if name:find(pName) then
+                                        plotContainer = child
+                                        break
+                                    end
+                                end
+                            end
+                            if plotContainer then break end
+                        end
+                        local searchArea = plotContainer and plotContainer:GetDescendants() or workspace:GetDescendants()
+                        for _, obj in pairs(searchArea) do
+                            if char and (obj == char or obj:IsDescendantOf(char)) then continue end
+                            local foundPlot = false
+                            if obj:IsA("Model") or obj:IsA("Folder") then
+                                local nameLower = obj.Name:lower()
+                                local ownerValue = obj:FindFirstChild("Owner")
+                                if (nameLower:find(player.Name:lower()) or nameLower:find(player.DisplayName:lower())) or (ownerValue and ownerValue:IsA("ObjectValue") and ownerValue.Value == player) or (ownerValue and ownerValue:IsA("StringValue") and ownerValue.Value == player.Name) then
+                                    foundPlot = obj
+                                end
+                            end
+                            if foundPlot then
+                                local spawnPad = foundPlot:FindFirstChild("Spawn") or foundPlot:FindFirstChild("SpawnLocation") or foundPlot:FindFirstChild("Base") or foundPlot:FindFirstChild("Floor")
+                                if spawnPad and spawnPad:IsA("BasePart") then
+                                    plotTarget = spawnPad
+                                    break
+                                else
+                                    for _, part in ipairs(foundPlot:GetDescendants()) do
+                                        if part:IsA("BasePart") then
+                                            plotTarget = part
+                                            break
+                                        end
+                                    end
+                                    if plotTarget then break end
+                                end
+                            end
+                        end
+                        if plotTarget and hrp then
+                            hrp.AssemblyLinearVelocity = Vector3.zero
+                            hrp.AssemblyAngularVelocity = Vector3.zero
+                            char:PivotTo(plotTarget.CFrame + Vector3.new(0, 10, 0))
+                        end
+                    end
+                else
+                    Wayae.UI.Notify("🤖 Auto Farm", "Tidak ada telur, menunggu spawn berikutnya...", 3)
+                end
+                
+                -- Tunggu 7 Menit (420 Detik)
+                local waitTime = 420
+                while waitTime > 0 and Wayae.autoFarmRunning do
+                    task.wait(1)
+                    waitTime = waitTime - 1
+                end
+            end
+        end)
+    else
+        Wayae.UI.AutoFarmBtn.Text = "🤖 4. Auto Farm Egg (7 Menit): OFF"
+        Wayae.UI.AutoFarmBtn.BackgroundColor3 = Color3.fromRGB(60, 30, 30)
+        Wayae.UI.Notify("🤖 Auto Farm Mati", "Auto Farm dihentikan.", 4)
+    end
+end)

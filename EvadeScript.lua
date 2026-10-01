@@ -862,16 +862,39 @@ GodHookBtn.MouseButton1Click:Connect(function()
             if anim and typeof(anim) == "Instance" and anim.ClassName == "Animation" then
                 local id = anim.AnimationId:match("%d+")
                 
-                -- Filter animasi bawaan Roblox (jalan/lari/lompat) biar gak spam
                 if id and not (id == "507770239" or id == "507777826" or id == "507766388" or id == "507766951" or id == "507766666" or id == "507765000" or id == "507765644" or id == "507767714" or id == "507768375" or id == "507767202") then
                     task.spawn(function()
-                        GodStatus.Text = "Tertangkap ID: " .. id
+                        GodStatus.Text = "Tertangkap (Load): " .. id
+                        if IDInput then IDInput.Text = id end
+                    end)
+                end
+            end
+        elseif method == "Play" and typeof(self) == "Instance" and self.ClassName == "AnimationTrack" then
+            if self.Animation then
+                local id = self.Animation.AnimationId:match("%d+")
+                if id and not (id == "507770239" or id == "507777826" or id == "507766388" or id == "507766951" or id == "507766666" or id == "507765000" or id == "507765644" or id == "507767714" or id == "507768375" or id == "507767202") then
+                    task.spawn(function()
+                        GodStatus.Text = "Tertangkap (Play): " .. id
                         if IDInput then IDInput.Text = id end
                     end)
                 end
             end
         end
         return oldNamecall(self, ...)
+    end)
+    
+    local oldNewIndex
+    oldNewIndex = hookmetamethod(game, "__newindex", function(self, key, value)
+        if key == "AnimationId" and typeof(self) == "Instance" and self.ClassName == "Animation" then
+            local id = tostring(value):match("%d+")
+            if id and not (id == "507770239" or id == "507777826" or id == "507766388" or id == "507766951" or id == "507766666" or id == "507765000" or id == "507765644" or id == "507767714" or id == "507768375" or id == "507767202") then
+                task.spawn(function()
+                    GodStatus.Text = "Tertangkap (Set): " .. id
+                    if IDInput then IDInput.Text = id end
+                end)
+            end
+        end
+        return oldNewIndex(self, key, value)
     end)
 end)
 

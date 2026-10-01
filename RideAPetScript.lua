@@ -17,6 +17,15 @@ local MainTab = Window:CreateTab("Special Egg Hunter", 4483362458)
 
 local detectedEggsList = {}
 
+-- Simpan posisi base saat script pertama kali dijalankan
+local baseCFrame = nil
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrpBase = character:FindFirstChild("HumanoidRootPart")
+if hrpBase then
+    baseCFrame = hrpBase.CFrame
+end
+
 local function ScanSpecialEggs()
     detectedEggsList = {}
     
@@ -158,6 +167,30 @@ MainTab:CreateButton({
                Title = "⚠️ Gagal Teleport",
                Content = "Klik 'Lacak Posisi Telur' dulu saat telur spawn!",
                Duration = 4,
+           })
+       end
+   end,
+})
+
+MainTab:CreateButton({
+   Name = "🏠 Kembali ke Base",
+   Callback = function()
+       local char = player.Character or player.CharacterAdded:Wait()
+       local hrp = char:FindFirstChild("HumanoidRootPart")
+       if not hrp then return end
+
+       if baseCFrame then
+           hrp.CFrame = baseCFrame
+           Rayfield:Notify({
+               Title = "🏠 Kembali ke Base!",
+               Content = "Anda sudah kembali ke posisi spawn awal.",
+               Duration = 3,
+           })
+       else
+           Rayfield:Notify({
+               Title = "⚠️ Gagal",
+               Content = "Posisi base tidak tersimpan. Coba re-execute script.",
+               Duration = 3,
            })
        end
    end,

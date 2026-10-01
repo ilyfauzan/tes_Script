@@ -372,6 +372,7 @@ Wayae.UI.Notify = function(title, msg, duration)
     nt.TextSize = 13
     nt.Font = Enum.Font.GothamBold
     nt.TextXAlignment = Enum.TextXAlignment.Left
+    nt.ZIndex = 51
     nt.Parent = notif
 
     local nm = Instance.new("TextLabel")
@@ -384,6 +385,7 @@ Wayae.UI.Notify = function(title, msg, duration)
     nm.Font = Enum.Font.Gotham
     nm.TextXAlignment = Enum.TextXAlignment.Left
     nm.TextWrapped = true
+    nm.ZIndex = 51
     nm.Parent = notif
 
     task.delay(duration or 4, function()

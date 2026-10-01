@@ -75,7 +75,7 @@ Wayae.ScanSpecialEggs = function()
                 -- Kalau nggak ada ProximityPrompt, berarti itu cuma patung pajangan atau papan skor!
                 local hasPrompt = false
                 for _, desc in pairs(obj:GetDescendants()) do
-                    if desc:IsA("ProximityPrompt") then
+                    if desc:IsA("ProximityPrompt") and desc.Enabled == true then
                         hasPrompt = true
                         break
                     end

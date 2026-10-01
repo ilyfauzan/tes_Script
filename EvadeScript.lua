@@ -737,6 +737,50 @@ ScanBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ========================================================
+-- 💯 VERIFIED EMOTES (PASTI GERAK - ASLI ROBLOX)
+-- ========================================================
+local LabelVerified = Instance.new("TextLabel")
+LabelVerified.Size = UDim2.new(1, 0, 0, 20)
+LabelVerified.BackgroundTransparency = 1
+LabelVerified.Text = "💯 VERIFIED EMOTES (PASTI GERAK!)"
+LabelVerified.TextColor3 = Color3.fromRGB(0, 255, 100)
+LabelVerified.Font = Enum.Font.GothamBold
+LabelVerified.TextSize = 14
+LabelVerified.TextXAlignment = Enum.TextXAlignment.Left
+LabelVerified.Parent = ScrollingFrame
+
+local verifiedEmotes = {
+    -- Jika Evade R6 (sangat mungkin)
+    {Name = "🕺 R6 Dance 1", Id = "183264076", Color = Color3.fromRGB(20, 80, 20)},
+    {Name = "🕺 R6 Dance 2", Id = "183268422", Color = Color3.fromRGB(20, 80, 20)},
+    {Name = "🕺 R6 Dance 3", Id = "183269374", Color = Color3.fromRGB(20, 80, 20)},
+    {Name = "👋 R6 Wave", Id = "128777973", Color = Color3.fromRGB(20, 60, 80)},
+    
+    -- Jika Evade R15
+    {Name = "🤖 R15 Dance 1", Id = "507771019", Color = Color3.fromRGB(80, 40, 0)},
+    {Name = "🤖 R15 Dance 2", Id = "507776043", Color = Color3.fromRGB(80, 40, 0)},
+    {Name = "🤖 R15 Dance 3", Id = "507777268", Color = Color3.fromRGB(80, 40, 0)},
+    {Name = "👋 R15 Wave", Id = "507770239", Color = Color3.fromRGB(80, 30, 80)},
+}
+
+for _, emoteData in ipairs(verifiedEmotes) do
+    local btn = CreateButton(emoteData.Name, ScrollingFrame)
+    btn.BackgroundColor3 = emoteData.Color
+    
+    local animId = emoteData.Id
+    local animName = emoteData.Name
+    btn.MouseButton1Click:Connect(function()
+        if IDInput then IDInput.Text = animId end
+        local ok = PlayAnimNow(animId)
+        if ok then
+            Notify("✅ Berhasil!", animName .. " diputar pakai Kloning Bayangan!")
+        else
+            Notify("❌ Gagal", "Tubuh kloning tidak kompatibel (mungkin salah pilih R6/R15).")
+        end
+    end)
+end
+
+-- ========================================================
 -- 🎃 HALLOWEEN 2022 EVENT ROLLBACK & BYPASS
 -- ========================================================
 

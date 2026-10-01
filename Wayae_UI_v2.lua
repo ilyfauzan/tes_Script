@@ -352,6 +352,7 @@ Wayae.UI.Notify = function(title, msg, duration)
     notif.BackgroundColor3 = Color3.fromRGB(25, 18, 50)
     notif.BorderSizePixel = 0
     notif.ZIndex = 50
+    notif.Parent = ScreenGui
 
     local nc = Instance.new("UICorner")
     nc.CornerRadius = UDim.new(0, 10)
@@ -371,7 +372,6 @@ Wayae.UI.Notify = function(title, msg, duration)
     nt.TextSize = 13
     nt.Font = Enum.Font.GothamBold
     nt.TextXAlignment = Enum.TextXAlignment.Left
-    nt.ZIndex = 51
     nt.Parent = notif
 
     local nm = Instance.new("TextLabel")
@@ -384,11 +384,7 @@ Wayae.UI.Notify = function(title, msg, duration)
     nm.Font = Enum.Font.Gotham
     nm.TextXAlignment = Enum.TextXAlignment.Left
     nm.TextWrapped = true
-    nm.ZIndex = 51
     nm.Parent = notif
-    
-    -- Pasang ke ScreenGui di bagian paling akhir supaya ter-render dengan sempurna di executor mobile
-    notif.Parent = ScreenGui
 
     task.delay(duration or 4, function()
         if notif and notif.Parent then notif:Destroy() end

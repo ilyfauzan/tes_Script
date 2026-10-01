@@ -1,5 +1,4 @@
-local WayaeHUB = loadstring(game:HttpGet('https://sirius.menu/WayaeHUB'))()
-
+local WayaeHUB = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = WayaeHUB:CreateWindow({
    Name = "WayaeHUB",
    Icon = 6031280882,

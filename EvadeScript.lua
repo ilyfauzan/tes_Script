@@ -152,67 +152,43 @@ StopBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
 
 local loopActive = false
 local currentTrack = nil
-
-local currentFakeChar = nil
+local loopThread = nil
 
 local function PlayAnimNow(idStr)
     local char = player.Character
     if not char then return false end
     
-    local trueId = idStr
-    local formattedId = "rbxassetid://" .. trueId
-    if tostring(trueId):find("rbxassetid://") then
-        formattedId = trueId
-    end
+    local numId = idStr:match("%d+")
+    if not numId then return false end
+    local formattedId = "rbxassetid://" .. numId
     
     local ok, err = pcall(function()
-        if currentFakeChar then currentFakeChar:Destroy() end
-        if currentTrack then currentTrack:Stop() end
-        
-        -- CARA ULTIMATE: Bikin SHADOW CLONE (Kloning Karakter)
-        -- Bypass total anti-cheat dan custom script dari Evade!
-        char.Archivable = true
-        local clone = char:Clone()
-        
-        -- Hapus semua script di clone biar ga bertabrakan
-        for _, v in pairs(clone:GetDescendants()) do
-            if v:IsA("LocalScript") or v:IsA("Script") then
-                v:Destroy()
-            end
+        if currentTrack then
+            pcall(function() currentTrack:Stop(0) end)
+            currentTrack = nil
         end
         
-        clone.Parent = game.Workspace
-        currentFakeChar = clone
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hum then return end
+        local animator = hum:FindFirstChildOfClass("Animator") or hum
         
-        -- Tempel clone ke badan asli
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        local cloneHrp = clone:FindFirstChild("HumanoidRootPart")
-        if hrp and cloneHrp then
-            cloneHrp.CFrame = hrp.CFrame
-            local weld = Instance.new("WeldConstraint")
-            weld.Part0 = hrp
-            weld.Part1 = cloneHrp
-            weld.Parent = cloneHrp
-        end
-        
-        -- Hilangkan badan asli (jadi tak terlihat)
-        for _, v in pairs(char:GetDescendants()) do
-            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
-                v.Transparency = 1
-            elseif v:IsA("Decal") then
-                v.Transparency = 1
-            end
-        end
-        
-        -- Putar animasi di Clone murni
-        local cloneHum = clone:FindFirstChildOfClass("Humanoid")
-        local cloneAnimator = cloneHum:FindFirstChildOfClass("Animator") or cloneHum
         local anim = Instance.new("Animation")
         anim.AnimationId = formattedId
-        currentTrack = cloneAnimator:LoadAnimation(anim)
-        currentTrack.Priority = Enum.AnimationPriority.Action4
-        currentTrack.Looped = true
-        currentTrack:Play()
+        
+        local track = animator:LoadAnimation(anim)
+        track.Priority = Enum.AnimationPriority.Action4
+        track.Looped = true
+        track:Play(0.1, 1, 1)
+        track:AdjustWeight(1, 0)
+        currentTrack = track
+        
+        -- Bypass: jika Evade mematikan track secara otomatis, hidupkan lagi via loop background
+        task.delay(0.15, function()
+            if currentTrack == track and not track.IsPlaying then
+                track:Play(0.1, 1, 1)
+                track:AdjustWeight(1, 0)
+            end
+        end)
     end)
     return ok
 end
@@ -570,85 +546,7 @@ PlaySniffedBtn.MouseButton1Click:Connect(function()
 end)
 
 
-PlayByIDBtn.BackgroundColor3 = Color3.fromRGB(100, 40, 120)
 
-local LoopBtn = CreateButton("🔁 Loop Mode: OFF", ScrollingFrame)
-LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-
-local StopBtn = CreateButton("⛔ Stop Animasi", ScrollingFrame)
-StopBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
-
-local function PlayAnimNow(idStr)
-    local char = player.Character
-    if not char then return false end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum then return false end
-    local animator = hum:FindFirstChildOfClass("Animator") or hum
-    
-    local ok = pcall(function()
-        local anim = Instance.new("Animation")
-        anim.AnimationId = "rbxassetid://" .. idStr
-        local track = animator:LoadAnimation(anim)
-        track.Priority = Enum.AnimationPriority.Action4
-        track:Play()
-    end)
-    return ok
-end
-
-LoopBtn.MouseButton1Click:Connect(function()
-    loopActive = not loopActive
-    if loopActive then
-        LoopBtn.Text = "🔁 Loop Mode: ON"
-        LoopBtn.BackgroundColor3 = Color3.fromRGB(30, 100, 30)
-        
-        local idStr = IDInput.Text:match("%d+") or "3360686498"
-        loopThread = task.spawn(function()
-            while loopActive do
-                PlayAnimNow(idStr)
-                task.wait(0.3)
-            end
-        end)
-        Notify("🔁 Loop Aktif!", "Animasi akan terus diputar ulang tiap 0.3 detik!")
-    else
-        loopActive = false
-        LoopBtn.Text = "🔁 Loop Mode: OFF"
-        LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        Notify("⏹️ Loop Berhenti", "Loop animasi dihentikan.")
-    end
-end)
-
-StopBtn.MouseButton1Click:Connect(function()
-    loopActive = false
-    LoopBtn.Text = "🔁 Loop Mode: OFF"
-    LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    
-    local char = player.Character
-    if char then
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        local animator = hum and (hum:FindFirstChildOfClass("Animator") or hum)
-        if animator then
-            for _, track in pairs(animator:GetPlayingAnimationTracks()) do
-                pcall(function() track:Stop(0) end)
-            end
-        end
-    end
-    Notify("⛔ Animasi Dihentikan", "Semua animasi paksa sudah di-stop.")
-end)
-
-PlayByIDBtn.MouseButton1Click:Connect(function()
-    local idStr = IDInput.Text:match("%d+")
-    if not idStr then
-        Notify("❌ ID Salah", "Masukkan angka ID animasi yang valid!")
-        return
-    end
-    
-    local ok = PlayAnimNow(idStr)
-    if ok then
-        Notify("✅ ID " .. idStr .. " diputar!", "Kalau karakter masih diam, aktifkan Loop Mode!")
-    else
-        Notify("❌ Gagal", "Error saat memutar ID " .. idStr)
-    end
-end)
 
 local LabelScan = Instance.new("TextLabel")
 LabelScan.Size = UDim2.new(1, 0, 0, 20)

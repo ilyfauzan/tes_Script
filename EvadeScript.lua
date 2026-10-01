@@ -808,25 +808,44 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
     local args = {...}
     
-    if spooferActive and method == "FireServer" and self.Name:lower():match("emote") then
-        -- Jika argumen berupa string nama emote
-        if type(args[1]) == "string" then
-            args[1] = spoofTarget
-        -- Jika argumen berupa tabel (seperti {EmoteName = "Dance"})
-        elseif type(args[1]) == "table" then
-            for k, v in pairs(args[1]) do
-                if type(v) == "string" then
-                    args[1][k] = spoofTarget
+    if spooferActive and (method == "FireServer" or method == "InvokeServer") then
+        local changed = false
+        for i, v in ipairs(args) do
+            if type(v) == "string" then
+                -- Jika argument berupa nama emote (biasanya string panjang tanpa spasi)
+                if v:lower():find("dance") or v:lower():find("wave") or v:lower():find("cheer") or v:lower():find("point") or v:lower():find("laugh") then
+                    args[i] = spoofTarget
+                    changed = true
+                end
+            elseif type(v) == "table" then
+                for k, val in pairs(v) do
+                    if type(val) == "string" and (val:lower():find("dance") or val:lower():find("wave") or val:lower():find("cheer")) then
+                        v[k] = spoofTarget
+                        changed = true
+                    end
                 end
             end
         end
-        return oldNamecall(self, unpack(args))
+        
+        -- Bypass khusus jika nama Remote berkaitan dengan Emote
+        if self.Name:lower():match("emote") or self.Name:lower():match("equip") then
+            if type(args[1]) == "string" and not changed then
+                args[1] = spoofTarget
+                changed = true
+            elseif type(args[2]) == "string" and not changed then
+                args[2] = spoofTarget
+                changed = true
+            end
+        end
+        
+        if changed then
+            return oldNamecall(self, unpack(args))
+        end
     end
     
     return oldNamecall(self, ...)
 end)
 
--- Tombol Set Target Spoof
 local SpooferTargetInput = Instance.new("TextBox")
 SpooferTargetInput.Size = UDim2.new(1, 0, 0, 30)
 SpooferTargetInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -841,38 +860,74 @@ SpooferTargetInput:GetPropertyChangedSignal("Text"):Connect(function()
     spoofTarget = SpooferTargetInput.Text
 end)
 
+local BruteForceBtn = CreateButton("🔥 BRUTE-FORCE SERVER (Paksa Putar!)", ScrollingFrame)
+BruteForceBtn.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+BruteForceBtn.MouseButton1Click:Connect(function()
+    local eventsFired = 0
+    for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            -- Spam berbagai kombinasi argumen yang sering dipakai game Evade
+            pcall(function() obj:FireServer("Equip", spoofTarget) end)
+            pcall(function() obj:FireServer("EquipEmote", spoofTarget) end)
+            pcall(function() obj:FireServer("Emote", spoofTarget) end)
+            pcall(function() obj:FireServer("PlayEmote", spoofTarget) end)
+            pcall(function() obj:FireServer({Emote = spoofTarget}) end)
+            pcall(function() obj:FireServer({EmoteName = spoofTarget}) end)
+            pcall(function() obj:FireServer("Communication", {"Equip", spoofTarget}) end)
+            eventsFired = eventsFired + 1
+        end
+    end
+    Notify("🔥 Brute-Force Selesai", "Telah mengirim perintah paksa ke " .. eventsFired .. " RemoteEvent!")
+end)
+
 local HallowAtmosBtn = CreateButton("🌕 Suasana Map Blood Moon Halloween 2022", ScrollingFrame)
 HallowAtmosBtn.BackgroundColor3 = Color3.fromRGB(90, 0, 120)
 
+local hallowAtmosConn = nil
 HallowAtmosBtn.MouseButton1Click:Connect(function()
+    if hallowAtmosConn then
+        hallowAtmosConn:Disconnect()
+        hallowAtmosConn = nil
+        HallowAtmosBtn.Text = "🌕 Suasana Map Blood Moon Halloween 2022"
+        HallowAtmosBtn.BackgroundColor3 = Color3.fromRGB(90, 0, 120)
+        Notify("🛑 Blood Moon Mati", "Pencahayaan kembali dikontrol oleh Evade.")
+        return
+    end
+    
+    HallowAtmosBtn.Text = "🌕 Matikan Blood Moon 2022"
+    HallowAtmosBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    Notify("🌕 Blood Moon 2022!", "Memaksa suasana Halloween 2022 setiap detik! (Anti-Reset Evade)")
+    
     local lighting = game:GetService("Lighting")
-    lighting.ClockTime = 0
-    lighting.Brightness = 0.8
-    lighting.GlobalShadows = true
-    lighting.Ambient = Color3.fromRGB(50, 10, 60)
-    lighting.OutdoorAmbient = Color3.fromRGB(80, 25, 10)
     
     local cc = lighting:FindFirstChildOfClass("ColorCorrectionEffect") or Instance.new("ColorCorrectionEffect", lighting)
-    cc.Brightness = -0.05
-    cc.Contrast = 0.35
-    cc.Saturation = 0.2
-    cc.TintColor = Color3.fromRGB(255, 160, 90)
-    
     local bloom = lighting:FindFirstChildOfClass("BloomEffect") or Instance.new("BloomEffect", lighting)
-    bloom.Intensity = 0.7
-    bloom.Size = 30
-    bloom.Threshold = 0.4
-    
-    lighting.FogColor = Color3.fromRGB(30, 10, 5)
-    lighting.FogStart = 0
-    lighting.FogEnd = 250
-    
     local atmos = lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere", lighting)
-    atmos.Density = 0.6
-    atmos.Color = Color3.fromRGB(90, 30, 10)
-    atmos.Decay = Color3.fromRGB(40, 10, 5)
     
-    Notify("🌕 Blood Moon 2022!", "Suasana Halloween 2022 di-aktifkan!")
+    -- Paksa setiap frame agar Evade tidak bisa meresetnya!
+    hallowAtmosConn = game:GetService("RunService").RenderStepped:Connect(function()
+        lighting.ClockTime = 0
+        lighting.Brightness = 0.8
+        lighting.GlobalShadows = true
+        lighting.Ambient = Color3.fromRGB(50, 10, 60)
+        lighting.OutdoorAmbient = Color3.fromRGB(80, 25, 10)
+        lighting.FogColor = Color3.fromRGB(30, 10, 5)
+        lighting.FogStart = 0
+        lighting.FogEnd = 250
+        
+        cc.Brightness = -0.05
+        cc.Contrast = 0.35
+        cc.Saturation = 0.2
+        cc.TintColor = Color3.fromRGB(255, 160, 90)
+        
+        bloom.Intensity = 0.7
+        bloom.Size = 30
+        bloom.Threshold = 0.4
+        
+        atmos.Density = 0.6
+        atmos.Color = Color3.fromRGB(90, 30, 10)
+        atmos.Decay = Color3.fromRGB(40, 10, 5)
+    end)
 end)
 
 local HallowMusicBtn = CreateButton("🎵 Play Halloween 2022 Chase Soundtrack", ScrollingFrame)

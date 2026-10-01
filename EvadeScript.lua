@@ -121,9 +121,6 @@ PlayByIDBtn.BackgroundColor3 = Color3.fromRGB(100, 40, 120)
 PlayByIDBtn.MouseButton1Click:Connect(function()
     local char = player.Character
     if not char then Notify("❌", "Karakter tidak ada!") return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum then return end
-    local animator = hum:FindFirstChildOfClass("Animator") or hum
     
     local idStr = IDInput.Text:match("%d+")
     if not idStr then
@@ -131,54 +128,75 @@ PlayByIDBtn.MouseButton1Click:Connect(function()
         return
     end
     
-    -- TEKNIK 1: Ganti AnimationId di object WalkAnim asli punya karakter
-    -- Ini bypass Anti-Override karena kita modif sumber animasinya langsung
-    local swapped = false
-    for _, obj in pairs(char:GetDescendants()) do
-        if obj:IsA("Animation") then
-            local nameLower = obj.Name:lower()
-            if nameLower == "walkanim" or nameLower == "walk" or nameLower:find("walk") or nameLower == "cheeranim" then
-                obj.AnimationId = "rbxassetid://" .. idStr
-                swapped = true
+    local newId = "rbxassetid://" .. idStr
+    local results = {}
+    
+    -- TEKNIK UTAMA: Cari LocalScript "Animate" di karakter
+    -- Di dalam Animate script ada StringValue yang nyimpen AnimationId
+    -- Kalau kita ganti StringValue-nya, animasi berubah otomatis!
+    local animateScript = char:FindFirstChild("Animate")
+    if animateScript then
+        for _, obj in pairs(animateScript:GetDescendants()) do
+            if obj:IsA("Animation") then
+                local parentName = obj.Parent and obj.Parent.Name:lower() or ""
+                if parentName:find("walk") or parentName:find("run") then
+                    obj.AnimationId = newId
+                    table.insert(results, "✅ Swap: " .. obj.Parent.Name .. "/" .. obj.Name)
+                end
+            end
+            -- Juga cek StringValue yang namanya "AnimationId"
+            if obj:IsA("StringValue") and obj.Name == "AnimationId" then
+                local parentName = obj.Parent and obj.Parent.Name:lower() or ""
+                if parentName:find("walk") or parentName:find("run") then
+                    obj.Value = newId
+                    table.insert(results, "✅ SwapStr: " .. obj.Name)
+                end
             end
         end
     end
     
-    -- TEKNIK 2: Stop semua animasi yang ada, play milik kita dengan priority tertinggi
-    for _, track in pairs(animator:GetPlayingAnimationTracks()) do
-        pcall(function() track:Stop(0) end)
+    -- TEKNIK 2: Cari langsung di seluruh karakter
+    for _, obj in pairs(char:GetDescendants()) do
+        if obj:IsA("Animation") and obj.Name:lower():find("walk") then
+            obj.AnimationId = newId
+            table.insert(results, "✅ CharAnim: " .. obj.Name)
+        end
     end
     
-    local anim = Instance.new("Animation")
-    anim.AnimationId = "rbxassetid://" .. idStr
-    local ok = pcall(function()
-        local track = animator:LoadAnimation(anim)
-        track.Priority = Enum.AnimationPriority.Action4
-        track:Play()
-    end)
-    
-    -- TEKNIK 3: Loop paksa tiap 0.2 detik selama 10 detik buat ngalahin anti-override
-    task.spawn(function()
-        for i = 1, 50 do
-            if not char or not char.Parent then break end
-            pcall(function()
-                -- Re-swap WalkAnim terus biar ga ke-reset
-                for _, obj in pairs(char:GetDescendants()) do
-                    if obj:IsA("Animation") and obj.Name:lower():find("walk") then
-                        obj.AnimationId = "rbxassetid://" .. idStr
-                    end
-                end
-                local loopAnim = Instance.new("Animation")
-                loopAnim.AnimationId = "rbxassetid://" .. idStr
-                local t = animator:LoadAnimation(loopAnim)
-                t.Priority = Enum.AnimationPriority.Action4
-                t:Play()
-            end)
-            task.wait(0.2)
+    -- TEKNIK 3: Paksa lewat Humanoid Animator (stop dulu biar restart)
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local animator = hum and (hum:FindFirstChildOfClass("Animator") or hum)
+    if animator then
+        -- Stop SEMUA track yang lagi jalan
+        for _, track in pairs(animator:GetPlayingAnimationTracks()) do
+            pcall(function() track:Stop(0) end)
         end
-    end)
+        -- Play animasi baru
+        pcall(function()
+            local anim = Instance.new("Animation")
+            anim.AnimationId = newId
+            local track = animator:LoadAnimation(anim)
+            track.Priority = Enum.AnimationPriority.Action4
+            track:Play()
+        end)
+    end
     
-    Notify("✅ Semua teknik diaktifkan!", swapped and "WalkAnim di-swap + loop paksa aktif!" or "Loop paksa aktif selama 10 detik!")
+    -- Debug: tampilkan apa saja yang ketemu di Animate script
+    if #results == 0 then
+        local debugList = {}
+        if animateScript then
+            for _, obj in pairs(animateScript:GetDescendants()) do
+                if obj:IsA("Animation") or obj:IsA("StringValue") then
+                    table.insert(debugList, obj.Parent.Name.."/"..obj.Name)
+                end
+            end
+            Notify("🔍 Animate Script Ditemukan!", "Isinya: " .. table.concat(debugList, ", "):sub(1,150))
+        else
+            Notify("❌ Animate Script TIDAK ADA", "Evade pakai sistem animasi custom total!")
+        end
+    else
+        Notify("✅ Berhasil swap " .. #results .. " animasi!", "Coba jalan sekarang!")
+    end
 end)
 
 local LabelScan = Instance.new("TextLabel")

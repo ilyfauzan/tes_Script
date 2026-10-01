@@ -1,6 +1,5 @@
 local Wayae = getgenv().Wayae
 local player = Wayae.player
-
 Wayae.UI.ScanBtn.MouseButton1Click:Connect(function()
     local eggs = Wayae.ScanSpecialEggs()
     if #eggs > 0 then
@@ -16,14 +15,11 @@ Wayae.UI.ScanBtn.MouseButton1Click:Connect(function()
         Wayae.UI.Notify("❌ Tidak Ada Telur", "Telur 100B/300B/1T/2.5T belum spawn di map.", 4)
     end
 end)
-
 Wayae.UI.TeleportBtn.MouseButton1Click:Connect(function()
     local character = player.Character or player.CharacterAdded:Wait()
     local hrp = character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-
     if #Wayae.detectedEggsList == 0 then Wayae.ScanSpecialEggs() end
-
     if #Wayae.detectedEggsList > 0 then
         local target = Wayae.detectedEggsList[Wayae.selectedEggIndex] or Wayae.detectedEggsList[1]
         if target and target.CFrame then
@@ -37,22 +33,15 @@ Wayae.UI.TeleportBtn.MouseButton1Click:Connect(function()
         Wayae.UI.Notify("⚠️ Gagal Teleport", "Klik 'Lacak Telur' dulu saat telur spawn!", 4)
     end
 end)
-
 Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-
     local plotTarget = nil
     local playerName = player.Name:lower()
     local playerDisplayName = player.DisplayName:lower()
-
-    -- Kita hapus RespawnLocation karena di beberapa game, RespawnLocation selalu diupdate ke lokasi player berpijak!
-
-    -- 1. Cari Folder/Model Plot utama di workspace (biasanya namanya Plots, Tycoons, Ranches, Bases)
     local possibleFolders = {"plots", "tycoons", "ranches", "bases", "islands", "playerplots"}
     local plotContainer = nil
-    
     for _, child in pairs(workspace:GetChildren()) do
         if child:IsA("Folder") or child:IsA("Model") then
             local name = child.Name:lower()
@@ -65,17 +54,10 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
         end
         if plotContainer then break end
     end
-
-    -- Jika ada folder kumpulan Plot, cari plot punya kita di dalamnya
     local searchArea = plotContainer and plotContainer:GetDescendants() or workspace:GetDescendants()
-    
     for _, obj in pairs(searchArea) do
-        -- Mutlak abaikan karakter
         if char and (obj == char or obj:IsDescendantOf(char)) then continue end
-
         local foundPlot = false
-
-        -- Cek TextLabel / StringValue (Tulisan Your Ranch / Fauzan's Ranch)
         if obj:IsA("TextLabel") or obj:IsA("StringValue") then
             local text = (obj:IsA("TextLabel") and obj.Text or tostring(obj.Value)):lower()
             if text:find("ranch") or text:find("plot") or text:find("tycoon") or text:find("base") then
@@ -84,17 +66,12 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
                 end
             end
         end
-
-        -- Cek ObjectValue Owner
         if not foundPlot and obj:IsA("ObjectValue") and obj.Value == player then
             foundPlot = true
         end
-
         if foundPlot then
-            -- Cari model utamanya
             local current = (obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("BasePart")) and obj or obj.Parent
             local plotModel = current
-            
             local temp = current
             while temp and temp ~= workspace and temp ~= plotContainer do
                 if temp:IsA("Model") or temp:IsA("Folder") then
@@ -102,9 +79,7 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
                 end
                 temp = temp.Parent
             end
-            
             if plotModel then
-                -- Cari Spawn Pad
                 local spawnPad = nil
                 for _, child in pairs(plotModel:GetDescendants()) do
                     if child:IsA("SpawnLocation") or (child:IsA("BasePart") and child.Name:lower():find("spawn")) then
@@ -112,13 +87,10 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
                         break
                     end
                 end
-
                 if spawnPad and spawnPad:IsA("BasePart") then
                     plotTarget = spawnPad.CFrame + Vector3.new(0, 5, 0)
                     break
                 end
-
-                -- Fallback hitung tengah-tengah plot
                 local ok, cf, size = pcall(function()
                     if plotModel:IsA("Model") then return plotModel:GetBoundingBox() end
                     return plotModel.CFrame, plotModel.Size
@@ -131,18 +103,14 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
             end
         end
     end
-
-    -- Fallback 2: Jika game pakai UI untuk teleport, mari kita cari UI-nya dan paksa eksekusi script gamenya!
     if not plotTarget then
         local playerGui = player:FindFirstChild("PlayerGui")
         if playerGui then
             for _, obj in pairs(playerGui:GetDescendants()) do
-                -- Cari tombol Teleport bawaan game
                 if obj:IsA("TextButton") or obj:IsA("ImageButton") then
                     local text = ""
                     if obj:IsA("TextButton") then text = obj.Text:lower() end
                     if obj.Name:lower():find("teleport") or obj.Name:lower():find("home") or obj.Name:lower():find("ranch") or text:find("ranch") or text:find("plot") then
-                        -- Jika tombol ini punya script koneksi, coba jalankan paksa (jika executor support getconnections)
                         if getconnections then
                             for _, conn in pairs(getconnections(obj.MouseButton1Click)) do
                                 pcall(function() conn:Function() end)
@@ -158,7 +126,6 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
             end
         end
     end
-
     if plotTarget then
         hrp.AssemblyLinearVelocity = Vector3.zero
         hrp.AssemblyAngularVelocity = Vector3.zero
@@ -168,19 +135,16 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
         Wayae.UI.Notify("⚠️ Plot Tidak Ditemukan", "Coba gunakan fitur Teleport bawaan game jika script tidak mendeteksinya.", 6)
     end
 end)
-
 Wayae.UI.VolcanicTestBtn.MouseButton1Click:Connect(function()
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-
     local targetPos = Vector3.new(-5332, 40912, -3542)
     hrp.AssemblyLinearVelocity = Vector3.zero
     hrp.AssemblyAngularVelocity = Vector3.zero
     hrp.CFrame = CFrame.new(targetPos) * hrp.CFrame.Rotation
     Wayae.UI.Notify("🌋 Volcanic Teleport", "Berhasil teleport dengan aman!", 4)
 end)
-
 Wayae.UI.GetPosBtn.MouseButton1Click:Connect(function()
     local char = player.Character
     if not char then return end

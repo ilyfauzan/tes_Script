@@ -198,11 +198,33 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                 local char = player.Character or player.CharacterAdded:Wait()
                 local hrp = char:FindFirstChild("HumanoidRootPart")
                 
-                -- Gunakan telur yang sudah dilacak di Dropdown
-                local eggs = Wayae.detectedEggsList
-                if #eggs > 0 and hrp then
-                    Wayae.UI.Notify("🤖 Auto Farm", "Mengunjungi " .. #eggs .. " telur dari list...", 3)
+                -- Ambil nama telur yang sedang dipilih di Dropdown
+                local targetEggName = nil
+                if Wayae.detectedEggsList and #Wayae.detectedEggsList > 0 and Wayae.selectedEggIndex then
+                    local selectedEgg = Wayae.detectedEggsList[Wayae.selectedEggIndex]
+                    if selectedEgg then
+                        targetEggName = selectedEgg.Name
+                    end
+                end
+                
+                -- Cari Telur baru di map
+                local eggs = Wayae.ScanSpecialEggs()
+                
+                -- Filter hanya telur yang namanya sama dengan yang dipilih di list
+                local filteredEggs = {}
+                if targetEggName then
                     for _, egg in ipairs(eggs) do
+                        if egg.Name == targetEggName then
+                            table.insert(filteredEggs, egg)
+                        end
+                    end
+                else
+                    filteredEggs = eggs -- Kalau belum milih, ambil semua
+                end
+                
+                if #filteredEggs > 0 and hrp then
+                    Wayae.UI.Notify("🤖 Auto Farm", "Menemukan " .. #filteredEggs .. " telur target! Mengambil...", 3)
+                    for _, egg in ipairs(filteredEggs) do
                         if not Wayae.autoFarmRunning then break end
                         if egg and egg.Parent ~= nil and egg.CFrame then
                             -- Teleport ke Telur

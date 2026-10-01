@@ -384,6 +384,6 @@ Wayae.UI.RefreshDropdown(Wayae.UI.dropdownOptions)
 
 Wayae.UI.ScanBtn = MakeButton(ContentFrame, "🔍  1. Lacak Telur Special (100B - 2.5T)", 1)
 Wayae.UI.TeleportBtn = MakeButton(ContentFrame, "🚀  2. Teleport ke Lokasi Telur", 5)
-Wayae.UI.SellBtn = MakeButton(ContentFrame, "🏪  3. Teleport ke Area Sell", 6)
+Wayae.UI.SellBtn = MakeButton(ContentFrame, "🏕️  3. Teleport ke My Plot / Ranch", 6)
 Wayae.UI.VolcanicTestBtn = MakeButton(ContentFrame, "🌋  4. Test Teleport Volcanic Egg", 7)
 Wayae.UI.GetPosBtn = MakeButton(ContentFrame, "📍  5. Ambil Posisi Saya Sekarang", 8)

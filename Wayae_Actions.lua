@@ -43,33 +43,63 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    local sellKeywords = {"sell", "selling", "sellzone", "sell zone", "shop", "store", "cashier", "vendor"}
-    local sellTarget = nil
+    local plotTarget = nil
+    local playerName = player.Name
+    local playerDisplayName = player.DisplayName
 
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") or obj:IsA("Model") then
-            local nameLower = obj.Name:lower()
-            for _, kw in ipairs(sellKeywords) do
-                if nameLower:find(kw) then
-                    if obj:IsA("Model") then
-                        local cf, _ = obj:GetBoundingBox()
-                        sellTarget = cf
-                    else
-                        sellTarget = obj.CFrame
+        -- Abaikan karakter kita sendiri (biar nametag karakter nggak dianggap plot)
+        if char and obj:IsDescendantOf(char) then continue end
+
+        if obj:IsA("TextLabel") or obj:IsA("StringValue") then
+            local text = (obj:IsA("TextLabel") and obj.Text or tostring(obj.Value))
+            -- Cari text yang mengandung nama kita
+            if text:find(playerName) or text:find(playerDisplayName) then
+                local current = obj.Parent
+                local plotModel = nil
+                
+                -- Cari model teratas (biasanya itu folder/model Plot nya)
+                while current and current ~= workspace do
+                    if current:IsA("Model") or current:IsA("Folder") then
+                        plotModel = current
                     end
-                    break
+                    current = current.Parent
+                end
+                
+                if plotModel then
+                    -- Cari spawn pad di dalam plot
+                    local spawnPad = nil
+                    for _, child in pairs(plotModel:GetDescendants()) do
+                        if child:IsA("SpawnLocation") or child:IsA("BasePart") and child.Name:lower():find("spawn") then
+                            spawnPad = child
+                            break
+                        end
+                    end
+
+                    if spawnPad and spawnPad:IsA("BasePart") then
+                        plotTarget = spawnPad.CFrame + Vector3.new(0, 5, 0)
+                        break
+                    end
+
+                    -- Cadangan kalau nggak ada pad khusus: ambil tengah-tengah plot tapi nempel tanah
+                    local ok, cf, size = pcall(function() return plotModel:GetBoundingBox() end)
+                    if ok and cf and size then
+                        local groundY = cf.Position.Y - (size.Y/2) + 5
+                        plotTarget = CFrame.new(cf.Position.X, groundY, cf.Position.Z) * cf.Rotation
+                        break
+                    end
                 end
             end
         end
-        if sellTarget then break end
     end
 
-    if sellTarget then
-        local targetPos = sellTarget.Position + Vector3.new(0, 5, 0)
-        hrp.CFrame = CFrame.new(targetPos) * sellTarget.Rotation
-        Wayae.UI.Notify("🏪 Teleport ke Sell!", "Berhasil teleport ke area Sell!", 3)
+    if plotTarget then
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+        char:PivotTo(plotTarget)
+        Wayae.UI.Notify("🏕️ Teleport Plot", "Berhasil pulang ke ranch/plot kamu!", 4)
     else
-        Wayae.UI.Notify("⚠️ Sell Tidak Ditemukan", "Objek Sell tidak ada di map saat ini.", 5)
+        Wayae.UI.Notify("⚠️ Plot Tidak Ditemukan", "Script tidak bisa mendeteksi area atas namamu. Mungkin kamu belum klaim plot?", 6)
     end
 end)
 

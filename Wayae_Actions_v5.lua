@@ -203,11 +203,12 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                 
                 if #eggs > 0 and hrp then
                     Wayae.UI.Notify("🤖 Auto Farm", "Menemukan " .. #eggs .. " telur! Mengambil...", 3)
-                    for _, egg in ipairs(eggs) do
+                    for _, eggData in ipairs(eggs) do
                         if not Wayae.autoFarmRunning then break end
-                        if egg and egg.Parent ~= nil then
-                            -- Cari posisi target (CFrame untuk part, GetPivot untuk model)
-                            local eggCFrame = egg:IsA("Model") and egg:GetPivot() or egg.CFrame
+                        local realEgg = eggData.Instance
+                        if realEgg and realEgg.Parent ~= nil then
+                            -- Gunakan CFrame yang sudah dihitung oleh scanner
+                            local eggCFrame = eggData.CFrame
                             if eggCFrame then
                                 -- Teleport ke Telur
                                 hrp.AssemblyLinearVelocity = Vector3.zero

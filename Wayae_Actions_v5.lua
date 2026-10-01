@@ -381,6 +381,47 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                             end
                                         end
                                         
+                                        -- 3. Auto-Tap tombol UI Hotbar (Bypass Custom Inventory)
+                                        local playerGui = player:FindFirstChild("PlayerGui")
+                                        if playerGui and getconnections then
+                                            for _, obj in pairs(playerGui:GetDescendants()) do
+                                                if obj:IsA("GuiButton") then
+                                                    local isSlot = false
+                                                    for _, child in pairs(obj:GetDescendants()) do
+                                                        if child:IsA("TextLabel") and child.Text:upper():find("KG") then
+                                                            isSlot = true
+                                                            break
+                                                        end
+                                                    end
+                                                    if isSlot then
+                                                        local isEquipped = false
+                                                        -- Deteksi apakah slot sedang dipilih (border putih/terang)
+                                                        if obj.BorderSizePixel > 0 and obj.BorderColor3.R > 0.8 and obj.BorderColor3.G > 0.8 and obj.BorderColor3.B > 0.8 then
+                                                            isEquipped = true
+                                                        end
+                                                        for _, child in pairs(obj:GetDescendants()) do
+                                                            if child:IsA("UIStroke") and child.Enabled and child.Color.R > 0.8 and child.Color.G > 0.8 and child.Color.B > 0.8 then
+                                                                isEquipped = true
+                                                            end
+                                                            if (child:IsA("Frame") or child:IsA("ImageLabel")) and child.Visible and (child.Name:lower():find("select") or child.Name:lower():find("equip") or child.Name:lower():find("highlight") or child.Name:lower():find("border")) then
+                                                                isEquipped = true
+                                                            end
+                                                        end
+                                                        if isEquipped then
+                                                            for _, conn in pairs(getconnections(obj.MouseButton1Click)) do
+                                                                pcall(function() conn:Function() end)
+                                                            end
+                                                            for _, conn in pairs(getconnections(obj.Activated)) do
+                                                                pcall(function() conn:Function() end)
+                                                            end
+                                                            -- Berhasil tap slot, lanjut
+                                                            break
+                                                        end
+                                                    end
+                                                end
+                                            end
+                                        end
+                                        
                                         -- Tunggu sebentar lagi biar animasinya selesai
                                         task.wait(1)
                                     else

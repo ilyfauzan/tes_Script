@@ -114,117 +114,118 @@ local cornerInput = Instance.new("UICorner")
 cornerInput.CornerRadius = UDim.new(0, 6)
 cornerInput.Parent = EmoteInput
 
-local PlayEmoteBtn = CreateButton("🚀 Paksa Play Emote!", ScrollingFrame)
+local PlayEmoteBtn = CreateButton("🔍 Scan & Tampilkan Semua Animasi", ScrollingFrame)
 PlayEmoteBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
 
-PlayEmoteBtn.MouseButton1Click:Connect(function()
-    local emoteName = EmoteInput.Text
-    if emoteName == "" then return end
-    
+-- Label untuk hasil scan
+local AnimListLabel = Instance.new("TextLabel")
+AnimListLabel.Size = UDim2.new(1, 0, 0, 20)
+AnimListLabel.BackgroundTransparency = 1
+AnimListLabel.Text = "-- Klik Scan dulu --"
+AnimListLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+AnimListLabel.Font = Enum.Font.Gotham
+AnimListLabel.TextSize = 12
+AnimListLabel.TextXAlignment = Enum.TextXAlignment.Left
+AnimListLabel.TextWrapped = true
+AnimListLabel.Parent = ScrollingFrame
+
+-- Container untuk tombol-tombol hasil scan
+local AnimContainer = Instance.new("Frame")
+AnimContainer.Size = UDim2.new(1, 0, 0, 0)
+AnimContainer.BackgroundTransparency = 1
+AnimContainer.Parent = ScrollingFrame
+
+local AnimListLayout = Instance.new("UIListLayout")
+AnimListLayout.Padding = UDim.new(0, 5)
+AnimListLayout.Parent = AnimContainer
+
+local function PlayAnimById(animId, animName)
     local char = player.Character
-    if not char then 
-        Notify("❌ Gagal", "Karakter tidak ditemukan!")
-        return 
-    end
-    
+    if not char then Notify("❌", "Karakter tidak ada!") return end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return end
     local animator = hum:FindFirstChildOfClass("Animator") or hum
     
-    local targetAnimation = nil
+    local anim = Instance.new("Animation")
+    anim.AnimationId = animId
     
-    -- TAHAP 1: Cari di SELURUH GAME (bukan cuma ReplicatedStorage)
-    local searchRoots = {
-        game:GetService("ReplicatedStorage"),
-        game:GetService("ReplicatedFirst"),
-        game:GetService("Workspace"),
-        player.Character,
-        player:FindFirstChild("PlayerGui"),
-        player:FindFirstChild("Backpack"),
-    }
-    
-    for _, root in pairs(searchRoots) do
-        if root == nil then continue end
-        for _, obj in pairs(root:GetDescendants()) do
-            if obj:IsA("Animation") then
-                if obj.Name:lower() == emoteName:lower() or obj.Name:lower():find(emoteName:lower()) then
-                    targetAnimation = obj
-                    break
-                end
-            end
-            if obj:IsA("StringValue") or obj:IsA("Folder") or obj:IsA("ModuleScript") then
-                if obj.Name:lower():find(emoteName:lower()) then
-                    local anim = obj:FindFirstChildOfClass("Animation")
-                    if anim then
-                        targetAnimation = anim
-                        break
-                    end
-                end
-            end
-        end
-        if targetAnimation then break end
-    end
-    
-    -- TAHAP 2: Cari dari HumanoidDescription (Emote yang sudah di-equip player)
-    if not targetAnimation then
-        local hd = hum:FindFirstChildOfClass("HumanoidDescription")
-        if hd then
-            local emoteSlots = {"Emote1","Emote2","Emote3","Emote4","Emote5","Emote6","Emote7","Emote8"}
-            for _, slot in pairs(emoteSlots) do
-                local val = hd:FindFirstChild(slot)
-                if val and tostring(val.Value):lower():find(emoteName:lower()) then
-                    local anim = Instance.new("Animation")
-                    anim.AnimationId = "rbxassetid://" .. tostring(val.Value)
-                    targetAnimation = anim
-                    break
-                end
-            end
-        end
-    end
-    
-    -- TAHAP 3: Cari di AnimationTracks yang pernah di-load (cached di Animator)
-    if not targetAnimation then
-        for _, track in pairs(animator:GetPlayingAnimationTracks()) do
-            if track.Animation and track.Animation.Name:lower():find(emoteName:lower()) then
-                targetAnimation = track.Animation
-                break
-            end
-        end
-    end
-    
-    -- TAHAP 4: Kalau tetap tidak ketemu, print daftar semua animasi yang ada biar kita tau namanya
-    if not targetAnimation then
-        local found = {}
-        for _, root in pairs(searchRoots) do
-            if root == nil then continue end
-            for _, obj in pairs(root:GetDescendants()) do
-                if obj:IsA("Animation") then
-                    table.insert(found, obj.Name .. " | " .. obj.AnimationId)
-                end
-            end
-        end
-        if #found > 0 then
-            Notify("🔍 Daftar Animasi Tersedia:", table.concat(found, ", "):sub(1, 200))
-        else
-            Notify("❌ Tidak Ada Animasi", "Evade tidak nyimpen animasi di client. Coba nama emote lain.")
-        end
-        return
-    end
-    
-    -- MAIN: Play animasi yang ketemu
     local ok, err = pcall(function()
-        for _, track in pairs(animator:GetPlayingAnimationTracks()) do
-            track:Stop()
-        end
-        local track = animator:LoadAnimation(targetAnimation)
+        local track = animator:LoadAnimation(anim)
         track:Play()
     end)
     
     if ok then
-        Notify("✅ Emote Berhasil!", "'" .. emoteName .. "' sedang dimainkan via Animation Bypass!")
+        Notify("✅ Animasi Dimainkan!", "'" .. animName .. "' berhasil diputar!")
     else
         Notify("❌ Error", tostring(err):sub(1, 100))
     end
+end
+
+PlayEmoteBtn.MouseButton1Click:Connect(function()
+    -- Bersihkan tombol lama
+    for _, child in pairs(AnimContainer:GetChildren()) do
+        if not child:IsA("UIListLayout") then child:Destroy() end
+    end
+    
+    local char = player.Character
+    local searchRoots = {
+        game:GetService("ReplicatedStorage"),
+        game:GetService("ReplicatedFirst"),
+        game:GetService("Workspace"),
+        char,
+        player:FindFirstChild("PlayerGui"),
+        player:FindFirstChild("Backpack"),
+    }
+    
+    local found = {}
+    local seen = {}
+    
+    for _, root in pairs(searchRoots) do
+        if root == nil then continue end
+        for _, obj in pairs(root:GetDescendants()) do
+            if obj:IsA("Animation") and not seen[obj.AnimationId] then
+                seen[obj.AnimationId] = true
+                table.insert(found, {Name = obj.Name, Id = obj.AnimationId})
+            end
+        end
+    end
+    
+    if #found == 0 then
+        AnimListLabel.Text = "❌ Tidak ada animasi ditemukan di client!"
+        AnimContainer.Size = UDim2.new(1, 0, 0, 0)
+    else
+        AnimListLabel.Text = "✅ Ketemu " .. #found .. " animasi! Klik buat mainkan:"
+        
+        for _, animData in ipairs(found) do
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, 0, 0, 35)
+            btn.BackgroundColor3 = Color3.fromRGB(20, 60, 20)
+            btn.Text = "▶ " .. animData.Name
+            btn.TextColor3 = Color3.fromRGB(200, 255, 200)
+            btn.Font = Enum.Font.Gotham
+            btn.TextSize = 12
+            btn.TextXAlignment = Enum.TextXAlignment.Left
+            btn.TextTruncate = Enum.TextTruncate.AtEnd
+            btn.Parent = AnimContainer
+            
+            local c = Instance.new("UICorner")
+            c.CornerRadius = UDim.new(0, 5)
+            c.Parent = btn
+            
+            local capturedId = animData.Id
+            local capturedName = animData.Name
+            btn.MouseButton1Click:Connect(function()
+                PlayAnimById(capturedId, capturedName)
+            end)
+        end
+        
+        AnimContainer.Size = UDim2.new(1, 0, 0, AnimListLayout.AbsoluteContentSize.Y)
+        AnimListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            AnimContainer.Size = UDim2.new(1, 0, 0, AnimListLayout.AbsoluteContentSize.Y)
+        end)
+    end
+    
+    Notify("🔍 Scan Selesai", "Ditemukan " .. #found .. " animasi. Lihat di menu!")
 end)
 
 local LabelUtilitas = Instance.new("TextLabel")

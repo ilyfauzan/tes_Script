@@ -93,12 +93,69 @@ end
 local LabelEmote = Instance.new("TextLabel")
 LabelEmote.Size = UDim2.new(1, 0, 0, 20)
 LabelEmote.BackgroundTransparency = 1
-LabelEmote.Text = "🎭 Emote Hack"
+LabelEmote.Text = "🎭 Play by Animation ID"
 LabelEmote.TextColor3 = Color3.fromRGB(200, 200, 200)
 LabelEmote.Font = Enum.Font.GothamBold
 LabelEmote.TextSize = 14
 LabelEmote.TextXAlignment = Enum.TextXAlignment.Left
 LabelEmote.Parent = ScrollingFrame
+
+-- Input ID Animasi langsung
+local IDInput = Instance.new("TextBox")
+IDInput.Size = UDim2.new(1, 0, 0, 40)
+IDInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+IDInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+IDInput.Font = Enum.Font.Gotham
+IDInput.TextSize = 14
+IDInput.PlaceholderText = "Paste Animation ID disini..."
+IDInput.Text = "3360686498" -- Rockin' Stride
+IDInput.Parent = ScrollingFrame
+
+local cornerID = Instance.new("UICorner")
+cornerID.CornerRadius = UDim.new(0, 6)
+cornerID.Parent = IDInput
+
+local PlayByIDBtn = CreateButton("🎸 Play Rockin' Stride (by ID)", ScrollingFrame)
+PlayByIDBtn.BackgroundColor3 = Color3.fromRGB(100, 40, 120)
+
+PlayByIDBtn.MouseButton1Click:Connect(function()
+    local char = player.Character
+    if not char then Notify("❌", "Karakter tidak ada!") return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    local animator = hum:FindFirstChildOfClass("Animator") or hum
+    
+    local idStr = IDInput.Text:match("%d+")
+    if not idStr then
+        Notify("❌ ID Salah", "Masukkan angka ID animasi yang valid!")
+        return
+    end
+    
+    local anim = Instance.new("Animation")
+    anim.AnimationId = "rbxassetid://" .. idStr
+    
+    local ok, err = pcall(function()
+        local track = animator:LoadAnimation(anim)
+        track.Priority = Enum.AnimationPriority.Action4
+        track:Play()
+    end)
+    
+    if ok then
+        Notify("✅ ID " .. idStr .. " Dimainkan!", "Cek karakter kamu sekarang!")
+    else
+        Notify("❌ Error", tostring(err):sub(1, 100))
+    end
+end)
+
+local LabelScan = Instance.new("TextLabel")
+LabelScan.Size = UDim2.new(1, 0, 0, 20)
+LabelScan.BackgroundTransparency = 1
+LabelScan.Text = "🔍 Scan Animasi Game"
+LabelScan.TextColor3 = Color3.fromRGB(200, 200, 200)
+LabelScan.Font = Enum.Font.GothamBold
+LabelScan.TextSize = 14
+LabelScan.TextXAlignment = Enum.TextXAlignment.Left
+LabelScan.Parent = ScrollingFrame
 
 local FilterInput = Instance.new("TextBox")
 FilterInput.Size = UDim2.new(1, 0, 0, 40)

@@ -116,7 +116,99 @@ local function Notify(title, text)
 end
 
 -- ========================================================
--- FITUR EVADE
+-- 🎸 MAIN ANIMASI BY ID (MANUAL)
+-- ========================================================
+local LabelPlayID = Instance.new("TextLabel")
+LabelPlayID.Size = UDim2.new(1, 0, 0, 20)
+LabelPlayID.BackgroundTransparency = 1
+LabelPlayID.Text = "🎸 Play Animasi Langsung"
+LabelPlayID.TextColor3 = Color3.fromRGB(200, 200, 200)
+LabelPlayID.Font = Enum.Font.GothamBold
+LabelPlayID.TextSize = 14
+LabelPlayID.TextXAlignment = Enum.TextXAlignment.Left
+LabelPlayID.Parent = ScrollingFrame
+
+local IDInput = Instance.new("TextBox")
+IDInput.Size = UDim2.new(1, 0, 0, 40)
+IDInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+IDInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+IDInput.Font = Enum.Font.Gotham
+IDInput.TextSize = 14
+IDInput.PlaceholderText = "Ketik/Paste ID Animasi di sini..."
+IDInput.Text = "12686575749"
+IDInput.Parent = ScrollingFrame
+local cornerID = Instance.new("UICorner")
+cornerID.CornerRadius = UDim.new(0, 6)
+cornerID.Parent = IDInput
+
+local PlayByIDBtn = CreateButton("▶️ Play Animasi (by ID)", ScrollingFrame)
+PlayByIDBtn.BackgroundColor3 = Color3.fromRGB(100, 40, 120)
+
+local LoopBtn = CreateButton("🔁 Loop Mode: OFF", ScrollingFrame)
+LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+
+local StopBtn = CreateButton("⛔ Stop Animasi", ScrollingFrame)
+StopBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
+
+local loopActive = false
+local currentTrack = nil
+
+local function PlayAnimNow(idStr)
+    local char = player.Character
+    if not char then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return false end
+    local animator = hum:FindFirstChildOfClass("Animator") or hum
+    
+    local ok = pcall(function()
+        if currentTrack then currentTrack:Stop() end
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://" .. idStr
+        currentTrack = animator:LoadAnimation(anim)
+        currentTrack.Priority = Enum.AnimationPriority.Action4
+        currentTrack.Looped = loopActive
+        currentTrack:Play()
+    end)
+    return ok
+end
+
+PlayByIDBtn.MouseButton1Click:Connect(function()
+    local id = IDInput.Text:match("%d+")
+    if id then
+        local ok = PlayAnimNow(id)
+        if ok then
+            Notify("✅ Animasi Diputar!", "Jika berhenti, nyalakan Loop Mode!")
+        else
+            Notify("❌ Gagal", "Gagal memutar animasi. Character belum siap?")
+        end
+    else
+        Notify("❌ Input Salah", "Masukkan angka ID yang benar!")
+    end
+end)
+
+LoopBtn.MouseButton1Click:Connect(function()
+    loopActive = not loopActive
+    if loopActive then
+        LoopBtn.Text = "🔁 Loop Mode: ON"
+        LoopBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
+    else
+        LoopBtn.Text = "🔁 Loop Mode: OFF"
+        LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    end
+    if currentTrack then
+        currentTrack.Looped = loopActive
+    end
+end)
+
+StopBtn.MouseButton1Click:Connect(function()
+    if currentTrack then
+        currentTrack:Stop()
+        Notify("⏹️ Dihentikan", "Animasi stop.")
+    end
+end)
+
+-- ========================================================
+-- 🎭 FITUR EVADE
 -- ========================================================
 
 local LabelEmoteInject = Instance.new("TextLabel")

@@ -23,7 +23,27 @@ local player = game.Players.LocalPlayer
 
 local function ScanSpecialEggs()
     detectedEggsList = {}
-    
+
+    -- Kumpulkan semua karakter pemain agar tidak ikut di-scan
+    local playerCharacters = {}
+    for _, plr in pairs(game.Players:GetPlayers()) do
+        if plr.Character then
+            playerCharacters[plr.Character] = true
+        end
+    end
+
+    -- Cek apakah objek adalah bagian dari karakter pemain manapun
+    local function IsInsideCharacter(obj)
+        local current = obj.Parent
+        while current do
+            if playerCharacters[current] then
+                return true
+            end
+            current = current.Parent
+        end
+        return false
+    end
+
     local specialNames = {
         ["blackhole"] = "100B - Blackhole Egg",
         ["solaris"] = "300B - Solaris Egg",
@@ -32,6 +52,9 @@ local function ScanSpecialEggs()
     }
 
     for _, obj in pairs(workspace:GetDescendants()) do
+        -- SKIP jika objek ada di dalam karakter pemain
+        if IsInsideCharacter(obj) then continue end
+
         if obj:IsA("Model") or obj:IsA("BasePart") then
             local nameLower = obj.Name:lower()
             local foundTierName = nil

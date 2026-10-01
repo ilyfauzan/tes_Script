@@ -216,6 +216,33 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                 local targetPos = eggCFrame.Position + Vector3.new(0, 1.5, 0)
                                 char:PivotTo(CFrame.new(targetPos) * eggCFrame.Rotation)
                                 
+                                -- Tunggu karakter stabil
+                                task.wait(0.3)
+                                
+                                -- Ambil telur dengan cara Trigger / Klik
+                                local fired = false
+                                for _, desc in pairs(realEgg:GetDescendants()) do
+                                    if desc:IsA("ProximityPrompt") then
+                                        if fireproximityprompt then
+                                            fireproximityprompt(desc, 1) -- angka 1 untuk bypass hold duration kadang diperlukan
+                                            fireproximityprompt(desc)
+                                            fired = true
+                                        end
+                                    elseif desc:IsA("ClickDetector") then
+                                        if fireclickdetector then
+                                            fireclickdetector(desc)
+                                            fired = true
+                                        end
+                                    end
+                                end
+                                
+                                -- Kalau cuma bisa disentuh, goyangin karakter dikit
+                                if not fired then
+                                    hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, 1)
+                                    task.wait(0.2)
+                                    hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, -1)
+                                end
+                                
                                 -- Tunggu 2 detik untuk animasi ambil/pickup
                                 task.wait(2)
                             end

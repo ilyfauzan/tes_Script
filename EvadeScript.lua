@@ -122,25 +122,49 @@ PlayEmoteBtn.MouseButton1Click:Connect(function()
     if emoteName == "" then return end
     
     local success = false
+    local char = player.Character
+    if not char then 
+        Notify("❌ Gagal", "Karakter tidak ditemukan!")
+        return 
+    end
     
-    -- 1. Coba cara standar Evade
-    pcall(function()
-        local events = replicatedStorage:FindFirstChild("Events")
-        if events then
-            local emoteRemote = events:FindFirstChild("Emote")
-            if emoteRemote then
-                if emoteRemote:IsA("RemoteEvent") then
-                    emoteRemote:FireServer(emoteName)
-                    success = true
-                elseif emoteRemote:IsA("RemoteFunction") then
-                    task.spawn(function() emoteRemote:InvokeServer(emoteName) end)
-                    success = true
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    local animator = hum:FindFirstChildOfClass("Animator") or hum
+    
+    -- 1. Coba Cari Object Animation-nya Langsung di Game Files (Evade biasanya nyimpen di ReplicatedStorage)
+    local targetAnimation = nil
+    for _, obj in pairs(replicatedStorage:GetDescendants()) do
+        if obj:IsA("Animation") and obj.Name:lower() == emoteName:lower() then
+            targetAnimation = obj
+            break
+        end
+        -- Kadang namanya dibungkus di dalam Folder/StringValue
+        if obj:IsA("StringValue") or obj:IsA("Folder") then
+            if obj.Name:lower() == emoteName:lower() then
+                local anim = obj:FindFirstChildOfClass("Animation")
+                if anim then
+                    targetAnimation = anim
+                    break
                 end
             end
         end
-    end)
+    end
     
-    -- 2. Jika gagal, cari semua RemoteEvent & RemoteFunction yang namanya mengandung "emote"
+    if targetAnimation then
+        -- KITA PLAY ANIMASINYA SECARA LOKAL (Roblox otomatis nge-broadcast ini ke player lain)
+        pcall(function()
+            -- Stop animasi yang lagi jalan (kayak lari/idle)
+            for _, track in pairs(animator:GetPlayingAnimationTracks()) do
+                track:Stop()
+            end
+            local track = animator:LoadAnimation(targetAnimation)
+            track:Play()
+            success = true
+        end)
+    end
+    
+    -- 2. Kalau Animation Object ga ketemu, coba tembak Remote (Cara Brutal)
     if not success then
         for _, obj in pairs(replicatedStorage:GetDescendants()) do
             local name = obj.Name:lower()
@@ -159,22 +183,14 @@ PlayEmoteBtn.MouseButton1Click:Connect(function()
         end
     end
     
-    -- 3. Coba cari sistem jaringan terpusat (Knit / Framework lain)
-    if not success then
-        for _, obj in pairs(replicatedStorage:GetDescendants()) do
-            if obj:IsA("RemoteEvent") and (obj.Name == "RemoteEvent" or obj.Name == "Remote") then
-                pcall(function() obj:FireServer("Emote", emoteName) end)
-                pcall(function() obj:FireServer("PlayEmote", emoteName) end)
-            end
-        end
-        -- Kita anggap aja sukses karena udah dikirim secara brutal
-        success = true
-    end
-    
     if success then
-        Notify("✅ Emote Terkirim!", "Sinyal emote '" .. emoteName .. "' dikirim ke server. Cek karaktermu!")
+        if targetAnimation then
+            Notify("✅ Emote Berhasil!", "Memutar '" .. emoteName .. "' menggunakan Animation Bypass!")
+        else
+            Notify("⚠️ Sinyal Terkirim", "Sinyal emote dikirim, tapi animasi tidak ditemukan di client.")
+        end
     else
-        Notify("❌ Gagal", "Sistem Emote Evade benar-benar disembunyikan!")
+        Notify("❌ Gagal Total", "Animasi atau Sistem Emote tidak ditemukan sama sekali.")
     end
 end)
 

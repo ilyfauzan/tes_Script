@@ -453,7 +453,7 @@ local function ScanSpecialEggs()
 
                 -- Posisi pasti untuk Volcanic Egg (2.5T)
                 if foundTierName == "2.5T - Volcanic Egg" then
-                    eggCFrame = CFrame.new(-5330.2, 40912.4, -3579.8)
+                    eggCFrame = CFrame.new(-5332, 40912, -3542)
                 end
 
                 local isDuplicate = false
@@ -681,16 +681,22 @@ VolcanicTestBtn.MouseButton1Click:Connect(function()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    -- KEMBALIKAN KE KOORDINAT ORIGINAL YANG BENAR BENAR TEPAT DI TELUR
-    local targetCFrame = CFrame.new(-5330.2, 40912.4, -3579.8)
+    -- KOORDINAT BENAR DI DALAM GUA (-5332, 40912, -3542)
+    local targetCFrame = CFrame.new(-5332, 40912, -3542)
     
-    -- Teleport biasa tanpa anchor, tanpa blok lantai tambahan
-    -- Ketinggian +3 pas untuk berdiri, tidak nabrak atap gua
     hrp.AssemblyLinearVelocity = Vector3.zero
     hrp.AssemblyAngularVelocity = Vector3.zero
+    
+    -- Ketinggian HANYA +3 (biar kepala tidak nabrak atap gua pas di-unanchor)
+    hrp.Anchored = true
     hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
     
-    Notify("🌋 Volcanic Teleport", "Teleport berhasil!", 4)
+    Notify("🌋 Teleporting...", "Menahan posisi agar map ke-load...", 2)
+    
+    task.delay(2, function()
+        if hrp then hrp.Anchored = false end
+        Notify("✅ Selesai", "Teleport berhasil!", 3)
+    end)
 end)
 GetPosBtn.MouseButton1Click:Connect(function()
     local char = player.Character

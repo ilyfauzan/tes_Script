@@ -93,8 +93,8 @@ CloseBtnCorner.Parent = CloseBtn
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Name = "WayaeToggle"
 ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
--- Pojok kiri tengah, di area yang aman dari UI game
-ToggleBtn.Position = UDim2.new(0, 10, 0.45, 0)
+-- Pojok kanan atas, aman dari tombol Shop/Rebirth/Index di kiri
+ToggleBtn.Position = UDim2.new(1, -70, 0, 120)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 30, 110)
 ToggleBtn.Text = "🥚"
 ToggleBtn.TextSize = 28

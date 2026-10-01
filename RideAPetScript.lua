@@ -368,7 +368,8 @@ local function ScanSpecialEggs()
         ["blackhole"] = "100B - Blackhole Egg",
         ["solaris"]   = "300B - Solaris Egg",
         ["cherub"]    = "1T - Cherub Egg",
-        ["volcanic"]  = "2.5T - Volcanic Egg"
+        ["volcanic"]  = "2.5T - Volcanic Egg",
+        ["tidal"]     = "2.5T - Volcanic Egg" -- nama model di game: "Volcanic Tidal"
     }
 
 

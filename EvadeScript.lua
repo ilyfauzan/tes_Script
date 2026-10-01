@@ -813,44 +813,95 @@ ESPBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ========================================================
--- 👿 GOD MODE: HOOK ANIMATOR (METATABLE HOOK)
+-- 👿 X-RAY DUMMY SNIFFER (LIVE TRACKER)
 -- ========================================================
 local LabelGod = Instance.new("TextLabel")
 LabelGod.Size = UDim2.new(1, 0, 0, 20)
 LabelGod.BackgroundTransparency = 1
-LabelGod.Text = "👿 God Mode: Hook Animator"
+LabelGod.Text = "👿 X-Ray Sniffer (Curian Dummy)"
 LabelGod.TextColor3 = Color3.fromRGB(255, 50, 50)
 LabelGod.Font = Enum.Font.GothamBold
 LabelGod.TextSize = 14
 LabelGod.TextXAlignment = Enum.TextXAlignment.Left
 LabelGod.Parent = ScrollingFrame
 
-local GodHookBtn = CreateButton("👿 Pasang Hook (Suntik Metatable)", ScrollingFrame)
+local GodHookBtn = CreateButton("👿 Sedot Animasi dari Dummy Shop", ScrollingFrame)
 GodHookBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
 
 local GodStatus = Instance.new("TextLabel")
 GodStatus.Size = UDim2.new(1, 0, 0, 30)
 GodStatus.BackgroundTransparency = 1
-GodStatus.Text = "Hook Belum Terpasang..."
+GodStatus.Text = "Belum menyedot apa-apa..."
 GodStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
 GodStatus.Font = Enum.Font.Gotham
 GodStatus.TextSize = 12
 GodStatus.TextWrapped = true
 GodStatus.Parent = ScrollingFrame
 
-local isHooked = false
+local isSniffing = false
 
 GodHookBtn.MouseButton1Click:Connect(function()
-    if not hookmetamethod then
-        Notify("❌ ERROR", "Emulator kamu (Delta) tidak support hookmetamethod!")
-        return
-    end
-    
-    if isHooked then return end
-    isHooked = true
-    GodHookBtn.Text = "👿 Hook Terpasang! Menunggu Data..."
+    if isSniffing then return end
+    isSniffing = true
+    GodHookBtn.Text = "👿 MENGX-RAY SELURUH MAP..."
     GodHookBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
-    Notify("👿 GOD MODE AKTIF", "Semua animasi yang diputar oleh game ini sekarang masuk radar kita!")
+    Notify("👿 X-RAY AKTIF", "Mencari Dummy Shop yang lagi joget...")
+    
+    task.spawn(function()
+        local foundIds = {}
+        
+        -- Cari semua Animator di dalam game (termasuk dummy shop)
+        for _, obj in pairs(game:GetService("Workspace"):GetDescendants()) do
+            if obj:IsA("Animator") then
+                for _, track in pairs(obj:GetPlayingAnimationTracks()) do
+                    if track.Animation and track.Animation.AnimationId then
+                        local id = track.Animation.AnimationId:match("%d+")
+                        -- Filter animasi jalan bawaan
+                        if id and not (id == "507770239" or id == "507777826" or id == "507766388" or id == "507766951" or id == "507766666" or id == "507765000" or id == "507765644" or id == "507767714" or id == "507768375" or id == "507767202") then
+                            foundIds[id] = true
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- Cari juga di ReplicatedStorage / PlayerGui barangkali Dummy-nya disembunyikan di UI (ViewportFrame)
+        for _, obj in pairs(game:GetService("Players").LocalPlayer:GetDescendants()) do
+            if obj:IsA("Animator") then
+                for _, track in pairs(obj:GetPlayingAnimationTracks()) do
+                    if track.Animation and track.Animation.AnimationId then
+                        local id = track.Animation.AnimationId:match("%d+")
+                        if id and not (id == "507770239" or id == "507777826" or id == "507766388") then
+                            foundIds[id] = true
+                        end
+                    end
+                end
+            end
+        end
+        
+        local resultStr = ""
+        local lastId = nil
+        for id, _ in pairs(foundIds) do
+            resultStr = resultStr .. id .. " "
+            lastId = id
+        end
+        
+        if lastId then
+            GodStatus.Text = "Ketemu ID: " .. resultStr
+            if IDInput then IDInput.Text = lastId end
+            Notify("🎯 TARGET DIKUNCI!", "ID Dummy disedot! Langsung klik Play!")
+        else
+            GodStatus.Text = "❌ Tidak ada dummy yang lagi joget."
+            Notify("❌ GAGAL", "Pastikan Dummy di Shop SEDANG BERGERAK, lalu klik tombol ini lagi!")
+        end
+        
+        task.wait(1)
+        isSniffing = false
+        GodHookBtn.Text = "👿 Sedot Animasi dari Dummy Shop"
+        GodHookBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    end)
+    -- Memutus sisa code lama agar tidak dieksekusi:
+    if true then return end
     
     local oldNamecall
     oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)

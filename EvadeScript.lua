@@ -163,37 +163,34 @@ local function PlayAnimNow(idStr)
     local animator = hum:FindFirstChildOfClass("Animator") or hum
     
     local trueId = idStr
-    -- Ekstrak ID Animasi Asli jika yang dimasukkan adalah ID Asset Catalog
-    pcall(function()
-        local objs = game:GetObjects("rbxassetid://" .. idStr)
-        if objs and #objs > 0 then
-            local anim = objs[1]:FindFirstChildOfClass("Animation", true) or objs[1]
-            if anim and anim:IsA("Animation") then
-                trueId = anim.AnimationId:match("%d+")
-            end
-        end
-    end)
+    local formattedId = "rbxassetid://" .. trueId
+    if tostring(trueId):find("rbxassetid://") then
+        formattedId = trueId
+    end
     
     local ok = pcall(function()
         if currentTrack then currentTrack:Stop() end
         
-        -- Kita TIDAK LAGI mematikan semua animasi bawaan secara paksa.
-        -- Cukup set Priority ke Action4, biarkan Roblox yang ngatur penimpakan animasinya.
-        -- Ini mencegah karakter tiba-tiba kaku/freeze kalau ID-nya salah atau beda Rig (R6/R15).
-        
-        local anim = Instance.new("Animation")
-        
-        -- Cek kalau ID-nya emang udah format rbxassetid
-        if not tostring(trueId):find("rbxassetid://") then
-            anim.AnimationId = "rbxassetid://" .. trueId
-        else
-            anim.AnimationId = trueId
+        -- CARA BRUTAL BARU: Timpa semua animasi bawaan Roblox/Evade di badan!
+        -- Jadi pas Abang diem atau jalan, yang keputar malah emote ini.
+        for _, obj in pairs(char:GetDescendants()) do
+            if obj:IsA("Animation") then
+                obj.AnimationId = formattedId
+            end
         end
         
+        -- Hentikan animasi yang lagi jalan biar engine kepaksa nge-load ulang ID baru
+        for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+            track:Stop()
+        end
+        
+        -- Coba play manual juga sebagai backup
+        local anim = Instance.new("Animation")
+        anim.AnimationId = formattedId
         currentTrack = animator:LoadAnimation(anim)
         currentTrack.Priority = Enum.AnimationPriority.Action4
-        currentTrack.Looped = loopActive
-        currentTrack:Play() -- Play normal tanpa argumen aneh-aneh
+        currentTrack.Looped = true -- Paksa loop biar kelihatan
+        currentTrack:Play(0, 1, 1)
     end)
     return ok
 end

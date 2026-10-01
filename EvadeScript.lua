@@ -812,6 +812,69 @@ ESPBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+-- ========================================================
+-- 👿 GOD MODE: HOOK ANIMATOR (METATABLE HOOK)
+-- ========================================================
+local LabelGod = Instance.new("TextLabel")
+LabelGod.Size = UDim2.new(1, 0, 0, 20)
+LabelGod.BackgroundTransparency = 1
+LabelGod.Text = "👿 God Mode: Hook Animator"
+LabelGod.TextColor3 = Color3.fromRGB(255, 50, 50)
+LabelGod.Font = Enum.Font.GothamBold
+LabelGod.TextSize = 14
+LabelGod.TextXAlignment = Enum.TextXAlignment.Left
+LabelGod.Parent = ScrollingFrame
+
+local GodHookBtn = CreateButton("👿 Pasang Hook (Suntik Metatable)", ScrollingFrame)
+GodHookBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+
+local GodStatus = Instance.new("TextLabel")
+GodStatus.Size = UDim2.new(1, 0, 0, 30)
+GodStatus.BackgroundTransparency = 1
+GodStatus.Text = "Hook Belum Terpasang..."
+GodStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
+GodStatus.Font = Enum.Font.Gotham
+GodStatus.TextSize = 12
+GodStatus.TextWrapped = true
+GodStatus.Parent = ScrollingFrame
+
+local isHooked = false
+
+GodHookBtn.MouseButton1Click:Connect(function()
+    if not hookmetamethod then
+        Notify("❌ ERROR", "Emulator kamu (Delta) tidak support hookmetamethod!")
+        return
+    end
+    
+    if isHooked then return end
+    isHooked = true
+    GodHookBtn.Text = "👿 Hook Terpasang! Menunggu Data..."
+    GodHookBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
+    Notify("👿 GOD MODE AKTIF", "Semua animasi yang diputar oleh game ini sekarang masuk radar kita!")
+    
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        
+        if method == "LoadAnimation" then
+            local args = {...}
+            local anim = args[1]
+            if anim and typeof(anim) == "Instance" and anim.ClassName == "Animation" then
+                local id = anim.AnimationId:match("%d+")
+                
+                -- Filter animasi bawaan Roblox (jalan/lari/lompat) biar gak spam
+                if id and not (id == "507770239" or id == "507777826" or id == "507766388" or id == "507766951" or id == "507766666" or id == "507765000" or id == "507765644" or id == "507767714" or id == "507768375" or id == "507767202") then
+                    task.spawn(function()
+                        GodStatus.Text = "Tertangkap ID: " .. id
+                        if IDInput then IDInput.Text = id end
+                    end)
+                end
+            end
+        end
+        return oldNamecall(self, ...)
+    end)
+end)
+
 local CloseBtn = CreateButton("❌ Sembunyikan UI", ScrollingFrame)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
 CloseBtn.MouseButton1Click:Connect(function()

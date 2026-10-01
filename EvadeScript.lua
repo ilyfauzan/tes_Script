@@ -761,6 +761,55 @@ for _, emoteData in ipairs(verifiedEmotes) do
 end
 
 -- ========================================================
+-- 👋 CUSTOM CFRAME WAVE (ANTI-BLOCK EVADE)
+-- ========================================================
+local CustomWaveBtn = CreateButton("👋 BIKIN SENDIRI: Custom Wave (Murni Fisika CFrame)", ScrollingFrame)
+CustomWaveBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 150)
+
+local customWaveLoop = nil
+CustomWaveBtn.MouseButton1Click:Connect(function()
+    if customWaveLoop then
+        customWaveLoop:Disconnect()
+        customWaveLoop = nil
+        CustomWaveBtn.Text = "👋 BIKIN SENDIRI: Custom Wave (Murni Fisika CFrame)"
+        CustomWaveBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 150)
+        Notify("🛑 Wave Dimatikan", "Tangan kembali normal.")
+        return
+    end
+    
+    local char = game.Players.LocalPlayer.Character
+    if not char then return end
+    
+    local rightShoulder = nil
+    -- Cari sendi bahu kanan (dukung R6 dan R15, bahkan custom rig Evade)
+    for _, obj in pairs(char:GetDescendants()) do
+        if obj:IsA("Motor6D") and (obj.Name:lower():match("right.*shoulder") or obj.Name:lower():match("rightupperarm")) then
+            rightShoulder = obj
+            break
+        end
+    end
+    
+    if not rightShoulder then
+        Notify("❌ Gagal", "Sendi tangan kanan tidak ditemukan di karakter ini.")
+        return
+    end
+    
+    CustomWaveBtn.Text = "🛑 Hentikan Custom Wave"
+    CustomWaveBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    Notify("👋 Custom Wave Aktif!", "Menggunakan matematika CFrame murni untuk melambai! Anti-block!")
+    
+    local startTime = tick()
+    -- Stepped berjalan SEBELUM fisika dan animasi dirender, sangat kuat untuk meng-override!
+    customWaveLoop = game:GetService("RunService").Stepped:Connect(function()
+        local t = tick() - startTime
+        local waveAngle = math.sin(t * 10) * 0.5 -- Kecepatan dan lebar ayunan
+        
+        -- Override transformasi murni, paksa tangan ke atas dan ayunkan
+        rightShoulder.Transform = CFrame.Angles(math.rad(150), math.rad(waveAngle * 60), 0)
+    end)
+end)
+
+-- ========================================================
 -- 🎃 HALLOWEEN 2022 EVENT ROLLBACK & BYPASS
 -- ========================================================
 

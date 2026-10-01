@@ -21,6 +21,61 @@ local Window = Rayfield:CreateWindow({
    KeySystem = false
 })
 
+-- ====================================================================
+-- FLOATING TOGGLE BUTTON (SIMBOL UNTUK BUKA / TUTUP UI)
+-- ====================================================================
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+
+-- Hapus tombol lama jika skrip di-execute ulang
+if CoreGui:FindFirstChild("RideAPetToggleButton") then
+    CoreGui.RideAPetToggleButton:Destroy()
+end
+
+local ToggleGui = Instance.new("ScreenGui")
+ToggleGui.Name = "RideAPetToggleButton"
+if gethui then
+    ToggleGui.Parent = gethui()
+else
+    ToggleGui.Parent = CoreGui
+end
+
+local ToggleButton = Instance.new("ImageButton")
+ToggleButton.Name = "OpenCloseButton"
+ToggleButton.Size = UDim2.new(0, 50, 0, 50)
+ToggleButton.Position = UDim2.new(0.02, 0, 0.4, 0)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+ToggleButton.BorderSizePixel = 0
+ToggleButton.Active = true
+ToggleButton.Draggable = true
+ToggleButton.Image = "rbxassetid://6031097225" -- Icon Pet / Egg
+ToggleButton.Parent = ToggleGui
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0.5, 0) -- Lingkaran Sempurna
+ToggleCorner.Parent = ToggleButton
+
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Color = Color3.fromRGB(0, 170, 255)
+ToggleStroke.Thickness = 2
+ToggleStroke.Parent = ToggleButton
+
+local uiVisible = true
+ToggleButton.MouseButton1Click:Connect(function()
+    uiVisible = not uiVisible
+    -- Rayfield builtin toggle / hide window
+    if Window and Window.Modify then
+        -- Jika Rayfield mendukung toggle bawaan
+        Rayfield:ToggleUI()
+    else
+        -- Fallback toggle visual
+        local mainFrame = CoreGui:FindFirstChild("Rayfield") or (gethui and gethui():FindFirstChild("Rayfield"))
+        if mainFrame then
+            mainFrame.Enabled = uiVisible
+        end
+    end
+end)
+
 -- 3. Create Tabs
 local EggTab = Window:CreateTab("Egg Hunt", 4483362458)
 local PlayerTab = Window:CreateTab("Pemain & Speed", 4483362458)

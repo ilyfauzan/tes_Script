@@ -53,25 +53,54 @@ TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = MainFrame
 
--- Tombol Close (X)
+-- Tombol Close (X) - Sekarang berfungsi sebagai Hide/Minimize
 local CloseButton = Instance.new("TextButton")
 CloseButton.Name = "CloseButton"
 CloseButton.Size = UDim2.new(0, 30, 0, 30)
 CloseButton.Position = UDim2.new(1, -38, 0, 8)
 CloseButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-CloseButton.Text = "X"
+CloseButton.Text = "-"
 CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextSize = 14
+CloseButton.TextSize = 18
 CloseButton.Parent = MainFrame
 
 local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 8)
 CloseCorner.Parent = CloseButton
 
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
+-- ====================================================================
+-- FLOATING TOGGLE ICON (SIMBOL FLATING UNTUK BUKA/TUTUP UI)
+-- ====================================================================
+local ToggleButton = Instance.new("ImageButton")
+ToggleButton.Name = "OpenCloseSimbol"
+ToggleButton.Size = UDim2.new(0, 50, 0, 50)
+ToggleButton.Position = UDim2.new(0.02, 0, 0.4, 0) -- Di sebelah kiri layar
+ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+ToggleButton.BorderSizePixel = 0
+ToggleButton.Active = true
+ToggleButton.Draggable = true -- Bisa digeser sesuka hati
+ToggleButton.Image = "rbxassetid://6031097225" -- Icon Gambar Logo
+ToggleButton.Parent = ScreenGui
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0.5, 0) -- Bulat Sempurna
+ToggleCorner.Parent = ToggleButton
+
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Color = Color3.fromRGB(0, 170, 255)
+ToggleStroke.Thickness = 2
+ToggleStroke.Parent = ToggleButton
+
+-- Event Buka / Tutup saat Simbol / Tombol diklik
+local uiVisible = true
+local function ToggleMainUI()
+    uiVisible = not uiVisible
+    MainFrame.Visible = uiVisible
+end
+
+CloseButton.MouseButton1Click:Connect(ToggleMainUI)
+ToggleButton.MouseButton1Click:Connect(ToggleMainUI)
 
 -- 5. Container Konten (Area Tombol)
 local ContentContainer = Instance.new("Frame")

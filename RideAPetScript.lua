@@ -128,53 +128,59 @@ task.spawn(function()
     end
 end)
 
--- ════ DRAG MANUAL pakai UIS (bekerja di mobile) ════
+-- ════ DRAG - Support emulator (Mouse) & mobile (Touch) ════
 local UIS = game:GetService("UserInputService")
+local dragActive = false
 local dragStartPos = nil
 local dragStartBtnPos = nil
 local isDragging = false
-local DRAG_THRESHOLD = 10
+local DRAG_THRESHOLD = 8
 
+-- Mulai drag saat klik/touch pada tombol
 ToggleBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch or
        input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragActive = true
         dragStartPos = input.Position
         dragStartBtnPos = ToggleBtn.Position
         isDragging = false
     end
 end)
 
--- Pakai UIS global bukan ToggleBtn.InputChanged
--- Karena di mobile, event touch movement dikirim lewat UIS bukan dari GuiObject
+-- Gerak mouse/touch: pindahkan tombol
 UIS.InputChanged:Connect(function(input)
-    if (input.UserInputType == Enum.UserInputType.Touch or
-        input.UserInputType == Enum.UserInputType.MouseMovement) and dragStartPos then
-        local delta = input.Position - dragStartPos
-        if math.abs(delta.X) > DRAG_THRESHOLD or math.abs(delta.Y) > DRAG_THRESHOLD then
-            isDragging = true
-            ToggleBtn.Position = UDim2.new(
-                dragStartBtnPos.X.Scale,
-                dragStartBtnPos.X.Offset + delta.X,
-                dragStartBtnPos.Y.Scale,
-                dragStartBtnPos.Y.Offset + delta.Y
-            )
-        end
+    if not dragActive or not dragStartPos then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement and
+       input.UserInputType ~= Enum.UserInputType.Touch then return end
+
+    local delta = input.Position - dragStartPos
+    if math.abs(delta.X) > DRAG_THRESHOLD or math.abs(delta.Y) > DRAG_THRESHOLD then
+        isDragging = true
+        ToggleBtn.Position = UDim2.new(
+            dragStartBtnPos.X.Scale,
+            dragStartBtnPos.X.Offset + delta.X,
+            dragStartBtnPos.Y.Scale,
+            dragStartBtnPos.Y.Offset + delta.Y
+        )
     end
 end)
 
+-- Lepas klik/touch
 UIS.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch or
-       input.UserInputType == Enum.UserInputType.MouseButton1 then
-        if dragStartPos and not isDragging then
-            -- Tap singkat = buka menu
-            if ToggleBtn.Visible then
-                MainFrame.Visible = true
-                ToggleBtn.Visible = false
-            end
+    if input.UserInputType ~= Enum.UserInputType.Touch and
+       input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+
+    if dragActive and not isDragging then
+        -- Ini tap/klik = buka menu
+        if ToggleBtn.Visible then
+            MainFrame.Visible = true
+            ToggleBtn.Visible = false
         end
-        dragStartPos = nil
-        isDragging = false
     end
+
+    dragActive = false
+    dragStartPos = nil
+    isDragging = false
 end)
 
 -- ════ CLOSE BUTTON ════

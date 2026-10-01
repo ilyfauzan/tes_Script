@@ -18,30 +18,6 @@ local MainTab = Window:CreateTab("Special Egg Hunter", 4483362458)
 local detectedEggsList = {}
 local player = game.Players.LocalPlayer
 
--- ============================================================
--- UTILITY: Teleport Bertahap (Anti Position-Check)
--- Gerak perlahan step-by-step agar tidak terdeteksi sebagai
--- instant teleport oleh server-side anti-cheat
--- ============================================================
-local function SafeTeleport(hrp, targetCF)
-    -- Offset posisi random kecil agar tidak selalu koordinat yang sama persis
-    local randX = math.random(-3, 3)
-    local randZ = math.random(-3, 3)
-    hrp.CFrame = targetCF + Vector3.new(randX, 4, randZ)
-end
-
--- ============================================================
--- UTILITY: Delay Human-like (Anti Bot Detection)
--- Jeda random agar pola aksi tidak terlihat seperti bot
--- ============================================================
-local function HumanDelay()
-    task.wait(math.random(8, 18) / 10) -- 0.8 - 1.8 detik random
-end
-
--- ============================================================
--- SCAN TELUR SPECIAL
--- Filter telur di dalam karakter & base/plot pemain
--- ============================================================
 local function ScanSpecialEggs()
     detectedEggsList = {}
 
@@ -53,30 +29,23 @@ local function ScanSpecialEggs()
         end
     end
 
-    -- Cek apakah objek adalah bagian dari karakter pemain manapun
     local function IsInsideCharacter(obj)
         local current = obj.Parent
         while current do
-            if playerCharacters[current] then
-                return true
-            end
+            if playerCharacters[current] then return true end
             current = current.Parent
         end
         return false
     end
 
-    -- Keyword nama folder/model yang biasanya adalah base/plot milik pemain
     local plotKeywords = {"plot", "base", "pen", "farm", "yard", "house", "home", "island", "territory"}
 
-    -- Cek apakah objek berada di dalam base/plot pemain
     local function IsInsidePlot(obj)
         local current = obj.Parent
         while current and current ~= workspace do
             local nameLower = current.Name:lower()
             for _, kw in ipairs(plotKeywords) do
-                if nameLower:find(kw) then
-                    return true
-                end
+                if nameLower:find(kw) then return true end
             end
             current = current.Parent
         end
@@ -123,7 +92,6 @@ local function ScanSpecialEggs()
             if foundTierName then
                 local eggCFrame
 
-                -- Cari BasePart paling tinggi dalam model (= telur, bukan alas platform)
                 local function GetHighestPart(model)
                     local highestPart = nil
                     local highestY = -math.huge
@@ -152,7 +120,6 @@ local function ScanSpecialEggs()
                     eggCFrame = obj.CFrame
                 end
 
-                -- Hindari duplikat posisi yang sangat berdekatan
                 local isDuplicate = false
                 for _, existing in ipairs(detectedEggsList) do
                     if existing.CFrame and eggCFrame then
@@ -177,18 +144,12 @@ local function ScanSpecialEggs()
     return detectedEggsList
 end
 
--- ============================================================
--- UI
--- ============================================================
 local selectedEggIndex = 1
 local eggDropdown = nil
-local isTeleporting = false -- Cooldown guard agar tidak spam
 
 MainTab:CreateButton({
    Name = "🔍 1. Lacak Posisi Telur Special (100B - 2.5T)",
    Callback = function()
-       -- Delay human-like sebelum scan
-       HumanDelay()
        local eggs = ScanSpecialEggs()
        if #eggs > 0 then
            local options = {}
@@ -231,16 +192,6 @@ eggDropdown = MainTab:CreateDropdown({
 MainTab:CreateButton({
    Name = "🚀 3. Teleport & Diam di Lokasi Telur",
    Callback = function()
-       -- Cooldown guard: cegah spam klik
-       if isTeleporting then
-           WayaeHUB:Notify({
-               Title   = "⏳ Harap Tunggu",
-               Content = "Sedang dalam proses teleport...",
-               Duration = 2,
-           })
-           return
-       end
-
        local character = player.Character or player.CharacterAdded:Wait()
        local hrp = character:FindFirstChild("HumanoidRootPart")
        if not hrp then return end
@@ -252,21 +203,12 @@ MainTab:CreateButton({
        if #detectedEggsList > 0 then
            local target = detectedEggsList[selectedEggIndex] or detectedEggsList[1]
            if target and target.CFrame then
-               isTeleporting = true
-
-               -- Delay human-like sebelum teleport
-               HumanDelay()
-
-               -- Teleport bertahap (anti position-check)
-               SafeTeleport(hrp, target.CFrame)
-
+               hrp.CFrame = target.CFrame + Vector3.new(0, 3, 0)
                WayaeHUB:Notify({
                    Title   = "🚀 Berhasil Teleport!",
                    Content = "Anda sekarang berada di posisi " .. target.Name .. "!",
                    Duration = 4,
                })
-
-               isTeleporting = false
            end
        else
            WayaeHUB:Notify({
@@ -281,8 +223,6 @@ MainTab:CreateButton({
 MainTab:CreateButton({
    Name = "🏪 Teleport ke Area Sell",
    Callback = function()
-       if isTeleporting then return end
-
        local char = player.Character or player.CharacterAdded:Wait()
        local hrp = char:FindFirstChild("HumanoidRootPart")
        if not hrp then return end
@@ -309,15 +249,12 @@ MainTab:CreateButton({
        end
 
        if sellTarget then
-           isTeleporting = true
-           HumanDelay()
-           SafeTeleport(hrp, sellTarget)
+           hrp.CFrame = sellTarget + Vector3.new(0, 5, 0)
            WayaeHUB:Notify({
                Title   = "🏪 Teleport ke Sell!",
                Content = "Berhasil teleport ke area Sell!",
                Duration = 3,
            })
-           isTeleporting = false
        else
            WayaeHUB:Notify({
                Title   = "⚠️ Area Sell Tidak Ditemukan",

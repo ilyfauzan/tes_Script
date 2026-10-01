@@ -2,6 +2,7 @@ local WayaeHUB = loadstring(game:HttpGet('https://sirius.menu/WayaeHUB'))()
 
 local Window = WayaeHUB:CreateWindow({
    Name = "WayaeHUB",
+   Icon = 6031280882,
    LoadingTitle = "Memuat WayaeHUB Simple...",
    LoadingSubtitle = "by Antigravity",
    ConfigurationSaving = {

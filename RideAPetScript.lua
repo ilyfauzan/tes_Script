@@ -595,6 +595,8 @@ local SellBtn = MakeButton(ContentFrame, "🏪  3. Teleport ke Area Sell", 6)
 
 local VolcanicTestBtn = MakeButton(ContentFrame, "🌋  4. Test Teleport Volcanic Egg", 7)
 
+local GetPosBtn = MakeButton(ContentFrame, "📍  5. Ambil Posisi Saya Sekarang", 8)
+
 -- ════════════════════════════════════════
 --  LOGIKA TOMBOL
 -- ════════════════════════════════════════
@@ -752,4 +754,16 @@ VolcanicTestBtn.MouseButton1Click:Connect(function()
     else
         Notify("⚠️ Gagal deteksi posisi", "Model ditemukan tapi posisi tidak valid.", 5)
     end
+end)
+GetPosBtn.MouseButton1Click:Connect(function()
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local p = hrp.Position
+    Notify(
+        "📍 Posisi Kamu Sekarang",
+        string.format("X: %.0f\nY: %.0f\nZ: %.0f", p.X, p.Y, p.Z),
+        10
+    )
 end)

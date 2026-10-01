@@ -88,13 +88,12 @@ CloseBtnCorner.CornerRadius = UDim.new(0, 8)
 CloseBtnCorner.Parent = CloseBtn
 
 -- ════════════════════════════════════════
---  FLOATING TOGGLE BUTTON
+--  FLOATING TOGGLE BUTTON (draggable + tappable)
 -- ════════════════════════════════════════
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Name = "WayaeToggle"
 ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
--- Pojok kanan atas, aman dari tombol Shop/Rebirth/Index di kiri
-ToggleBtn.Position = UDim2.new(1, -70, 0, 120)
+ToggleBtn.Position = UDim2.new(1, -75, 0, 130) -- Pojok kanan atas, aman dari Shop/Rebirth
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 30, 110)
 ToggleBtn.Text = "🥚"
 ToggleBtn.TextSize = 28
@@ -104,7 +103,7 @@ ToggleBtn.BorderSizePixel = 0
 ToggleBtn.Visible = false
 ToggleBtn.ZIndex = 100
 ToggleBtn.Active = true
-ToggleBtn.Draggable = false -- Matikan Draggable agar klik/touch bekerja di mobile
+ToggleBtn.Draggable = false
 ToggleBtn.Parent = ScreenGui
 
 local ToggleCorner = Instance.new("UICorner")
@@ -116,16 +115,12 @@ ToggleStroke.Color = Color3.fromRGB(140, 80, 255)
 ToggleStroke.Thickness = 2.5
 ToggleStroke.Parent = ToggleBtn
 
--- Glow berdenyut sederhana (tanpa ImageLabel agar tidak error)
+-- Glow berdenyut
 task.spawn(function()
-    local colors = {
-        Color3.fromRGB(100, 50, 220),
-        Color3.fromRGB(160, 90, 255),
-        Color3.fromRGB(100, 50, 220),
-    }
+    local colors = {Color3.fromRGB(100, 50, 220), Color3.fromRGB(180, 100, 255)}
     local i = 1
     while true do
-        task.wait(0.6)
+        task.wait(0.7)
         if ToggleBtn and ToggleBtn.Parent then
             ToggleStroke.Color = colors[i]
             i = (i % #colors) + 1
@@ -133,28 +128,61 @@ task.spawn(function()
     end
 end)
 
--- Tangani klik DAN touch (penting untuk mobile)
-local function onToggleOpen()
-    MainFrame.Visible = true
-    ToggleBtn.Visible = false
-end
+-- ════ DRAG MANUAL (bekerja di mobile) ════
+local UIS = game:GetService("UserInputService")
+local dragStartPos = nil
+local dragStartBtnPos = nil
+local isDragging = false
+local DRAG_THRESHOLD = 10 -- pixel, lebih dari ini = drag, kurang = tap
 
-ToggleBtn.MouseButton1Click:Connect(onToggleOpen)
 ToggleBtn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch then
-        onToggleOpen()
+    if input.UserInputType == Enum.UserInputType.Touch or
+       input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragStartPos = input.Position
+        dragStartBtnPos = ToggleBtn.Position
+        isDragging = false
     end
 end)
 
-CloseBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = false
-    ToggleBtn.Visible = true
+ToggleBtn.InputChanged:Connect(function(input)
+    if (input.UserInputType == Enum.UserInputType.Touch or
+        input.UserInputType == Enum.UserInputType.MouseMovement) and dragStartPos then
+        local delta = input.Position - dragStartPos
+        if math.abs(delta.X) > DRAG_THRESHOLD or math.abs(delta.Y) > DRAG_THRESHOLD then
+            isDragging = true
+            ToggleBtn.Position = UDim2.new(
+                dragStartBtnPos.X.Scale,
+                dragStartBtnPos.X.Offset + delta.X,
+                dragStartBtnPos.Y.Scale,
+                dragStartBtnPos.Y.Offset + delta.Y
+            )
+        end
+    end
 end)
 
+ToggleBtn.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or
+       input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if not isDragging then
+            -- Ini tap = buka menu
+            MainFrame.Visible = true
+            ToggleBtn.Visible = false
+        end
+        dragStartPos = nil
+        isDragging = false
+    end
+end)
+
+-- ════ CLOSE BUTTON ════
+local function onClose()
+    MainFrame.Visible = false
+    ToggleBtn.Visible = true
+end
+
+CloseBtn.MouseButton1Click:Connect(onClose)
 CloseBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch then
-        MainFrame.Visible = false
-        ToggleBtn.Visible = true
+        onClose()
     end
 end)
 

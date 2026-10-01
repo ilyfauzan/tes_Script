@@ -222,36 +222,82 @@ EggTab:CreateToggle({
 
 local autoLegendaryTeleport = false
 
-local function FindLegendaryEgg()
+local function FindLegendaryEggObject()
+    local searchLocations = {
+        workspace:FindFirstChild("Eggs"),
+        workspace:FindFirstChild("EggSpawns"),
+        workspace:FindFirstChild("Collectibles"),
+        workspace:FindFirstChild("Map"),
+        workspace
+    }
+
+    for _, location in pairs(searchLocations) do
+        if location then
+            for _, obj in pairs(location:GetDescendants()) do
+                local nameLower = obj.Name:lower()
+                local isLegend = nameLower:find("legend") or nameLower:find("mythic") or nameLower:find("eternal") or nameLower:find("gold") or nameLower:find("secret") or nameLower:find("rare")
+                
+                if isLegend then
+                    if obj:IsA("Model") or obj:IsA("BasePart") then
+                        return obj
+                    end
+                end
+                
+                if obj:IsA("StringValue") or obj:IsA("IntValue") then
+                    if obj.Name:lower():find("rarity") and (obj.Value:lower():find("legend") or obj.Value:lower():find("mythic")) then
+                        return obj.Parent
+                    end
+                end
+            end
+        end
+    end
+
     local character = LocalPlayer.Character
     if character then
         for _, child in pairs(character:GetDescendants()) do
             if child:IsA("Beam") and child.Attachment1 then
                 local targetPart = child.Attachment1.Parent
                 if targetPart then
-                    return targetPart:IsA("Model") and targetPart:GetPivot() or targetPart.CFrame
+                    return targetPart
                 end
             end
         end
     end
 
-    local eggFolder = workspace:FindFirstChild("Eggs") 
-        or workspace:FindFirstChild("EggSpawns") 
-        or workspace:FindFirstChild("Collectibles") 
-        or workspace
+    return nil
+end
 
-    for _, obj in pairs(eggFolder:GetDescendants()) do
-        local nameLower = obj.Name:lower()
-        if nameLower:find("legend") or nameLower:find("mythic") or nameLower:find("eternal") or nameLower:find("special") then
-            if obj:IsA("Model") then
-                return obj:GetPivot()
-            elseif obj:IsA("BasePart") then
-                return obj.CFrame
-            end
-        end
+local function FindLegendaryEgg()
+    local obj = FindLegendaryEggObject()
+    if obj then
+        return obj:IsA("Model") and obj:GetPivot() or obj.CFrame
     end
     return nil
 end
+
+local legendHighlight = nil
+local function HighlightLegendaryEgg()
+    local targetObj = FindLegendaryEggObject()
+    if targetObj then
+        if not legendHighlight or legendHighlight.Parent ~= targetObj then
+            if legendHighlight then legendHighlight:Destroy() end
+            legendHighlight = Instance.new("Highlight")
+            legendHighlight.Name = "WayaeEggESP"
+            legendHighlight.FillColor = Color3.fromRGB(255, 215, 0)
+            legendHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            legendHighlight.FillTransparency = 0.3
+            legendHighlight.Parent = targetObj
+        end
+        return true
+    else
+        if legendHighlight then
+            legendHighlight:Destroy()
+            legendHighlight = nil
+        end
+        return false
+    end
+end
+
 
 EggTab:CreateButton({
    Name = "🎯 Teleport ke Telur Legendary (Radar Target)",
@@ -313,6 +359,34 @@ EggTab:CreateToggle({
        end)
    end,
 })
+
+local espEnabled = false
+EggTab:CreateToggle({
+   Name = "✨ Sorot Telur Legendary (Golden ESP / Visual Radar)",
+   CurrentValue = false,
+   Flag = "LegendaryESPToggle",
+   Callback = function(Value)
+       espEnabled = Value
+       task.spawn(function()
+           while espEnabled do
+               local found = HighlightLegendaryEgg()
+               if found then
+                   Rayfield:Notify({
+                       Title = "✨ Telur Legendary Terdeteksi ESP!",
+                       Content = "Lihat sorotan emas di map!",
+                       Duration = 2,
+                   })
+               end
+               task.wait(3)
+           end
+           if legendHighlight then
+               legendHighlight:Destroy()
+               legendHighlight = nil
+           end
+       end)
+   end,
+})
+
 
 local walkSpeedConnection = nil
 PlayerTab:CreateSlider({

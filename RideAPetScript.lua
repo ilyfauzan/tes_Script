@@ -20,46 +20,41 @@ local detectedEggsList = {}
 local function ScanSpecialEggs()
     detectedEggsList = {}
     
-    local eggFolder = workspace:FindFirstChild("Eggs") 
-        or workspace:FindFirstChild("EggSpawns") 
-        or workspace:FindFirstChild("Collectibles") 
-        or workspace:FindFirstChild("Map") 
-        or workspace
-
-    for _, obj in pairs(eggFolder:GetDescendants()) do
+    for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") or obj:IsA("BasePart") then
             local nameLower = obj.Name:lower()
-            
-            local isSpecial = nameLower:find("100b") 
-                or nameLower:find("300b") 
-                or nameLower:find("1t") 
-                or nameLower:find("2.5t")
+            local isMatch = false
 
-            if not isSpecial then
-                for _, child in pairs(obj:GetDescendants()) do
-                    if child:IsA("TextLabel") or child:IsA("StringValue") then
-                        local valText = (child:IsA("TextLabel") and child.Text or tostring(child.Value)):lower()
-                        if valText:find("100b") or valText:find("300b") or valText:find("1t") or valText:find("2.5t") then
-                            isSpecial = true
-                            break
-                        end
+            if nameLower:find("egg") or nameLower:find("telur") or nameLower:find("100b") or nameLower:find("300b") or nameLower:find("1t") or nameLower:find("2.5t") or nameLower:find("spawn") then
+                isMatch = true
+            end
+
+            if not isMatch then
+                for _, child in pairs(obj:GetChildren()) do
+                    if child:IsA("TextLabel") or child:IsA("BillboardGui") or child:IsA("StringValue") or child:IsA("TouchTransmitter") or child:IsA("ProximityPrompt") then
+                        isMatch = true
+                        break
                     end
                 end
             end
 
-            if isSpecial then
-                local eggCFrame = obj:IsA("Model") and obj:GetPivot() or obj.CFrame
-                table.insert(detectedEggsList, {
-                    Name = obj.Name,
-                    Instance = obj,
-                    CFrame = eggCFrame
-                })
+            if isMatch then
+                local hasParentEggFolder = obj.Parent and (obj.Parent.Name:lower():find("egg") or obj.Parent.Name:lower():find("spawn") or obj.Parent.Name:lower():find("map"))
+                if isMatch or hasParentEggFolder then
+                    local eggCFrame = obj:IsA("Model") and obj:GetPivot() or obj.CFrame
+                    table.insert(detectedEggsList, {
+                        Name = obj.Name .. " (" .. obj.ClassName .. ")",
+                        Instance = obj,
+                        CFrame = eggCFrame
+                    })
+                end
             end
         end
     end
 
     return detectedEggsList
 end
+
 
 local selectedEggIndex = 1
 local eggDropdown = nil

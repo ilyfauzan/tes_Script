@@ -100,22 +100,25 @@ LabelEmote.TextSize = 14
 LabelEmote.TextXAlignment = Enum.TextXAlignment.Left
 LabelEmote.Parent = ScrollingFrame
 
-local EmoteInput = Instance.new("TextBox")
-EmoteInput.Size = UDim2.new(1, 0, 0, 40)
-EmoteInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-EmoteInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-EmoteInput.Font = Enum.Font.Gotham
-EmoteInput.TextSize = 14
-EmoteInput.PlaceholderText = "Ketik Nama Emote (contoh: Rockin' Stride)"
-EmoteInput.Text = "Rockin' Stride"
-EmoteInput.Parent = ScrollingFrame
+local FilterInput = Instance.new("TextBox")
+FilterInput.Size = UDim2.new(1, 0, 0, 40)
+FilterInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+FilterInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+FilterInput.Font = Enum.Font.Gotham
+FilterInput.TextSize = 14
+FilterInput.PlaceholderText = "Filter animasi... (contoh: emote, cheer, rockin)"
+FilterInput.Text = ""
+FilterInput.Parent = ScrollingFrame
 
-local cornerInput = Instance.new("UICorner")
-cornerInput.CornerRadius = UDim.new(0, 6)
-cornerInput.Parent = EmoteInput
+local cornerFilter = Instance.new("UICorner")
+cornerFilter.CornerRadius = UDim.new(0, 6)
+cornerFilter.Parent = FilterInput
 
-local PlayEmoteBtn = CreateButton("🔍 Scan & Tampilkan Semua Animasi", ScrollingFrame)
-PlayEmoteBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
+local ScanBtn = CreateButton("🔍 Scan Semua Animasi", ScrollingFrame)
+ScanBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
+
+-- Simpan semua animasi yang ditemukan
+local allAnimations = {}
 
 -- Label untuk hasil scan
 local AnimListLabel = Instance.new("TextLabel")
@@ -161,12 +164,56 @@ local function PlayAnimById(animId, animName)
     end
 end
 
-PlayEmoteBtn.MouseButton1Click:Connect(function()
+local function RefreshAnimList(filterText)
     -- Bersihkan tombol lama
     for _, child in pairs(AnimContainer:GetChildren()) do
         if not child:IsA("UIListLayout") then child:Destroy() end
     end
     
+    local filtered = {}
+    for _, animData in ipairs(allAnimations) do
+        if filterText == "" or animData.Name:lower():find(filterText:lower(), 1, true) then
+            table.insert(filtered, animData)
+        end
+    end
+    
+    AnimListLabel.Text = "✅ " .. #filtered .. " dari " .. #allAnimations .. " animasi. Klik buat mainkan:"
+    
+    for _, animData in ipairs(filtered) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 35)
+        btn.BackgroundColor3 = Color3.fromRGB(20, 60, 20)
+        btn.Text = "▶ " .. animData.Name
+        btn.TextColor3 = Color3.fromRGB(200, 255, 200)
+        btn.Font = Enum.Font.Gotham
+        btn.TextSize = 12
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.TextTruncate = Enum.TextTruncate.AtEnd
+        btn.Parent = AnimContainer
+        
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0, 5)
+        c.Parent = btn
+        
+        local capturedId = animData.Id
+        local capturedName = animData.Name
+        btn.MouseButton1Click:Connect(function()
+            PlayAnimById(capturedId, capturedName)
+        end)
+    end
+    
+    AnimContainer.Size = UDim2.new(1, 0, 0, AnimListLayout.AbsoluteContentSize.Y)
+end
+
+-- Filter real-time saat Abang ngetik
+FilterInput:GetPropertyChangedSignal("Text"):Connect(function()
+    if #allAnimations > 0 then
+        RefreshAnimList(FilterInput.Text)
+    end
+end)
+
+ScanBtn.MouseButton1Click:Connect(function()
+    allAnimations = {}
     local char = player.Character
     local searchRoots = {
         game:GetService("ReplicatedStorage"),
@@ -177,55 +224,25 @@ PlayEmoteBtn.MouseButton1Click:Connect(function()
         player:FindFirstChild("Backpack"),
     }
     
-    local found = {}
     local seen = {}
-    
     for _, root in pairs(searchRoots) do
         if root == nil then continue end
         for _, obj in pairs(root:GetDescendants()) do
             if obj:IsA("Animation") and not seen[obj.AnimationId] then
                 seen[obj.AnimationId] = true
-                table.insert(found, {Name = obj.Name, Id = obj.AnimationId})
+                table.insert(allAnimations, {Name = obj.Name, Id = obj.AnimationId})
             end
         end
     end
     
-    if #found == 0 then
-        AnimListLabel.Text = "❌ Tidak ada animasi ditemukan di client!"
+    if #allAnimations == 0 then
+        AnimListLabel.Text = "❌ Tidak ada animasi ditemukan!"
         AnimContainer.Size = UDim2.new(1, 0, 0, 0)
     else
-        AnimListLabel.Text = "✅ Ketemu " .. #found .. " animasi! Klik buat mainkan:"
-        
-        for _, animData in ipairs(found) do
-            local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(1, 0, 0, 35)
-            btn.BackgroundColor3 = Color3.fromRGB(20, 60, 20)
-            btn.Text = "▶ " .. animData.Name
-            btn.TextColor3 = Color3.fromRGB(200, 255, 200)
-            btn.Font = Enum.Font.Gotham
-            btn.TextSize = 12
-            btn.TextXAlignment = Enum.TextXAlignment.Left
-            btn.TextTruncate = Enum.TextTruncate.AtEnd
-            btn.Parent = AnimContainer
-            
-            local c = Instance.new("UICorner")
-            c.CornerRadius = UDim.new(0, 5)
-            c.Parent = btn
-            
-            local capturedId = animData.Id
-            local capturedName = animData.Name
-            btn.MouseButton1Click:Connect(function()
-                PlayAnimById(capturedId, capturedName)
-            end)
-        end
-        
-        AnimContainer.Size = UDim2.new(1, 0, 0, AnimListLayout.AbsoluteContentSize.Y)
-        AnimListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            AnimContainer.Size = UDim2.new(1, 0, 0, AnimListLayout.AbsoluteContentSize.Y)
-        end)
+        RefreshAnimList(FilterInput.Text)
     end
     
-    Notify("🔍 Scan Selesai", "Ditemukan " .. #found .. " animasi. Lihat di menu!")
+    Notify("🔍 Scan Selesai", "Ditemukan " .. #allAnimations .. " animasi! Ketik di kotak filter untuk cari nama spesifik.")
 end)
 
 local LabelUtilitas = Instance.new("TextLabel")

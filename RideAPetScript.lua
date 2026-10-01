@@ -1,4 +1,4 @@
-local WayaeHUB = loadstring(game:HttpGet('https://sirius.menu/WayaeHUB'))()
+local WayaeHUB = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = WayaeHUB:CreateWindow({
    Name = "WayaeHUB",
@@ -16,11 +16,39 @@ local Window = WayaeHUB:CreateWindow({
 local MainTab = Window:CreateTab("Special Egg Hunter", 4483362458)
 
 local detectedEggsList = {}
-
--- Variabel player untuk digunakan di semua tombol
 local player = game.Players.LocalPlayer
 
+-- ============================================================
+-- UTILITY: Teleport Bertahap (Anti Position-Check)
+-- Gerak perlahan step-by-step agar tidak terdeteksi sebagai
+-- instant teleport oleh server-side anti-cheat
+-- ============================================================
+local function SafeTeleport(hrp, targetCF)
+    local steps = 12
+    local startCF = hrp.CFrame
+    -- Tambah offset posisi random kecil agar tidak selalu sama persis
+    local randX = math.random(-2, 2)
+    local randZ = math.random(-2, 2)
+    local finalCF = targetCF + Vector3.new(randX, 3, randZ)
+    for i = 1, steps do
+        if not hrp or not hrp.Parent then break end
+        hrp.CFrame = startCF:Lerp(finalCF, i / steps)
+        task.wait(0.04) -- ~0.5 detik total jalan
+    end
+end
 
+-- ============================================================
+-- UTILITY: Delay Human-like (Anti Bot Detection)
+-- Jeda random agar pola aksi tidak terlihat seperti bot
+-- ============================================================
+local function HumanDelay()
+    task.wait(math.random(8, 18) / 10) -- 0.8 - 1.8 detik random
+end
+
+-- ============================================================
+-- SCAN TELUR SPECIAL
+-- Filter telur di dalam karakter & base/plot pemain
+-- ============================================================
 local function ScanSpecialEggs()
     detectedEggsList = {}
 
@@ -64,15 +92,13 @@ local function ScanSpecialEggs()
 
     local specialNames = {
         ["blackhole"] = "100B - Blackhole Egg",
-        ["solaris"] = "300B - Solaris Egg",
-        ["cherub"] = "1T - Cherub Egg",
-        ["volcanic"] = "2.5T - Volcanic Egg"
+        ["solaris"]   = "300B - Solaris Egg",
+        ["cherub"]    = "1T - Cherub Egg",
+        ["volcanic"]  = "2.5T - Volcanic Egg"
     }
 
     for _, obj in pairs(workspace:GetDescendants()) do
-        -- SKIP jika objek ada di dalam karakter pemain
         if IsInsideCharacter(obj) then continue end
-        -- SKIP jika objek ada di dalam base/plot milik pemain
         if IsInsidePlot(obj) then continue end
 
         if obj:IsA("Model") or obj:IsA("BasePart") then
@@ -104,15 +130,14 @@ local function ScanSpecialEggs()
             if foundTierName then
                 local eggCFrame
 
-                -- Cari BasePart paling tinggi di dalam model (= telur, bukan alas platform)
+                -- Cari BasePart paling tinggi dalam model (= telur, bukan alas platform)
                 local function GetHighestPart(model)
                     local highestPart = nil
                     local highestY = -math.huge
                     for _, part in pairs(model:GetDescendants()) do
                         if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                            local partY = part.Position.Y
-                            if partY > highestY then
-                                highestY = partY
+                            if part.Position.Y > highestY then
+                                highestY = part.Position.Y
                                 highestPart = part
                             end
                         end
@@ -138,8 +163,7 @@ local function ScanSpecialEggs()
                 local isDuplicate = false
                 for _, existing in ipairs(detectedEggsList) do
                     if existing.CFrame and eggCFrame then
-                        local dist = (existing.CFrame.Position - eggCFrame.Position).Magnitude
-                        if dist < 5 then
+                        if (existing.CFrame.Position - eggCFrame.Position).Magnitude < 5 then
                             isDuplicate = true
                             break
                         end
@@ -148,46 +172,47 @@ local function ScanSpecialEggs()
 
                 if not isDuplicate then
                     table.insert(detectedEggsList, {
-                        Name = foundTierName .. " [" .. obj.Name .. "]",
+                        Name     = foundTierName .. " [" .. obj.Name .. "]",
                         Instance = obj,
-                        CFrame = eggCFrame
+                        CFrame   = eggCFrame
                     })
                 end
             end
-
         end
     end
 
     return detectedEggsList
 end
 
-
-
+-- ============================================================
+-- UI
+-- ============================================================
 local selectedEggIndex = 1
 local eggDropdown = nil
+local isTeleporting = false -- Cooldown guard agar tidak spam
 
 MainTab:CreateButton({
    Name = "🔍 1. Lacak Posisi Telur Special (100B - 2.5T)",
    Callback = function()
+       -- Delay human-like sebelum scan
+       HumanDelay()
        local eggs = ScanSpecialEggs()
        if #eggs > 0 then
            local options = {}
            for i, eggData in ipairs(eggs) do
                table.insert(options, tostring(i) .. ". " .. eggData.Name)
            end
-           
            if eggDropdown then
                eggDropdown:Refresh(options, true)
            end
-           
            WayaeHUB:Notify({
-               Title = "🎯 BERHASIL MELACAK!",
+               Title   = "🎯 BERHASIL MELACAK!",
                Content = "Ditemukan " .. tostring(#eggs) .. " Telur Special!",
                Duration = 4,
            })
        else
            WayaeHUB:Notify({
-               Title = "❌ Tidak Ada Telur Special",
+               Title   = "❌ Tidak Ada Telur Special",
                Content = "Telur 100B/300B/1T/2.5T belum spawn di map saat ini.",
                Duration = 4,
            })
@@ -196,11 +221,11 @@ MainTab:CreateButton({
 })
 
 eggDropdown = MainTab:CreateDropdown({
-   Name = "📌 2. Pilih Telur Target",
-   Options = {"Belum ada telur dilacak"},
+   Name          = "📌 2. Pilih Telur Target",
+   Options       = {"Belum ada telur dilacak"},
    CurrentOption = {"Belum ada telur dilacak"},
    MultipleOptions = false,
-   Flag = "SelectedEggDropdown",
+   Flag          = "SelectedEggDropdown",
    Callback = function(Option)
        local selectedText = type(Option) == "table" and Option[1] or Option
        local idxStr = selectedText:match("^(%d+)%.")
@@ -213,10 +238,18 @@ eggDropdown = MainTab:CreateDropdown({
 MainTab:CreateButton({
    Name = "🚀 3. Teleport & Diam di Lokasi Telur",
    Callback = function()
-       local player = game.Players.LocalPlayer
+       -- Cooldown guard: cegah spam klik
+       if isTeleporting then
+           WayaeHUB:Notify({
+               Title   = "⏳ Harap Tunggu",
+               Content = "Sedang dalam proses teleport...",
+               Duration = 2,
+           })
+           return
+       end
+
        local character = player.Character or player.CharacterAdded:Wait()
        local hrp = character:FindFirstChild("HumanoidRootPart")
-
        if not hrp then return end
 
        if #detectedEggsList == 0 then
@@ -226,17 +259,25 @@ MainTab:CreateButton({
        if #detectedEggsList > 0 then
            local target = detectedEggsList[selectedEggIndex] or detectedEggsList[1]
            if target and target.CFrame then
-               hrp.CFrame = target.CFrame + Vector3.new(0, 3, 0)
-               
+               isTeleporting = true
+
+               -- Delay human-like sebelum teleport
+               HumanDelay()
+
+               -- Teleport bertahap (anti position-check)
+               SafeTeleport(hrp, target.CFrame)
+
                WayaeHUB:Notify({
-                   Title = "🚀 Berhasil Teleport!",
+                   Title   = "🚀 Berhasil Teleport!",
                    Content = "Anda sekarang berada di posisi " .. target.Name .. "!",
                    Duration = 4,
                })
+
+               isTeleporting = false
            end
        else
            WayaeHUB:Notify({
-               Title = "⚠️ Gagal Teleport",
+               Title   = "⚠️ Gagal Teleport",
                Content = "Klik 'Lacak Posisi Telur' dulu saat telur spawn!",
                Duration = 4,
            })
@@ -247,14 +288,15 @@ MainTab:CreateButton({
 MainTab:CreateButton({
    Name = "🏪 Teleport ke Area Sell",
    Callback = function()
+       if isTeleporting then return end
+
        local char = player.Character or player.CharacterAdded:Wait()
        local hrp = char:FindFirstChild("HumanoidRootPart")
        if not hrp then return end
 
-       -- Keyword yang biasa dipakai untuk area sell di Ride a Pet
        local sellKeywords = {"sell", "selling", "sellzone", "sell zone", "shop", "store", "cashier", "vendor"}
-
        local sellTarget = nil
+
        for _, obj in pairs(workspace:GetDescendants()) do
            if obj:IsA("BasePart") or obj:IsA("Model") then
                local nameLower = obj.Name:lower()
@@ -274,16 +316,19 @@ MainTab:CreateButton({
        end
 
        if sellTarget then
-           hrp.CFrame = sellTarget + Vector3.new(0, 5, 0)
+           isTeleporting = true
+           HumanDelay()
+           SafeTeleport(hrp, sellTarget)
            WayaeHUB:Notify({
-               Title = "🏪 Teleport ke Sell!",
+               Title   = "🏪 Teleport ke Sell!",
                Content = "Berhasil teleport ke area Sell!",
                Duration = 3,
            })
+           isTeleporting = false
        else
            WayaeHUB:Notify({
-               Title = "⚠️ Area Sell Tidak Ditemukan",
-               Content = "Objek 'Sell' tidak ditemukan di map. Coba lacak dulu atau minta update nama keyword.",
+               Title   = "⚠️ Area Sell Tidak Ditemukan",
+               Content = "Objek 'Sell' tidak ditemukan di map.",
                Duration = 5,
            })
        end
@@ -291,4 +336,3 @@ MainTab:CreateButton({
 })
 
 WayaeHUB:LoadConfiguration()
-

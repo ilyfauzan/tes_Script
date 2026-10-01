@@ -17,14 +17,9 @@ local MainTab = Window:CreateTab("Special Egg Hunter", 4483362458)
 
 local detectedEggsList = {}
 
--- Simpan posisi base saat script pertama kali dijalankan
-local baseCFrame = nil
+-- Variabel player untuk digunakan di semua tombol
 local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local hrpBase = character:FindFirstChild("HumanoidRootPart")
-if hrpBase then
-    baseCFrame = hrpBase.CFrame
-end
+
 
 local function ScanSpecialEggs()
     detectedEggsList = {}
@@ -207,24 +202,46 @@ MainTab:CreateButton({
 })
 
 MainTab:CreateButton({
-   Name = "🏠 Kembali ke Base",
+   Name = "🏪 Teleport ke Area Sell",
    Callback = function()
        local char = player.Character or player.CharacterAdded:Wait()
        local hrp = char:FindFirstChild("HumanoidRootPart")
        if not hrp then return end
 
-       if baseCFrame then
-           hrp.CFrame = baseCFrame
+       -- Keyword yang biasa dipakai untuk area sell di Ride a Pet
+       local sellKeywords = {"sell", "selling", "sellzone", "sell zone", "shop", "store", "cashier", "vendor"}
+
+       local sellTarget = nil
+       for _, obj in pairs(workspace:GetDescendants()) do
+           if obj:IsA("BasePart") or obj:IsA("Model") then
+               local nameLower = obj.Name:lower()
+               for _, kw in ipairs(sellKeywords) do
+                   if nameLower:find(kw) then
+                       if obj:IsA("Model") then
+                           local cf, _ = obj:GetBoundingBox()
+                           sellTarget = cf
+                       else
+                           sellTarget = obj.CFrame
+                       end
+                       break
+                   end
+               end
+           end
+           if sellTarget then break end
+       end
+
+       if sellTarget then
+           hrp.CFrame = sellTarget + Vector3.new(0, 5, 0)
            Rayfield:Notify({
-               Title = "🏠 Kembali ke Base!",
-               Content = "Anda sudah kembali ke posisi spawn awal.",
+               Title = "🏪 Teleport ke Sell!",
+               Content = "Berhasil teleport ke area Sell!",
                Duration = 3,
            })
        else
            Rayfield:Notify({
-               Title = "⚠️ Gagal",
-               Content = "Posisi base tidak tersimpan. Coba re-execute script.",
-               Duration = 3,
+               Title = "⚠️ Area Sell Tidak Ditemukan",
+               Content = "Objek 'Sell' tidak ditemukan di map. Coba lacak dulu atau minta update nama keyword.",
+               Duration = 5,
            })
        end
    end,

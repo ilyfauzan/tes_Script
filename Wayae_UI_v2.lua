@@ -8,7 +8,7 @@ end
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "WayaeHUB"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 ScreenGui.Parent = playerGui
 
 local MainFrame = Instance.new("Frame")

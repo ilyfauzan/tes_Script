@@ -1,13 +1,3 @@
-local pcall = pcall
-local getgenv = getgenv or function() return _G end
-
-pcall(function()
-    local LogService = game:GetService("LogService")
-    LogService.MessageOut:Connect(function(msg, msgType)
-        -- Prevent log leakage to game analytics
-    end)
-end)
-
 local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
@@ -15,38 +5,13 @@ local LocalPlayer = Players.LocalPlayer
 
 local randomGuiName = "Wayae_" .. HttpService:GenerateGUID(false):sub(1, 8)
 
-pcall(function()
-    local oldNamecall
-    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-        local method = getnamecallmethod()
-        if method == "Kick" or method == "kick" or method == "Ban" or method == "ban" then
-            if self == LocalPlayer then
-                return nil
-            end
-        end
-        return oldNamecall(self, ...)
-    end)
-
-    local oldIndex
-    oldIndex = hookmetamethod(game, "__index", function(self, key)
-        if not checkcaller() and self:IsA("Humanoid") and self.Parent == LocalPlayer.Character then
-            if key == "WalkSpeed" then
-                return 16
-            elseif key == "JumpPower" then
-                return 50
-            end
-        end
-        return oldIndex(self, key)
-    end)
-end)
-
 local function SafeTweenTeleport(targetCFrame, speedMultiplier)
     local character = LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
     local hrp = character.HumanoidRootPart
     
     local distance = (hrp.Position - targetCFrame.Position).Magnitude
-    local duration = math.clamp(distance / (speedMultiplier or 120), 0.1, 1.5)
+    local duration = math.clamp(distance / (speedMultiplier or 140), 0.15, 1.5)
     
     local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
     local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
@@ -121,105 +86,9 @@ ToggleButton.MouseButton1Click:Connect(function()
 end)
 
 local EggTab = Window:CreateTab("Egg Hunt (Safe)", 4483362458)
-local PlayerTab = Window:CreateTab("Pemain & Speed", 4483362458)
+PlayerTab = Window:CreateTab("Pemain & Speed", 4483362458)
 
 local autoEggHunt = false
-
-EggTab:CreateButton({
-   Name = "Ambil Telur Terdekat & Balik ke Base (Safe Tween)",
-   Callback = function()
-       local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-       local hrp = character:FindFirstChild("HumanoidRootPart")
-
-       if not hrp then
-           Rayfield:Notify({
-               Title = "Error",
-               Content = "Karakter tidak ditemukan!",
-               Duration = 3,
-           })
-           return
-       end
-
-       local baseCFrame = hrp.CFrame
-       local eggFolder = workspace:FindFirstChild("Eggs") 
-           or workspace:FindFirstChild("EggSpawns") 
-           or workspace:FindFirstChild("Collectibles")
-
-       if eggFolder then
-           local targetEgg = nil
-           for _, item in pairs(eggFolder:GetChildren()) do
-               if item:IsA("Model") or item:IsA("BasePart") then
-                   targetEgg = item
-                   break
-               end
-           end
-
-           if targetEgg then
-               local eggPosition = targetEgg:IsA("Model") and targetEgg:GetPivot() or targetEgg.CFrame
-               
-               SafeTweenTeleport(eggPosition, 150)
-               task.wait(0.3)
-
-               SafeTweenTeleport(baseCFrame, 150)
-               
-               Rayfield:Notify({
-                  Title = "Berhasil!",
-                  Content = "Berhasil mengambil telur secara aman!",
-                  Duration = 3,
-               })
-           else
-               Rayfield:Notify({
-                  Title = "Informasi",
-                  Content = "Tidak ada telur yang ditemukan!",
-                  Duration = 3,
-               })
-           end
-       else
-           Rayfield:Notify({
-               Title = "Peringatan",
-               Content = "Folder telur ('Eggs') tidak ditemukan!",
-               Duration = 3,
-           })
-       end
-   end,
-})
-
-EggTab:CreateToggle({
-   Name = "Auto Loop Hunt All Eggs (Safe Mode)",
-   CurrentValue = false,
-   Flag = "AutoEggHuntToggle",
-   Callback = function(Value)
-       autoEggHunt = Value
-
-       task.spawn(function()
-           while autoEggHunt do
-               local character = LocalPlayer.Character
-               if character and character:FindFirstChild("HumanoidRootPart") then
-                   local baseCFrame = character.HumanoidRootPart.CFrame
-                   local eggFolder = workspace:FindFirstChild("Eggs") 
-                       or workspace:FindFirstChild("EggSpawns") 
-                       or workspace:FindFirstChild("Collectibles")
-
-                   if eggFolder then
-                       for _, egg in pairs(eggFolder:GetChildren()) do
-                           if not autoEggHunt then break end
-                           
-                           local eggPos = egg:IsA("Model") and egg:GetPivot() or egg.CFrame
-                           
-                           SafeTweenTeleport(eggPos, 140)
-                           task.wait(0.3)
-                           
-                           SafeTweenTeleport(baseCFrame, 140)
-                           task.wait(0.4)
-                       end
-                   end
-               end
-               task.wait(1)
-           end
-       end)
-   end,
-})
-
 local autoLegendaryTeleport = false
 
 local function FindAllSpecialEggs()
@@ -295,11 +164,11 @@ local function FindLegendaryEgg()
     return nil
 end
 
-
 local legendHighlight = nil
 local function HighlightLegendaryEgg()
-    local targetObj = FindLegendaryEggObject()
-    if targetObj then
+    local eggs = FindAllSpecialEggs()
+    if #eggs > 0 then
+        local targetObj = eggs[1]
         if not legendHighlight or legendHighlight.Parent ~= targetObj then
             if legendHighlight then legendHighlight:Destroy() end
             legendHighlight = Instance.new("Highlight")
@@ -319,9 +188,83 @@ local function HighlightLegendaryEgg()
     end
 end
 
+EggTab:CreateButton({
+   Name = "Ambil Telur Terdekat & Balik ke Base",
+   Callback = function()
+       local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+       local hrp = character:FindFirstChild("HumanoidRootPart")
+
+       if not hrp then return end
+
+       local baseCFrame = hrp.CFrame
+       local eggFolder = workspace:FindFirstChild("Eggs") 
+           or workspace:FindFirstChild("EggSpawns") 
+           or workspace:FindFirstChild("Collectibles")
+
+       if eggFolder then
+           local targetEgg = nil
+           for _, item in pairs(eggFolder:GetChildren()) do
+               if item:IsA("Model") or item:IsA("BasePart") then
+                   targetEgg = item
+                   break
+               end
+           end
+
+           if targetEgg then
+               local eggPosition = targetEgg:IsA("Model") and targetEgg:GetPivot() or targetEgg.CFrame
+               
+               SafeTweenTeleport(eggPosition, 150)
+               task.wait(0.3)
+               SafeTweenTeleport(baseCFrame, 150)
+               
+               Rayfield:Notify({
+                  Title = "Berhasil!",
+                  Content = "Berhasil mengambil telur!",
+                  Duration = 3,
+               })
+           end
+       end
+   end,
+})
+
+EggTab:CreateToggle({
+   Name = "Auto Loop Hunt All Eggs",
+   CurrentValue = false,
+   Flag = "AutoEggHuntToggle",
+   Callback = function(Value)
+       autoEggHunt = Value
+
+       task.spawn(function()
+           while autoEggHunt do
+               local character = LocalPlayer.Character
+               if character and character:FindFirstChild("HumanoidRootPart") then
+                   local baseCFrame = character.HumanoidRootPart.CFrame
+                   local eggFolder = workspace:FindFirstChild("Eggs") 
+                       or workspace:FindFirstChild("EggSpawns") 
+                       or workspace:FindFirstChild("Collectibles")
+
+                   if eggFolder then
+                       for _, egg in pairs(eggFolder:GetChildren()) do
+                           if not autoEggHunt then break end
+                           
+                           local eggPos = egg:IsA("Model") and egg:GetPivot() or egg.CFrame
+                           
+                           SafeTweenTeleport(eggPos, 140)
+                           task.wait(0.3)
+                           
+                           SafeTweenTeleport(baseCFrame, 140)
+                           task.wait(0.4)
+                       end
+                   end
+               end
+               task.wait(1)
+           end
+       end)
+   end,
+})
 
 EggTab:CreateButton({
-   Name = "🎯 Teleport ke Telur Legendary (Radar Target)",
+   Name = "🎯 Teleport ke Telur Special (100B - 2.5T)",
    Callback = function()
        local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
        local hrp = character:FindFirstChild("HumanoidRootPart")
@@ -332,8 +275,8 @@ EggTab:CreateButton({
        local legendaryCFrame = FindLegendaryEgg()
        if legendaryCFrame then
            Rayfield:Notify({
-               Title = "Telur Legendary Ditemukan!",
-               Content = "Meluncur ke posisi telur...",
+               Title = "Telur Special Ditemukan!",
+               Content = "Meluncur ke lokasi...",
                Duration = 3,
            })
            SafeTweenTeleport(legendaryCFrame, 150)
@@ -341,8 +284,8 @@ EggTab:CreateButton({
            SafeTweenTeleport(baseCFrame, 150)
        else
            Rayfield:Notify({
-               Title = "Radar / Telur Tidak Ditemukan",
-               Content = "Aktifkan Eternal Radar / Tunggu Telur Legendary spawn!",
+               Title = "Tidak Ditemukan",
+               Content = "Belum ada Telur Special (100B-2.5T) yang spawn!",
                Duration = 4,
            })
        end
@@ -350,7 +293,7 @@ EggTab:CreateButton({
 })
 
 EggTab:CreateToggle({
-   Name = "⚡ Auto Sweep Semua Telur Special (100B, 300B, 1T, 2.5T)",
+   Name = "⚡ Auto Sweep Semua Telur Special (100B - 2.5T)",
    CurrentValue = false,
    Flag = "AutoLegendaryToggle",
    Callback = function(Value)
@@ -366,7 +309,7 @@ EggTab:CreateToggle({
                    if #specialEggs > 0 then
                        Rayfield:Notify({
                            Title = "⚡ Telur Special Terdeteksi!",
-                           Content = "Mengambil " .. tostring(#specialEggs) .. " Telur Special di map...",
+                           Content = "Mengambil " .. tostring(#specialEggs) .. " Telur Special...",
                            Duration = 3,
                        })
 
@@ -388,24 +331,16 @@ EggTab:CreateToggle({
    end,
 })
 
-
 local espEnabled = false
 EggTab:CreateToggle({
-   Name = "✨ Sorot Telur Legendary (Golden ESP / Visual Radar)",
+   Name = "✨ Sorot Telur Special (Golden ESP)",
    CurrentValue = false,
    Flag = "LegendaryESPToggle",
    Callback = function(Value)
        espEnabled = Value
        task.spawn(function()
            while espEnabled do
-               local found = HighlightLegendaryEgg()
-               if found then
-                   Rayfield:Notify({
-                       Title = "✨ Telur Legendary Terdeteksi ESP!",
-                       Content = "Lihat sorotan emas di map!",
-                       Duration = 2,
-                   })
-               end
+               HighlightLegendaryEgg()
                task.wait(3)
            end
            if legendHighlight then
@@ -416,10 +351,8 @@ EggTab:CreateToggle({
    end,
 })
 
-
-local walkSpeedConnection = nil
 PlayerTab:CreateSlider({
-   Name = "Kecepatan Jalan Safe (WalkSpeed)",
+   Name = "Kecepatan Jalan (WalkSpeed)",
    Range = {16, 120},
    Increment = 1,
    Suffix = "Speed",

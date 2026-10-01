@@ -153,6 +153,8 @@ StopBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
 local loopActive = false
 local currentTrack = nil
 
+local animateScript = nil
+
 local function PlayAnimNow(idStr)
     local char = player.Character
     if not char then return false end
@@ -160,14 +162,38 @@ local function PlayAnimNow(idStr)
     if not hum then return false end
     local animator = hum:FindFirstChildOfClass("Animator") or hum
     
+    local trueId = idStr
+    -- Ekstrak ID Animasi Asli jika yang dimasukkan adalah ID Asset Catalog
+    pcall(function()
+        local objs = game:GetObjects("rbxassetid://" .. idStr)
+        if objs and #objs > 0 then
+            local anim = objs[1]:FindFirstChildOfClass("Animation", true) or objs[1]
+            if anim and anim:IsA("Animation") then
+                trueId = anim.AnimationId:match("%d+")
+            end
+        end
+    end)
+    
     local ok = pcall(function()
         if currentTrack then currentTrack:Stop() end
+        
+        -- Hentikan SEMUA animasi bawaan Evade yang sedang main (idle/jalan)
+        for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+            track:Stop()
+        end
+        
+        -- Matikan skrip bawaan sementara biar gak numpuk
+        animateScript = char:FindFirstChild("Animate") or char:FindFirstChild("animate")
+        if animateScript and animateScript:IsA("LocalScript") then
+            animateScript.Disabled = true
+        end
+        
         local anim = Instance.new("Animation")
-        anim.AnimationId = "rbxassetid://" .. idStr
+        anim.AnimationId = "rbxassetid://" .. trueId
         currentTrack = animator:LoadAnimation(anim)
         currentTrack.Priority = Enum.AnimationPriority.Action4
         currentTrack.Looped = loopActive
-        currentTrack:Play()
+        currentTrack:Play(0.1, 1, 1) -- Force play weight 1
     end)
     return ok
 end
@@ -203,7 +229,12 @@ end)
 StopBtn.MouseButton1Click:Connect(function()
     if currentTrack then
         currentTrack:Stop()
+        currentTrack = nil
         Notify("⏹️ Dihentikan", "Animasi stop.")
+    end
+    -- Nyalakan lagi skrip animasi bawaan
+    if animateScript then
+        animateScript.Disabled = false
     end
 end)
 

@@ -684,14 +684,21 @@ VolcanicTestBtn.MouseButton1Click:Connect(function()
     -- Langsung teleport ke koordinat Volcanic Egg yang sudah pasti
     local targetCFrame = CFrame.new(-5332, 40912, -3542)
     
-    -- Anchor karakter supaya map sempat ke-load dan tidak tembus ke bawah
+    -- Reset velocity dan gunakan PivotTo (lebih aman untuk game yang ada pet/kendaraan)
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.AssemblyAngularVelocity = Vector3.zero
     hrp.Anchored = true
-    hrp.CFrame = targetCFrame + Vector3.new(0, 5, 0)
+    
+    char:PivotTo(targetCFrame + Vector3.new(0, 10, 0)) -- Tambah ketinggian jadi 10 biar tidak nyangkut di tanah
     
     Notify("🌋 Teleporting...", "Menahan karakter di udara agar map ter-load...", 2)
     
     task.delay(1.5, function()
-        if hrp then hrp.Anchored = false end
+        if hrp then 
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+            hrp.Anchored = false 
+        end
         Notify("✅ Selesai", "Teleport berhasil!", 3)
     end)
 end)

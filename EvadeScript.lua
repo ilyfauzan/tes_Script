@@ -280,8 +280,19 @@ DeepScanBtn.MouseButton1Click:Connect(function()
         local success, err = pcall(function()
             -- Hexagon Development Community Group ID: 10854488
             local url = "https://catalog.roproxy.com/v1/search/items/details?Category=12&CreatorTargetId=10854488&CreatorType=2&Limit=120"
-            local response = game:HttpGet(url)
-            local data = game:GetService("HttpService"):JSONDecode(response)
+            
+            local responseStr = ""
+            if type(request) == "function" then
+                local res = request({Url = url, Method = "GET"})
+                responseStr = res.Body
+            elseif type(http_request) == "function" then
+                local res = http_request({Url = url, Method = "GET"})
+                responseStr = res.Body
+            else
+                responseStr = game:HttpGet(url)
+            end
+            
+            local data = game:GetService("HttpService"):JSONDecode(responseStr)
             
             local foundId = nil
             local emoteName = EmoteNameInput.Text:lower()

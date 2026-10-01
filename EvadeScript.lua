@@ -129,73 +129,80 @@ PlayByIDBtn.MouseButton1Click:Connect(function()
     end
     
     local newId = "rbxassetid://" .. idStr
-    local results = {}
     
-    -- TEKNIK UTAMA: Cari LocalScript "Animate" di karakter
-    -- Di dalam Animate script ada StringValue yang nyimpen AnimationId
-    -- Kalau kita ganti StringValue-nya, animasi berubah otomatis!
-    local animateScript = char:FindFirstChild("Animate")
-    if animateScript then
-        for _, obj in pairs(animateScript:GetDescendants()) do
-            if obj:IsA("Animation") then
-                local parentName = obj.Parent and obj.Parent.Name:lower() or ""
-                if parentName:find("walk") or parentName:find("run") then
-                    obj.AnimationId = newId
-                    table.insert(results, "✅ Swap: " .. obj.Parent.Name .. "/" .. obj.Name)
-                end
-            end
-            -- Juga cek StringValue yang namanya "AnimationId"
-            if obj:IsA("StringValue") and obj.Name == "AnimationId" then
-                local parentName = obj.Parent and obj.Parent.Name:lower() or ""
-                if parentName:find("walk") or parentName:find("run") then
-                    obj.Value = newId
-                    table.insert(results, "✅ SwapStr: " .. obj.Name)
-                end
-            end
-        end
-    end
-    
-    -- TEKNIK 2: Cari langsung di seluruh karakter
+    -- CARI LocalScript CUSTOM EVADE di dalam karakter
+    local foundScripts = {}
     for _, obj in pairs(char:GetDescendants()) do
-        if obj:IsA("Animation") and obj.Name:lower():find("walk") then
-            obj.AnimationId = newId
-            table.insert(results, "✅ CharAnim: " .. obj.Name)
+        if obj:IsA("LocalScript") or obj:IsA("Script") then
+            table.insert(foundScripts, obj.Name)
         end
     end
     
-    -- TEKNIK 3: Paksa lewat Humanoid Animator (stop dulu biar restart)
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    local animator = hum and (hum:FindFirstChildOfClass("Animator") or hum)
-    if animator then
-        -- Stop SEMUA track yang lagi jalan
-        for _, track in pairs(animator:GetPlayingAnimationTracks()) do
-            pcall(function() track:Stop(0) end)
+    -- Cari juga di PlayerGui (Evade mungkin taruh controller di sini)
+    local playerGui = player:FindFirstChild("PlayerGui")
+    if playerGui then
+        for _, obj in pairs(playerGui:GetDescendants()) do
+            if obj:IsA("LocalScript") then
+                table.insert(foundScripts, "PlayerGui/" .. obj.Name)
+            end
         end
-        -- Play animasi baru
-        pcall(function()
+    end
+    
+    -- Coba akses AnimationController (alternatif Humanoid untuk animasi custom)
+    local animController = char:FindFirstChildOfClass("AnimationController")
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local animator = nil
+    
+    if animController then
+        animator = animController:FindFirstChildOfClass("Animator")
+        Notify("🎯 AnimController Ditemukan!", "Evade pakai AnimationController bukan Humanoid!")
+    elseif hum then
+        animator = hum:FindFirstChildOfClass("Animator") or hum
+    end
+    
+    -- Coba play via AnimationController jika ada
+    if animator then
+        local ok, err = pcall(function()
+            for _, track in pairs(animator:GetPlayingAnimationTracks()) do
+                track:Stop(0)
+            end
             local anim = Instance.new("Animation")
             anim.AnimationId = newId
             local track = animator:LoadAnimation(anim)
             track.Priority = Enum.AnimationPriority.Action4
             track:Play()
         end)
+        if ok then
+            Notify("✅ Animasi diputar via " .. (animController and "AnimController" or "Humanoid"), "Cek karaktermu!")
+            return
+        end
     end
     
-    -- Debug: tampilkan apa saja yang ketemu di Animate script
-    if #results == 0 then
-        local debugList = {}
-        if animateScript then
-            for _, obj in pairs(animateScript:GetDescendants()) do
-                if obj:IsA("Animation") or obj:IsA("StringValue") then
-                    table.insert(debugList, obj.Parent.Name.."/"..obj.Name)
+    -- Coba cari via getgenv() / getfenv() - akses global Evade
+    if getgenv then
+        local genv = getgenv()
+        local emoteFuncs = {}
+        for k, v in pairs(genv) do
+            if type(v) == "function" then
+                local kl = tostring(k):lower()
+                if kl:find("emote") or kl:find("anim") or kl:find("dance") then
+                    table.insert(emoteFuncs, tostring(k))
+                    pcall(function() v(idStr) end)
+                    pcall(function() v(newId) end)
                 end
             end
-            Notify("🔍 Animate Script Ditemukan!", "Isinya: " .. table.concat(debugList, ", "):sub(1,150))
-        else
-            Notify("❌ Animate Script TIDAK ADA", "Evade pakai sistem animasi custom total!")
         end
+        if #emoteFuncs > 0 then
+            Notify("🎯 Global Func Ketemu!", table.concat(emoteFuncs, ", "):sub(1, 150))
+            return
+        end
+    end
+    
+    -- Hasil debug
+    if #foundScripts > 0 then
+        Notify("🔍 Script Evade di Karakter:", table.concat(foundScripts, ", "):sub(1, 200))
     else
-        Notify("✅ Berhasil swap " .. #results .. " animasi!", "Coba jalan sekarang!")
+        Notify("❌ Sistem Animasi Evade", "Tidak ada LocalScript, AnimController, atau global func. Animasi dikontrol server penuh.")
     end
 end)
 

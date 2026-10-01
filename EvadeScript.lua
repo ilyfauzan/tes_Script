@@ -767,10 +767,16 @@ local CustomWaveBtn = CreateButton("👋 BIKIN SENDIRI: Custom Wave (Murni Fisik
 CustomWaveBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 150)
 
 local customWaveLoop = nil
+local savedRightShoulder = nil
+local savedC0 = nil
+
 CustomWaveBtn.MouseButton1Click:Connect(function()
     if customWaveLoop then
         customWaveLoop:Disconnect()
         customWaveLoop = nil
+        if savedRightShoulder and savedC0 then
+            savedRightShoulder.C0 = savedC0
+        end
         CustomWaveBtn.Text = "👋 BIKIN SENDIRI: Custom Wave (Murni Fisika CFrame)"
         CustomWaveBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 150)
         Notify("🛑 Wave Dimatikan", "Tangan kembali normal.")
@@ -794,18 +800,21 @@ CustomWaveBtn.MouseButton1Click:Connect(function()
         return
     end
     
+    savedRightShoulder = rightShoulder
+    savedC0 = rightShoulder.C0
+    
     CustomWaveBtn.Text = "🛑 Hentikan Custom Wave"
     CustomWaveBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-    Notify("👋 Custom Wave Aktif!", "Menggunakan matematika CFrame murni untuk melambai! Anti-block!")
+    Notify("👋 Custom Wave Aktif!", "Menggunakan peretasan C0 Murni! Anti-block!")
     
     local startTime = tick()
-    -- Stepped berjalan SEBELUM fisika dan animasi dirender, sangat kuat untuk meng-override!
-    customWaveLoop = game:GetService("RunService").Stepped:Connect(function()
+    -- RenderStepped untuk menimpa semua hal yang dilakukan Evade di frame yang sama
+    customWaveLoop = game:GetService("RunService").RenderStepped:Connect(function()
         local t = tick() - startTime
-        local waveAngle = math.sin(t * 10) * 0.5 -- Kecepatan dan lebar ayunan
+        local waveAngle = math.sin(t * 10) * 0.5
         
-        -- Override transformasi murni, paksa tangan ke atas dan ayunkan
-        rightShoulder.Transform = CFrame.Angles(math.rad(150), math.rad(waveAngle * 60), 0)
+        -- Kita tidak pakai Transform (karena mungkin Evade tidak pakai Animator), kita langsung retas sendi C0 aslinya!
+        rightShoulder.C0 = startC0 * CFrame.Angles(math.rad(150), math.rad(waveAngle * 60), 0)
     end)
 end)
 

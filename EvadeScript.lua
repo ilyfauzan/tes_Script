@@ -217,10 +217,27 @@ ESPBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-local CloseBtn = CreateButton("❌ Tutup UI", ScrollingFrame)
+local CloseBtn = CreateButton("❌ Sembunyikan UI", ScrollingFrame)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
 CloseBtn.MouseButton1Click:Connect(function()
-    WayaeUI:Destroy()
+    MainFrame.Visible = false
+end)
+
+-- Tombol Floating untuk Munculin/Sembunyiin UI
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.Position = UDim2.new(0, 10, 0, 10) -- Pojok kiri atas
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
+ToggleBtn.Text = "👽"
+ToggleBtn.TextSize = 24
+ToggleBtn.Parent = WayaeUI
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(1, 0) -- Bikin bulat
+ToggleCorner.Parent = ToggleBtn
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
 end)
 
 -- Update konten scroll
@@ -229,4 +246,4 @@ UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 20)
 end)
 
-Notify("Alien Wayae", "Berhasil inject Evade Script!")
+Notify("Alien Wayae", "Berhasil inject Evade Script! (Klik icon 👽 di pojok untuk buka/tutup menu)")

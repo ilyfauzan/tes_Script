@@ -814,8 +814,58 @@ CustomWaveBtn.MouseButton1Click:Connect(function()
         local waveAngle = math.sin(t * 10) * 0.5
         
         -- Kita tidak pakai Transform (karena mungkin Evade tidak pakai Animator), kita langsung retas sendi C0 aslinya!
-        rightShoulder.C0 = startC0 * CFrame.Angles(math.rad(150), math.rad(waveAngle * 60), 0)
+        -- BUG FIX: Gunakan savedC0!
+        rightShoulder.C0 = savedC0 * CFrame.Angles(math.rad(150), math.rad(waveAngle * 60), 0)
     end)
+end)
+
+-- ========================================================
+-- 🧬 INJECT DATA EMOTE (MEMBAJAK SYSTEM EVADE)
+-- ========================================================
+local InjectDataBtn = CreateButton("💉 INJECT DATA: Masukkan Semua Emote ke Inventory", ScrollingFrame)
+InjectDataBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 150)
+
+InjectDataBtn.MouseButton1Click:Connect(function()
+    Notify("⏳ Mengekstrak Data...", "Membongkar ModuleScript Evade untuk mencari data Emote asli...")
+    task.wait(0.1)
+    
+    local foundModules = 0
+    local injected = false
+    
+    for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+        if obj:IsA("ModuleScript") then
+            -- Bypass anti-require jika ada
+            local ok, data = pcall(function() return require(obj) end)
+            if ok and type(data) == "table" then
+                local isEmoteTable = false
+                for k, v in pairs(data) do
+                    if type(v) == "table" and (v.AnimationId or v.Price or v.Tier or tostring(k):match("Rockin")) then
+                        isEmoteTable = true
+                        break
+                    end
+                end
+                
+                if isEmoteTable then
+                    foundModules = foundModules + 1
+                    -- Paksa ubah semua emote menjadi "Owned" = true
+                    for emoteName, emoteData in pairs(data) do
+                        if type(emoteData) == "table" then
+                            emoteData.Owned = true
+                            emoteData.Unlocked = true
+                            emoteData.Purchased = true
+                            injected = true
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    if injected then
+        Notify("✅ BERHASIL MENCURI DATA!", "Semua Emote berhasil di-unlock secara lokal! Coba buka menu Emote (G) di game sekarang!")
+    else
+        Notify("❌ Gagal", "Data Emote dienkripsi atau disembunyikan oleh Evade.")
+    end
 end)
 
 -- ========================================================

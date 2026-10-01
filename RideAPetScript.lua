@@ -430,21 +430,20 @@ local function ScanSpecialEggs()
                             end
                         end
 
-                        if eggPart then
+                        local ok, cf, size = pcall(function()
+                            return obj:GetBoundingBox()
+                        end)
+                        if ok and cf and size then
+                            -- Selalu ambil dasar/bawah dari model telur (menyentuh tanah)
+                            -- Lalu kita tambahkan sedikit (biar posisi tidak nembus tanah)
+                            eggCFrame = cf - Vector3.new(0, size.Y/2, 0) + Vector3.new(0, 1.5, 0)
+                        elseif eggPart then
+                            -- Cadangan kalau tidak ada bounding box, pakai part prompt
                             eggCFrame = eggPart.CFrame
+                        elseif obj.PrimaryPart then
+                            eggCFrame = obj.PrimaryPart.CFrame
                         else
-                            -- Prioritas 3: Center bounding box (bukan highest — hindari sayap naga/kristal)
-                            local ok, cf, size = pcall(function()
-                                return obj:GetBoundingBox()
-                            end)
-                            if ok and cf then
-                                -- Gunakan pusat bounding box, bukan puncaknya
-                                eggCFrame = cf
-                            elseif obj.PrimaryPart then
-                                eggCFrame = obj.PrimaryPart.CFrame
-                            else
-                                eggCFrame = obj:GetPivot()
-                            end
+                            eggCFrame = obj:GetPivot()
                         end
                     end
                 else
@@ -631,7 +630,11 @@ TeleportBtn.MouseButton1Click:Connect(function()
     if #detectedEggsList > 0 then
         local target = detectedEggsList[selectedEggIndex] or detectedEggsList[1]
         if target and target.CFrame then
-            hrp.CFrame = target.CFrame + Vector3.new(0, 3, 0)
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+            -- Kita pakai PivotTo supaya aman dan pet ikut tanpa kepental
+            -- target.CFrame udah di lantai + 1.5, kita tambah 1.5 lagi biar pas di dada/perut
+            char:PivotTo(target.CFrame + Vector3.new(0, 1.5, 0))
             Notify("🚀 Teleport Berhasil!", "Posisi: " .. target.Name, 4)
         end
     else

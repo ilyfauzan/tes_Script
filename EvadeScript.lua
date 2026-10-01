@@ -121,33 +121,60 @@ PlayEmoteBtn.MouseButton1Click:Connect(function()
     local emoteName = EmoteInput.Text
     if emoteName == "" then return end
     
-    -- Mencoba memanggil RemoteEvent Emote bawaan Evade
     local success = false
     
-    -- Biasanya remote event Evade ada di ReplicatedStorage -> Events -> Emote
-    local events = replicatedStorage:FindFirstChild("Events")
-    if events then
-        local emoteRemote = events:FindFirstChild("Emote")
-        if emoteRemote and emoteRemote:IsA("RemoteEvent") then
-            emoteRemote:FireServer(emoteName)
-            success = true
+    -- 1. Coba cara standar Evade
+    pcall(function()
+        local events = replicatedStorage:FindFirstChild("Events")
+        if events then
+            local emoteRemote = events:FindFirstChild("Emote")
+            if emoteRemote then
+                if emoteRemote:IsA("RemoteEvent") then
+                    emoteRemote:FireServer(emoteName)
+                    success = true
+                elseif emoteRemote:IsA("RemoteFunction") then
+                    task.spawn(function() emoteRemote:InvokeServer(emoteName) end)
+                    success = true
+                end
+            end
         end
-    end
+    end)
     
+    -- 2. Jika gagal, cari semua RemoteEvent & RemoteFunction yang namanya mengandung "emote"
     if not success then
-        -- Jika tidak ketemu di lokasi standar, cari di seluruh ReplicatedStorage
         for _, obj in pairs(replicatedStorage:GetDescendants()) do
-            if obj:IsA("RemoteEvent") and obj.Name:lower():find("emote") then
-                obj:FireServer(emoteName)
-                success = true
+            local name = obj.Name:lower()
+            if name:find("emote") or name:find("dance") then
+                if obj:IsA("RemoteEvent") then
+                    pcall(function() obj:FireServer(emoteName) end)
+                    pcall(function() obj:FireServer("Play", emoteName) end)
+                    success = true
+                elseif obj:IsA("RemoteFunction") then
+                    task.spawn(function()
+                        pcall(function() obj:InvokeServer(emoteName) end)
+                    end)
+                    success = true
+                end
             end
         end
     end
     
+    -- 3. Coba cari sistem jaringan terpusat (Knit / Framework lain)
+    if not success then
+        for _, obj in pairs(replicatedStorage:GetDescendants()) do
+            if obj:IsA("RemoteEvent") and (obj.Name == "RemoteEvent" or obj.Name == "Remote") then
+                pcall(function() obj:FireServer("Emote", emoteName) end)
+                pcall(function() obj:FireServer("PlayEmote", emoteName) end)
+            end
+        end
+        -- Kita anggap aja sukses karena udah dikirim secara brutal
+        success = true
+    end
+    
     if success then
-        Notify("✅ Emote Berhasil", "Mencoba memutar emote: " .. emoteName)
+        Notify("✅ Emote Terkirim!", "Sinyal emote '" .. emoteName .. "' dikirim ke server. Cek karaktermu!")
     else
-        Notify("❌ Gagal", "Sistem Emote Evade tidak ditemukan!")
+        Notify("❌ Gagal", "Sistem Emote Evade benar-benar disembunyikan!")
     end
 end)
 

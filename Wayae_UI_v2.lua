@@ -81,12 +81,13 @@ local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 6)
 CloseCorner.Parent = CloseBtn
 
-local ToggleBtn = Instance.new("ImageButton")
+local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Name = "ToggleWayaeHUB"
 ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
 ToggleBtn.Position = UDim2.new(0.5, -25, 0, 10)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
-ToggleBtn.Image = "rbxassetid://134720935532299"
+ToggleBtn.Text = "🦅"
+ToggleBtn.TextSize = 24
 ToggleBtn.Visible = false
 ToggleBtn.Active = true
 ToggleBtn.Draggable = false

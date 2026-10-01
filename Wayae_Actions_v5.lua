@@ -205,15 +205,19 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                     Wayae.UI.Notify("🤖 Auto Farm", "Menemukan " .. #eggs .. " telur! Mengambil...", 3)
                     for _, egg in ipairs(eggs) do
                         if not Wayae.autoFarmRunning then break end
-                        if egg and egg.Parent ~= nil and egg.CFrame then
-                            -- Teleport ke Telur
-                            hrp.AssemblyLinearVelocity = Vector3.zero
-                            hrp.AssemblyAngularVelocity = Vector3.zero
-                            local targetPos = egg.CFrame.Position + Vector3.new(0, 1.5, 0)
-                            char:PivotTo(CFrame.new(targetPos) * egg.CFrame.Rotation)
-                            
-                            -- Tunggu 2 detik untuk animasi ambil/pickup
-                            task.wait(2)
+                        if egg and egg.Parent ~= nil then
+                            -- Cari posisi target (CFrame untuk part, GetPivot untuk model)
+                            local eggCFrame = egg:IsA("Model") and egg:GetPivot() or egg.CFrame
+                            if eggCFrame then
+                                -- Teleport ke Telur
+                                hrp.AssemblyLinearVelocity = Vector3.zero
+                                hrp.AssemblyAngularVelocity = Vector3.zero
+                                local targetPos = eggCFrame.Position + Vector3.new(0, 1.5, 0)
+                                char:PivotTo(CFrame.new(targetPos) * eggCFrame.Rotation)
+                                
+                                -- Tunggu 2 detik untuk animasi ambil/pickup
+                                task.wait(2)
+                            end
                         end
                     end
                     

@@ -270,76 +270,43 @@ FireRemoteBtn.MouseButton1Click:Connect(function()
     Notify("🚀 " .. fired .. " variasi dikirim ke '" .. remote.Name .. "'!", "Cek emote slot kamu!")
 end)
 
-local DeepScanBtn = CreateButton("🔍 BONGKAR DATABASE EVADE (Mobile Safe)", ScrollingFrame)
-DeepScanBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+local DeepScanBtn = CreateButton("🌐 HACK API ROBLOX (Cari Data Developer)", ScrollingFrame)
+DeepScanBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 150)
 
 DeepScanBtn.MouseButton1Click:Connect(function()
-    Notify("⚠️ MEMBONGKAR DATABASE...", "Mencari ID Rockin' Stride di file game...")
+    Notify("⚠️ MENGHACK API ROBLOX...", "Mengambil daftar semua animasi yang pernah dibuat oleh developer Evade...")
     
     task.spawn(function()
-        local foundIds = {}
-        local emoteName = "rockin"
-        
-        for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
-            if obj:IsA("ModuleScript") then
-                pcall(function()
-                    local mod = require(obj)
-                    if type(mod) == "table" then
-                        local function searchTable(t, visited, depth)
-                            if depth > 3 then return end -- Batasi kedalaman maksimal
-                            if visited[t] then return end -- Cegah infinite loop (crash)
-                            visited[t] = true
-                            
-                            for k, v in pairs(t) do
-                                if type(k) == "string" and k:lower():find(emoteName) then
-                                    if type(v) == "table" then
-                                        for subK, subV in pairs(v) do
-                                            if tostring(subK):lower():find("id") then
-                                                table.insert(foundIds, tostring(subV))
-                                            end
-                                        end
-                                    end
-                                elseif type(v) == "table" then
-                                    if type(v.Name) == "string" and v.Name:lower():find(emoteName) then
-                                        for subK, subV in pairs(v) do
-                                            if tostring(subK):lower():find("id") then
-                                                table.insert(foundIds, tostring(subV))
-                                            end
-                                        end
-                                    else
-                                        searchTable(v, visited, depth + 1)
-                                    end
-                                end
-                            end
-                        end
-                        searchTable(mod, {}, 0)
+        pcall(function()
+            -- Hexagon Development Community Group ID: 10854488
+            -- RoProxy digunakan karena Roblox memblokir request langsung dari dalam game
+            local url = "https://catalog.roproxy.com/v1/search/items/details?Category=12&CreatorTargetId=10854488&CreatorType=2&Limit=30"
+            local response = game:HttpGet(url)
+            local data = game:GetService("HttpService"):JSONDecode(response)
+            
+            local foundId = nil
+            local emoteName = EmoteNameInput.Text:lower()
+            
+            if data and data.data then
+                for _, item in ipairs(data.data) do
+                    if item.name and item.name:lower():find(emoteName) then
+                        foundId = tostring(item.id)
+                        break
                     end
-                end)
-                task.wait() -- Wajib ada supaya emulator tidak force close!
-
-            end
-        end
-        
-        if #foundIds > 0 then
-            -- Ambil ID pertama yang ketemu dan berupa angka
-            local idKetemu = nil
-            for _, idStr in ipairs(foundIds) do
-                local num = idStr:match("%d+")
-                if num and string.len(num) > 5 then -- Pastikan itu format ID Roblox yang valid
-                    idKetemu = num
-                    break
                 end
             end
             
-            if idKetemu then
-                Notify("🎯 KETEMU ID: " .. idKetemu, "Langsung dimasukkan ke kolom ID. Coba Play sekarang!")
-                if IDInput then IDInput.Text = idKetemu end
+            if foundId then
+                Notify("🎯 HACK BERHASIL!", "ID Ketemu dari database pusat Roblox: " .. foundId)
+                if IDInput then IDInput.Text = foundId end
+                local ok = PlayAnimNow(foundId)
+                if ok then
+                    Notify("✅ Animasi Diputar!", "Jika macet, nyalakan Loop Mode!")
+                end
             else
-                Notify("❌ GAGAL!", "Ketemu datanya, tapi tidak ada ID angka di dalamnya.")
+                Notify("❌ API GAGAL", "Animasi '" .. EmoteNameInput.Text .. "' disembunyikan dari publik oleh developer.")
             end
-        else
-            Notify("❌ GAGAL!", "Evade menyembunyikan datanya sangat rapat di Server.")
-        end
+        end)
     end)
 end)
 

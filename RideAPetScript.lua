@@ -337,19 +337,6 @@ local function ScanSpecialEggs()
         ["volcanic"]  = "2.5T - Volcanic Egg"
     }
 
-    local function GetHighestPart(model)
-        local highestPart = nil
-        local highestY = -math.huge
-        for _, part in pairs(model:GetDescendants()) do
-            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                if part.Position.Y > highestY then
-                    highestY = part.Position.Y
-                    highestPart = part
-                end
-            end
-        end
-        return highestPart
-    end
 
     for _, obj in pairs(workspace:GetDescendants()) do
         if IsInsideCharacter(obj) then continue end
@@ -383,15 +370,46 @@ local function ScanSpecialEggs()
 
             if foundTierName then
                 local eggCFrame
+
                 if obj:IsA("Model") then
-                    local topPart = GetHighestPart(obj)
-                    if topPart then
-                        eggCFrame = topPart.CFrame
-                    elseif obj.PrimaryPart then
-                        eggCFrame = obj.PrimaryPart.CFrame
+                    -- Prioritas 1: Cari ProximityPrompt (selalu diletakkan tepat di atas telur)
+                    local promptPart = nil
+                    for _, desc in pairs(obj:GetDescendants()) do
+                        if desc:IsA("ProximityPrompt") and desc.Parent:IsA("BasePart") then
+                            promptPart = desc.Parent
+                            break
+                        end
+                    end
+
+                    if promptPart then
+                        eggCFrame = promptPart.CFrame
+
                     else
-                        local cf, _ = obj:GetBoundingBox()
-                        eggCFrame = cf
+                        -- Prioritas 2: Cari BasePart yang namanya mengandung "egg"
+                        local eggPart = nil
+                        for _, desc in pairs(obj:GetDescendants()) do
+                            if desc:IsA("BasePart") and desc.Name:lower():find("egg") then
+                                eggPart = desc
+                                break
+                            end
+                        end
+
+                        if eggPart then
+                            eggCFrame = eggPart.CFrame
+                        else
+                            -- Prioritas 3: Center bounding box (bukan highest — hindari sayap naga/kristal)
+                            local ok, cf, size = pcall(function()
+                                return obj:GetBoundingBox()
+                            end)
+                            if ok and cf then
+                                -- Gunakan pusat bounding box, bukan puncaknya
+                                eggCFrame = cf
+                            elseif obj.PrimaryPart then
+                                eggCFrame = obj.PrimaryPart.CFrame
+                            else
+                                eggCFrame = obj:GetPivot()
+                            end
+                        end
                     end
                 else
                     eggCFrame = obj.CFrame

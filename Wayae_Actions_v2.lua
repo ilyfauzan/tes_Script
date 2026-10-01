@@ -44,50 +44,62 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
     if not hrp then return end
 
     local plotTarget = nil
-    local playerName = player.Name
-    local playerDisplayName = player.DisplayName
+    local playerName = player.Name:lower()
+    local playerDisplayName = player.DisplayName:lower()
 
     for _, obj in pairs(workspace:GetDescendants()) do
-        -- Abaikan karakter kita sendiri (biar nametag karakter nggak dianggap plot)
         if char and obj:IsDescendantOf(char) then continue end
 
-        if obj:IsA("TextLabel") or obj:IsA("StringValue") then
-            local text = (obj:IsA("TextLabel") and obj.Text or tostring(obj.Value))
-            -- Cari text yang mengandung nama kita
+        local foundPlot = false
+
+        -- 1. Cek dari nama objek (misal: "Plot_Fauzan")
+        if (obj:IsA("Model") or obj:IsA("Folder")) and (obj.Name:lower():find(playerName) or obj.Name:lower():find(playerDisplayName)) then
+            foundPlot = true
+        end
+
+        -- 2. Cek dari TextLabel atau StringValue (misal: "Fauzan's Ranch")
+        if not foundPlot and (obj:IsA("TextLabel") or obj:IsA("StringValue")) then
+            local text = (obj:IsA("TextLabel") and obj.Text or tostring(obj.Value)):lower()
             if text:find(playerName) or text:find(playerDisplayName) then
-                local current = obj.Parent
-                local plotModel = nil
-                
-                -- Cari model teratas (biasanya itu folder/model Plot nya)
-                while current and current ~= workspace do
-                    if current:IsA("Model") or current:IsA("Folder") then
-                        plotModel = current
-                    end
-                    current = current.Parent
+                foundPlot = true
+            end
+        end
+
+        -- 3. Cek dari ObjectValue (misal: Owner = Player)
+        if not foundPlot and obj:IsA("ObjectValue") and obj.Value == player then
+            foundPlot = true
+        end
+
+        if foundPlot then
+            local current = (obj:IsA("Model") or obj:IsA("Folder")) and obj or obj.Parent
+            local plotModel = nil
+            
+            while current and current ~= workspace do
+                if current:IsA("Model") or current:IsA("Folder") then
+                    plotModel = current
                 end
-                
-                if plotModel then
-                    -- Cari spawn pad di dalam plot
-                    local spawnPad = nil
-                    for _, child in pairs(plotModel:GetDescendants()) do
-                        if child:IsA("SpawnLocation") or child:IsA("BasePart") and child.Name:lower():find("spawn") then
-                            spawnPad = child
-                            break
-                        end
-                    end
-
-                    if spawnPad and spawnPad:IsA("BasePart") then
-                        plotTarget = spawnPad.CFrame + Vector3.new(0, 5, 0)
+                current = current.Parent
+            end
+            
+            if plotModel then
+                local spawnPad = nil
+                for _, child in pairs(plotModel:GetDescendants()) do
+                    if child:IsA("SpawnLocation") or (child:IsA("BasePart") and child.Name:lower():find("spawn")) then
+                        spawnPad = child
                         break
                     end
+                end
 
-                    -- Cadangan kalau nggak ada pad khusus: ambil tengah-tengah plot tapi nempel tanah
-                    local ok, cf, size = pcall(function() return plotModel:GetBoundingBox() end)
-                    if ok and cf and size then
-                        local groundY = cf.Position.Y - (size.Y/2) + 5
-                        plotTarget = CFrame.new(cf.Position.X, groundY, cf.Position.Z) * cf.Rotation
-                        break
-                    end
+                if spawnPad and spawnPad:IsA("BasePart") then
+                    plotTarget = spawnPad.CFrame + Vector3.new(0, 5, 0)
+                    break
+                end
+
+                local ok, cf, size = pcall(function() return plotModel:GetBoundingBox() end)
+                if ok and cf and size then
+                    local groundY = cf.Position.Y - (size.Y/2) + 5
+                    plotTarget = CFrame.new(cf.Position.X, groundY, cf.Position.Z) * cf.Rotation
+                    break
                 end
             end
         end

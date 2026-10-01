@@ -681,15 +681,19 @@ VolcanicTestBtn.MouseButton1Click:Connect(function()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    -- Langsung teleport ke koordinat Volcanic Egg yang sudah pasti (tanpa nunggu spawn/scan)
+    -- Langsung teleport ke koordinat Volcanic Egg yang sudah pasti
     local targetCFrame = CFrame.new(-5330.2, 40912.4, -3579.8)
     
-    hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
-    Notify(
-        "🌋 Volcanic Teleport",
-        "Teleport langsung ke lokasi Volcanic Egg!\n(Tanpa perlu telur spawn)",
-        5
-    )
+    -- Anchor karakter supaya map sempat ke-load dan tidak tembus ke bawah
+    hrp.Anchored = true
+    hrp.CFrame = targetCFrame + Vector3.new(0, 5, 0)
+    
+    Notify("🌋 Teleporting...", "Menahan karakter di udara agar map ter-load...", 2)
+    
+    task.delay(1.5, function()
+        if hrp then hrp.Anchored = false end
+        Notify("✅ Selesai", "Teleport berhasil!", 3)
+    end)
 end)
 GetPosBtn.MouseButton1Click:Connect(function()
     local char = player.Character

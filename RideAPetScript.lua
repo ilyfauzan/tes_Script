@@ -280,9 +280,10 @@ end
 -- ════════════════════════════════════════
 local function Notify(title, msg, duration)
     local notif = Instance.new("Frame")
-    notif.Size = UDim2.new(0, 300, 0, 72)
-    -- Di bawah display duit kanan atas
-    notif.Position = UDim2.new(1, -308, 0, 165)
+    notif.Size = UDim2.new(0, 280, 0, 72)
+    -- AnchorPoint kanan = selalu nempel di kanan layar, apapun ukuran screen
+    notif.AnchorPoint = Vector2.new(1, 0)
+    notif.Position = UDim2.new(1, -8, 0, 165) -- 8px dari kanan, di bawah display uang
     notif.BackgroundColor3 = Color3.fromRGB(25, 18, 50)
     notif.BorderSizePixel = 0
     notif.ZIndex = 50

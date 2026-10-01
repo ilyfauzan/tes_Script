@@ -281,8 +281,8 @@ end
 local function Notify(title, msg, duration)
     local notif = Instance.new("Frame")
     notif.Size = UDim2.new(0, 300, 0, 72)
-    -- Atas tengah layar, aman dari weather/currency di bawah
-    notif.Position = UDim2.new(0.5, -150, 0, 70)
+    -- Di bawah display duit kanan atas
+    notif.Position = UDim2.new(1, -308, 0, 165)
     notif.BackgroundColor3 = Color3.fromRGB(25, 18, 50)
     notif.BorderSizePixel = 0
     notif.ZIndex = 50

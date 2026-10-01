@@ -55,6 +55,35 @@ ScrollingFrame.BackgroundTransparency = 1
 ScrollingFrame.ScrollBarThickness = 4
 ScrollingFrame.Parent = MainFrame
 
+-- ===================================================
+-- TOMBOL TOGGLE MENGAMBANG - SELALU KELIATAN!
+-- Pencet ini buat sembunyikan / tampilkan UI
+-- ===================================================
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.Position = UDim2.new(0, 10, 0, 10) -- pojok kiri atas
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
+ToggleBtn.Text = "👽"
+ToggleBtn.TextSize = 28
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.ZIndex = 10
+ToggleBtn.Parent = WayaeUI
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 10)
+ToggleCorner.Parent = ToggleBtn
+
+local isVisible = true
+ToggleBtn.MouseButton1Click:Connect(function()
+    isVisible = not isVisible
+    MainFrame.Visible = isVisible
+    ToggleBtn.BackgroundColor3 = isVisible 
+        and Color3.fromRGB(30, 0, 0) 
+        or Color3.fromRGB(0, 80, 0)
+    ToggleBtn.Text = isVisible and "👽" or "👁️"
+end)
+
 local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Padding = UDim.new(0, 10)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder

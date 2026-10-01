@@ -1,3 +1,20 @@
+local pcall = pcall
+pcall(function()
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        if method == "Kick" or method == "kick" then
+            if self == LocalPlayer then
+                return nil
+            end
+        end
+        return oldNamecall(self, ...)
+    end)
+end)
+
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({

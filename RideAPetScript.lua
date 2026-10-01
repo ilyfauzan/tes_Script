@@ -557,6 +557,8 @@ local TeleportBtn = MakeButton(ContentFrame, "🚀  2. Teleport ke Lokasi Telur"
 
 local SellBtn = MakeButton(ContentFrame, "🏪  3. Teleport ke Area Sell", 6)
 
+local VolcanicTestBtn = MakeButton(ContentFrame, "🌋  4. Test Teleport Volcanic Egg", 7)
+
 -- ════════════════════════════════════════
 --  LOGIKA TOMBOL
 -- ════════════════════════════════════════
@@ -625,5 +627,93 @@ SellBtn.MouseButton1Click:Connect(function()
         Notify("🏪 Teleport ke Sell!", "Berhasil teleport ke area Sell!", 3)
     else
         Notify("⚠️ Sell Tidak Ditemukan", "Objek Sell tidak ada di map saat ini.", 5)
+    end
+end)
+
+-- ════════════════════════════════════════
+--  TEST VOLCANIC EGG
+-- ════════════════════════════════════════
+VolcanicTestBtn.MouseButton1Click:Connect(function()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    -- Scan khusus volcanic saja
+    local foundObj = nil
+    local foundHow = "tidak ditemukan"
+
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj.Name:lower():find("volcanic") then
+            -- Skip karakter & plot pemain
+            local skip = false
+            local cur = obj.Parent
+            while cur do
+                local n = cur.Name:lower()
+                if n:find("plot") or n:find("base") or n:find("farm") or n:find("pen") then
+                    skip = true break
+                end
+                for _, plr in pairs(game.Players:GetPlayers()) do
+                    if plr.Character == cur then skip = true break end
+                end
+                if skip then break end
+                cur = cur.Parent
+            end
+            if not skip then
+                foundObj = obj
+                break
+            end
+        end
+    end
+
+    if not foundObj then
+        Notify("❌ Volcanic Tidak Ada", "Volcanic Egg belum spawn di map saat ini.", 5)
+        return
+    end
+
+    local targetCFrame = nil
+
+    if foundObj:IsA("Model") then
+        -- Cek ProximityPrompt
+        for _, desc in pairs(foundObj:GetDescendants()) do
+            if desc:IsA("ProximityPrompt") and desc.Parent:IsA("BasePart") then
+                targetCFrame = desc.Parent.CFrame
+                foundHow = "ProximityPrompt di: " .. desc.Parent.Name
+                break
+            end
+        end
+        -- Cek part bernama egg
+        if not targetCFrame then
+            for _, desc in pairs(foundObj:GetDescendants()) do
+                if desc:IsA("BasePart") and desc.Name:lower():find("egg") then
+                    targetCFrame = desc.CFrame
+                    foundHow = "Part 'egg': " .. desc.Name
+                    break
+                end
+            end
+        end
+        -- Fallback center bbox
+        if not targetCFrame then
+            local ok, cf = pcall(function() return foundObj:GetBoundingBox() end)
+            if ok then
+                targetCFrame = cf
+                foundHow = "Center BoundingBox"
+            end
+        end
+    elseif foundObj:IsA("BasePart") then
+        targetCFrame = foundObj.CFrame
+        foundHow = "BasePart: " .. foundObj.Name
+    end
+
+    if targetCFrame then
+        local pos = targetCFrame.Position
+        local posStr = string.format("X:%.0f Y:%.0f Z:%.0f", pos.X, pos.Y, pos.Z)
+        hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
+        Notify(
+            "🌋 Volcanic - " .. foundHow,
+            "Pos: " .. posStr .. "\nBenar? Cek posisimu di map!",
+            7
+        )
+    else
+        Notify("⚠️ Gagal deteksi posisi", "Model ditemukan tapi posisi tidak valid.", 5)
     end
 end)

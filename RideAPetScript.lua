@@ -1,6 +1,6 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local WayaeHUB = loadstring(game:HttpGet('https://sirius.menu/WayaeHUB'))()
 
-local Window = Rayfield:CreateWindow({
+local Window = WayaeHUB:CreateWindow({
    Name = "WayaeHUB",
    LoadingTitle = "Memuat WayaeHUB Simple...",
    LoadingSubtitle = "by Antigravity",
@@ -180,13 +180,13 @@ MainTab:CreateButton({
                eggDropdown:Refresh(options, true)
            end
            
-           Rayfield:Notify({
+           WayaeHUB:Notify({
                Title = "🎯 BERHASIL MELACAK!",
                Content = "Ditemukan " .. tostring(#eggs) .. " Telur Special!",
                Duration = 4,
            })
        else
-           Rayfield:Notify({
+           WayaeHUB:Notify({
                Title = "❌ Tidak Ada Telur Special",
                Content = "Telur 100B/300B/1T/2.5T belum spawn di map saat ini.",
                Duration = 4,
@@ -228,14 +228,14 @@ MainTab:CreateButton({
            if target and target.CFrame then
                hrp.CFrame = target.CFrame + Vector3.new(0, 3, 0)
                
-               Rayfield:Notify({
+               WayaeHUB:Notify({
                    Title = "🚀 Berhasil Teleport!",
                    Content = "Anda sekarang berada di posisi " .. target.Name .. "!",
                    Duration = 4,
                })
            end
        else
-           Rayfield:Notify({
+           WayaeHUB:Notify({
                Title = "⚠️ Gagal Teleport",
                Content = "Klik 'Lacak Posisi Telur' dulu saat telur spawn!",
                Duration = 4,
@@ -275,13 +275,13 @@ MainTab:CreateButton({
 
        if sellTarget then
            hrp.CFrame = sellTarget + Vector3.new(0, 5, 0)
-           Rayfield:Notify({
+           WayaeHUB:Notify({
                Title = "🏪 Teleport ke Sell!",
                Content = "Berhasil teleport ke area Sell!",
                Duration = 3,
            })
        else
-           Rayfield:Notify({
+           WayaeHUB:Notify({
                Title = "⚠️ Area Sell Tidak Ditemukan",
                Content = "Objek 'Sell' tidak ditemukan di map. Coba lacak dulu atau minta update nama keyword.",
                Duration = 5,
@@ -290,5 +290,5 @@ MainTab:CreateButton({
    end,
 })
 
-Rayfield:LoadConfiguration()
+WayaeHUB:LoadConfiguration()
 

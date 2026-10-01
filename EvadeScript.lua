@@ -783,28 +783,62 @@ for _, emoteData in ipairs(halloweenEmotes) do
     end)
 end
 
-local ForceEquipHallowBtn = CreateButton("⚡ Force Remote Inject Emote ke Server", ScrollingFrame)
-ForceEquipHallowBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 0)
+local HallowSpoofBtn = CreateButton("🕵️ AKTIFKAN SPOOFER EMOTE (Paling Ampuh!)", ScrollingFrame)
+HallowSpoofBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 0)
 
-ForceEquipHallowBtn.MouseButton1Click:Connect(function()
-    local items = {
-        "Halloween2022", "SpookyDance", "Catjam_Halloween", "MonsterMash",
-        "GhostFloat", "PumpkinJam", "SkeletonShuffle", "Thriller", "ZombieWalk"
-    }
-    local fired = 0
-    for _, item in ipairs(items) do
-        for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
-            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-                local n = obj.Name:lower()
-                if n:find("emote") or n:find("equip") or n:find("cosmetic") or n:find("item") then
-                    pcall(function() obj:FireServer("Equip", item) end)
-                    pcall(function() obj:FireServer(item) end)
-                    fired = fired + 1
+local spooferActive = false
+local spoofTarget = "Rockin' Stride"
+
+HallowSpoofBtn.MouseButton1Click:Connect(function()
+    spooferActive = not spooferActive
+    if spooferActive then
+        HallowSpoofBtn.Text = "🕵️ SPOOFER AKTIF! (Pakai Emote Apapun di Game!)"
+        HallowSpoofBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        Notify("🕵️ Spoofer Aktif!", "Sekarang, buka menu Emote bawaan Evade, lalu pakai emote GRATIS (misal: Dance). Skrip akan menukarnya menjadi Rockin' Stride / Emote Event di server!")
+    else
+        HallowSpoofBtn.Text = "🕵️ AKTIFKAN SPOOFER EMOTE (Paling Ampuh!)"
+        HallowSpoofBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 0)
+        Notify("🛑 Spoofer Mati", "Spoofer emote dimatikan.")
+    end
+end)
+
+-- Hook RemoteEvents untuk menukar Emote secara langsung ke Server Evade
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    
+    if spooferActive and method == "FireServer" and self.Name:lower():match("emote") then
+        -- Jika argumen berupa string nama emote
+        if type(args[1]) == "string" then
+            args[1] = spoofTarget
+        -- Jika argumen berupa tabel (seperti {EmoteName = "Dance"})
+        elseif type(args[1]) == "table" then
+            for k, v in pairs(args[1]) do
+                if type(v) == "string" then
+                    args[1][k] = spoofTarget
                 end
             end
         end
+        return oldNamecall(self, unpack(args))
     end
-    Notify("⚡ Force Inject Dikirim!", fired .. " percobaan Remote Emote Halloween 2022 dikirim!")
+    
+    return oldNamecall(self, ...)
+end)
+
+-- Tombol Set Target Spoof
+local SpooferTargetInput = Instance.new("TextBox")
+SpooferTargetInput.Size = UDim2.new(1, 0, 0, 30)
+SpooferTargetInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+SpooferTargetInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpooferTargetInput.Font = Enum.Font.Gotham
+SpooferTargetInput.TextSize = 12
+SpooferTargetInput.PlaceholderText = "Ketik nama emote yg mau dispoof (Cth: Rockin' Stride)"
+SpooferTargetInput.Text = "Rockin' Stride"
+SpooferTargetInput.Parent = ScrollingFrame
+
+SpooferTargetInput:GetPropertyChangedSignal("Text"):Connect(function()
+    spoofTarget = SpooferTargetInput.Text
 end)
 
 local HallowAtmosBtn = CreateButton("🌕 Suasana Map Blood Moon Halloween 2022", ScrollingFrame)

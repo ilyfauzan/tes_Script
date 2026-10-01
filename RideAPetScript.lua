@@ -451,9 +451,9 @@ local function ScanSpecialEggs()
                     eggCFrame = obj.CFrame
                 end
 
-                -- Posisi pasti untuk Volcanic Egg (2.5T)
+                -- Posisi pasti untuk Volcanic Egg (2.5T) (Y + 1.5 biar tidak tenggelam)
                 if foundTierName == "2.5T - Volcanic Egg" then
-                    eggCFrame = CFrame.new(-5332, 40912, -3542)
+                    eggCFrame = CFrame.new(-5332, 40913.5, -3542)
                 end
 
                 local isDuplicate = false
@@ -682,8 +682,9 @@ VolcanicTestBtn.MouseButton1Click:Connect(function()
     if not hrp then return end
 
     -- KOORDINAT BENAR DI DALAM GUA (-5332, 40912, -3542)
-    -- Angka ini sudah posisi perut (HRP) dari tombol GetPos, jadi JANGAN ditambah ketinggian lagi!
-    local targetCFrame = CFrame.new(-5332, 40912, -3542)
+    -- Karena UI sebelumnya membulatkan angka, 40912 ternyata tenggelam di tanah (bikin kepental!)
+    -- Kita naikkan Y menjadi 40913.5 agar kaki pas di atas tanah
+    local targetCFrame = CFrame.new(-5332, 40913.5, -3542)
     
     hrp.AssemblyLinearVelocity = Vector3.zero
     hrp.AssemblyAngularVelocity = Vector3.zero

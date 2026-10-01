@@ -31,8 +31,7 @@ Wayae.ScanSpecialEggs = function()
         ["blackhole"] = "100B - Blackhole Egg",
         ["solaris"]   = "300B - Solaris Egg",
         ["cherub"]    = "1T - Cherub Egg",
-        ["volcanic"]  = "2.5T - Volcanic Egg",
-        ["tidal"]     = "2.5T - Volcanic Egg" 
+        ["volcanic"]  = "2.5T - Volcanic Egg"
     }
     for _, obj in pairs(workspace:GetDescendants()) do
         if IsInsideCharacter(obj) then continue end

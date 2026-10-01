@@ -71,6 +71,19 @@ Wayae.ScanSpecialEggs = function()
             end
 
             if foundTierName then
+                -- FILTER SUPER KETAT: Telur asli PASTI punya ProximityPrompt buat diklaim (Pick Up).
+                -- Kalau nggak ada ProximityPrompt, berarti itu cuma patung pajangan atau papan skor!
+                local hasPrompt = false
+                for _, desc in pairs(obj:GetDescendants()) do
+                    if desc:IsA("ProximityPrompt") then
+                        hasPrompt = true
+                        break
+                    end
+                end
+                
+                -- Skip kalau ini bukan telur sungguhan
+                if not hasPrompt then continue end
+
                 local eggCFrame
 
                 if obj:IsA("Model") then

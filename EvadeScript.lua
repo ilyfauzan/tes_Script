@@ -805,6 +805,131 @@ ScanBtn.MouseButton1Click:Connect(function()
     Notify("🔍 Scan Selesai", "Ditemukan " .. #allAnimations .. " animasi! Ketik di kotak filter untuk cari nama spesifik.")
 end)
 
+-- ========================================================
+-- 🎃 HALLOWEEN 2022 EVENT ROLLBACK & BYPASS
+-- ========================================================
+-- ========================================================
+-- 🎃 HALLOWEEN 2022 EMOTE UNLOCKER (ALL EMOTES)
+-- ========================================================
+local LabelHalloween = Instance.new("TextLabel")
+LabelHalloween.Size = UDim2.new(1, 0, 0, 20)
+LabelHalloween.BackgroundTransparency = 1
+LabelHalloween.Text = "🎃 HALLOWEEN 2022 EMOTE UNLOCKER"
+LabelHalloween.TextColor3 = Color3.fromRGB(255, 120, 0)
+LabelHalloween.Font = Enum.Font.GothamBold
+LabelHalloween.TextSize = 14
+LabelHalloween.TextXAlignment = Enum.TextXAlignment.Left
+LabelHalloween.Parent = ScrollingFrame
+
+-- Daftar Emote Halloween 2022 Lengkap
+local halloweenEmotes = {
+    {Name = "🕺 Spooky Scary Skeleton Dance", Id = "11370221379", Color = Color3.fromRGB(180, 80, 0)},
+    {Name = "🧟 Zombie Walk / Monster Mash", Id = "3360689775", Color = Color3.fromRGB(140, 60, 0)},
+    {Name = "👻 Ghost Levitating / Headless", Id = "3360690911", Color = Color3.fromRGB(120, 50, 0)},
+    {Name = "🐱 Catjam Halloween Special", Id = "12686575749", Color = Color3.fromRGB(160, 40, 100)},
+    {Name = "💃 Thriller Night Dance", Id = "3360686498", Color = Color3.fromRGB(100, 30, 120)},
+    {Name = "💀 Skeleton Shuffle Dance", Id = "4841397146", Color = Color3.fromRGB(130, 70, 0)},
+    {Name = "🎃 Pumpkin Jam / Jack-o'-Lantern", Id = "3695333480", Color = Color3.fromRGB(190, 90, 0)},
+    {Name = "🦇 Vampire Fly / Bat Dance", Id = "3360690020", Color = Color3.fromRGB(90, 20, 90)},
+    {Name = "🔮 Witch Spell Cast Emote", Id = "3360691500", Color = Color3.fromRGB(70, 20, 110)},
+}
+
+for _, emoteData in ipairs(halloweenEmotes) do
+    local btn = CreateButton(emoteData.Name, ScrollingFrame)
+    btn.BackgroundColor3 = emoteData.Color
+    
+    local animId = emoteData.Id
+    local animName = emoteData.Name
+    btn.MouseButton1Click:Connect(function()
+        if IDInput then IDInput.Text = animId end
+        local ok = PlayAnimNow(animId)
+        if ok then
+            Notify("🎃 Emote Halloween 2022!", animName .. " berhasil diputar!")
+        else
+            Notify("❌ Gagal", "Karakter tidak siap diputar animasi.")
+        end
+    end)
+end
+
+local ForceEquipHallowBtn = CreateButton("⚡ Force Remote Inject Emote ke Server", ScrollingFrame)
+ForceEquipHallowBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 0)
+
+ForceEquipHallowBtn.MouseButton1Click:Connect(function()
+    local items = {
+        "Halloween2022", "SpookyDance", "Catjam_Halloween", "MonsterMash",
+        "GhostFloat", "PumpkinJam", "SkeletonShuffle", "Thriller", "ZombieWalk"
+    }
+    local fired = 0
+    for _, item in ipairs(items) do
+        for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                local n = obj.Name:lower()
+                if n:find("emote") or n:find("equip") or n:find("cosmetic") or n:find("item") then
+                    pcall(function() obj:FireServer("Equip", item) end)
+                    pcall(function() obj:FireServer(item) end)
+                    fired = fired + 1
+                end
+            end
+        end
+    end
+    Notify("⚡ Force Inject Dikirim!", fired .. " percobaan Remote Emote Halloween 2022 dikirim!")
+end)
+
+local HallowAtmosBtn = CreateButton("🌕 Suasana Map Blood Moon Halloween 2022", ScrollingFrame)
+HallowAtmosBtn.BackgroundColor3 = Color3.fromRGB(90, 0, 120)
+
+HallowAtmosBtn.MouseButton1Click:Connect(function()
+    local lighting = game:GetService("Lighting")
+    lighting.ClockTime = 0
+    lighting.Brightness = 0.8
+    lighting.GlobalShadows = true
+    lighting.Ambient = Color3.fromRGB(50, 10, 60)
+    lighting.OutdoorAmbient = Color3.fromRGB(80, 25, 10)
+    
+    local cc = lighting:FindFirstChildOfClass("ColorCorrectionEffect") or Instance.new("ColorCorrectionEffect", lighting)
+    cc.Brightness = -0.05
+    cc.Contrast = 0.35
+    cc.Saturation = 0.2
+    cc.TintColor = Color3.fromRGB(255, 160, 90)
+    
+    local bloom = lighting:FindFirstChildOfClass("BloomEffect") or Instance.new("BloomEffect", lighting)
+    bloom.Intensity = 0.7
+    bloom.Size = 30
+    bloom.Threshold = 0.4
+    
+    lighting.FogColor = Color3.fromRGB(30, 10, 5)
+    lighting.FogStart = 0
+    lighting.FogEnd = 250
+    
+    local atmos = lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere", lighting)
+    atmos.Density = 0.6
+    atmos.Color = Color3.fromRGB(90, 30, 10)
+    atmos.Decay = Color3.fromRGB(40, 10, 5)
+    
+    Notify("🌕 Blood Moon 2022!", "Suasana Halloween 2022 di-aktifkan!")
+end)
+
+local HallowMusicBtn = CreateButton("🎵 Play Halloween 2022 Chase Soundtrack", ScrollingFrame)
+HallowMusicBtn.BackgroundColor3 = Color3.fromRGB(60, 90, 0)
+
+local currentHallowSound = nil
+HallowMusicBtn.MouseButton1Click:Connect(function()
+    if currentHallowSound then
+        currentHallowSound:Stop()
+        currentHallowSound:Destroy()
+        currentHallowSound = nil
+        Notify("🎵 Musik Dimatikan", "Soundtrack Halloween 2022 di-stop.")
+    else
+        currentHallowSound = Instance.new("Sound")
+        currentHallowSound.SoundId = "rbxassetid://1837849405"
+        currentHallowSound.Volume = 1
+        currentHallowSound.Looped = true
+        currentHallowSound.Parent = game:GetService("SoundService")
+        currentHallowSound:Play()
+        Notify("🎵 Halloween Soundtrack!", "Memutar musik tema Halloween 2022.")
+    end
+end)
+
 local LabelUtilitas = Instance.new("TextLabel")
 LabelUtilitas.Size = UDim2.new(1, 0, 0, 20)
 LabelUtilitas.BackgroundTransparency = 1

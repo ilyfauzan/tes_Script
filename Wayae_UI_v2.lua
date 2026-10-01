@@ -8,7 +8,7 @@ end
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "WayaeHUB"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = playerGui
 
 local MainFrame = Instance.new("Frame")
@@ -17,7 +17,6 @@ MainFrame.Size = UDim2.new(0, 320, 0, 360)
 MainFrame.Position = UDim2.new(0.5, -160, 0.5, -180)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 15, 45)
 MainFrame.BorderSizePixel = 0
-MainFrame.ZIndex = 10
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
@@ -347,6 +346,15 @@ Wayae.UI.TpLocBtn = MakeButton(ExtraMenu, "🔙 Teleport Last Location", 3)
 Wayae.UI.VolcanicTestBtn = MakeButton(ExtraMenu, "🌋 Test Teleport Volcanic", 4)
 
 Wayae.UI.Notify = function(title, msg, duration)
+    local notifyGui = playerGui:FindFirstChild("WayaeNotifyGui")
+    if not notifyGui then
+        notifyGui = Instance.new("ScreenGui")
+        notifyGui.Name = "WayaeNotifyGui"
+        notifyGui.ResetOnSpawn = false
+        notifyGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+        notifyGui.Parent = playerGui
+    end
+
     local notif = Instance.new("Frame")
     notif.Size = UDim2.new(0, 280, 0, 90)
     notif.AnchorPoint = Vector2.new(1, 0)
@@ -354,7 +362,7 @@ Wayae.UI.Notify = function(title, msg, duration)
     notif.BackgroundColor3 = Color3.fromRGB(25, 18, 50)
     notif.BorderSizePixel = 0
     notif.ZIndex = 100
-    notif.Parent = ScreenGui
+    notif.Parent = notifyGui
 
     local nc = Instance.new("UICorner")
     nc.CornerRadius = UDim.new(0, 10)

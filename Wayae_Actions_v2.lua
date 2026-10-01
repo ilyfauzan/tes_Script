@@ -47,102 +47,111 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
     local playerName = player.Name:lower()
     local playerDisplayName = player.DisplayName:lower()
 
-    -- 0. Cek apakah game menggunakan fitur bawaan Roblox RespawnLocation
-    if player.RespawnLocation then
-        plotTarget = player.RespawnLocation.CFrame + Vector3.new(0, 5, 0)
+    -- Kita hapus RespawnLocation karena di beberapa game, RespawnLocation selalu diupdate ke lokasi player berpijak!
+
+    -- 1. Cari Folder/Model Plot utama di workspace (biasanya namanya Plots, Tycoons, Ranches, Bases)
+    local possibleFolders = {"plots", "tycoons", "ranches", "bases", "islands", "playerplots"}
+    local plotContainer = nil
+    
+    for _, child in pairs(workspace:GetChildren()) do
+        if child:IsA("Folder") or child:IsA("Model") then
+            local name = child.Name:lower()
+            for _, pName in ipairs(possibleFolders) do
+                if name:find(pName) then
+                    plotContainer = child
+                    break
+                end
+            end
+        end
+        if plotContainer then break end
     end
 
-    if not plotTarget then
-        for _, obj in pairs(workspace:GetDescendants()) do
-            -- Abaikan karakter kita sendiri SEPENUHNYA (termasuk model utama karakter itu sendiri)
-            if char and (obj == char or obj:IsDescendantOf(char)) then continue end
+    -- Jika ada folder kumpulan Plot, cari plot punya kita di dalamnya
+    local searchArea = plotContainer and plotContainer:GetDescendants() or workspace:GetDescendants()
+    
+    for _, obj in pairs(searchArea) do
+        -- Mutlak abaikan karakter
+        if char and (obj == char or obj:IsDescendantOf(char)) then continue end
 
-            local foundPlot = false
+        local foundPlot = false
 
-            -- 1. Cek dari nama objek, TAPI WAJIB mengandung kata "plot", "ranch", "base", atau "tycoon" 
-            -- Ini mencegah Pet peliharaan (yang ada nama playernya) dianggap sebagai Plot!
-            if (obj:IsA("Model") or obj:IsA("Folder")) then
-                local name = obj.Name:lower()
-                if (name:find(playerName) or name:find(playerDisplayName)) and (name:find("plot") or name:find("ranch") or name:find("base") or name:find("tycoon")) then
+        -- Cek TextLabel / StringValue (Tulisan Your Ranch / Fauzan's Ranch)
+        if obj:IsA("TextLabel") or obj:IsA("StringValue") then
+            local text = (obj:IsA("TextLabel") and obj.Text or tostring(obj.Value)):lower()
+            if text:find("ranch") or text:find("plot") or text:find("tycoon") or text:find("base") then
+                if text:find(playerName) or text:find(playerDisplayName) or text:find("your") or text:find("my") then
                     foundPlot = true
                 end
             end
+        end
 
-            -- 2. Cek dari TextLabel atau StringValue (misal: "Your Ranch", "Fauzan's Ranch")
-            if not foundPlot and (obj:IsA("TextLabel") or obj:IsA("StringValue")) then
-                local text = (obj:IsA("TextLabel") and obj.Text or tostring(obj.Value)):lower()
-                -- Wajib ada kata ranch/plot/base
-                if text:find("ranch") or text:find("plot") or text:find("base") or text:find("tycoon") then
-                    if text:find(playerName) or text:find(playerDisplayName) or text:find("your") or text:find("my") then
-                        foundPlot = true
-                    end
+        -- Cek ObjectValue Owner
+        if not foundPlot and obj:IsA("ObjectValue") and obj.Value == player then
+            foundPlot = true
+        end
+
+        if foundPlot then
+            -- Cari model utamanya
+            local current = (obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("BasePart")) and obj or obj.Parent
+            local plotModel = current
+            
+            local temp = current
+            while temp and temp ~= workspace and temp ~= plotContainer do
+                if temp:IsA("Model") or temp:IsA("Folder") then
+                    plotModel = temp
                 end
+                temp = temp.Parent
             end
-
-            -- 3. Cek dari ObjectValue (misal: Owner = Player) TAPI parentnya wajib bernama Plot/Ranch
-            if not foundPlot and obj:IsA("ObjectValue") and obj.Value == player then
-                local pName = obj.Parent and obj.Parent.Name:lower() or ""
-                if pName:find("plot") or pName:find("ranch") or pName:find("base") or pName:find("tycoon") then
-                    foundPlot = true
-                end
-            end
-
-            if foundPlot then
-                local current = (obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("BasePart")) and obj or obj.Parent
-                local plotModel = nil
-                
-                local temp = current
-                while temp and temp ~= workspace do
-                    if temp:IsA("Model") or temp:IsA("Folder") then
-                        plotModel = temp
-                    end
-                    temp = temp.Parent
-                end
-                
-                -- Fallback: Kalau tidak ada Model/Folder pembungkus, gunakan objek itu sendiri (biasanya Part)
-                plotModel = plotModel or current
-                
-                if plotModel then
-                    local spawnPad = nil
-                    for _, child in pairs(plotModel:GetDescendants()) do
-                        if child:IsA("SpawnLocation") or (child:IsA("BasePart") and child.Name:lower():find("spawn")) then
-                            spawnPad = child
-                            break
-                        end
-                    end
-
-                    if spawnPad and spawnPad:IsA("BasePart") then
-                        plotTarget = spawnPad.CFrame + Vector3.new(0, 5, 0)
+            
+            if plotModel then
+                -- Cari Spawn Pad
+                local spawnPad = nil
+                for _, child in pairs(plotModel:GetDescendants()) do
+                    if child:IsA("SpawnLocation") or (child:IsA("BasePart") and child.Name:lower():find("spawn")) then
+                        spawnPad = child
                         break
                     end
+                end
 
-                    local ok, cf, size = pcall(function()
-                        if plotModel:IsA("Model") then return plotModel:GetBoundingBox() end
-                        return plotModel.CFrame, plotModel.Size
-                    end)
-                    if ok and cf and size then
-                        local groundY = cf.Position.Y - (size.Y/2) + 5
-                        plotTarget = CFrame.new(cf.Position.X, groundY, cf.Position.Z) * cf.Rotation
-                        break
-                    end
+                if spawnPad and spawnPad:IsA("BasePart") then
+                    plotTarget = spawnPad.CFrame + Vector3.new(0, 5, 0)
+                    break
+                end
+
+                -- Fallback hitung tengah-tengah plot
+                local ok, cf, size = pcall(function()
+                    if plotModel:IsA("Model") then return plotModel:GetBoundingBox() end
+                    return plotModel.CFrame, plotModel.Size
+                end)
+                if ok and cf and size then
+                    local groundY = cf.Position.Y - (size.Y/2) + 5
+                    plotTarget = CFrame.new(cf.Position.X, groundY, cf.Position.Z) * cf.Rotation
+                    break
                 end
             end
         end
     end
 
-    -- Jika masih belum ketemu, coba cari UI "Your Ranch" di PlayerGui (karena beberapa game menyembunyikan tulisan ini di client-side)
+    -- Fallback 2: Jika game pakai UI untuk teleport, mari kita cari UI-nya dan paksa eksekusi script gamenya!
     if not plotTarget then
         local playerGui = player:FindFirstChild("PlayerGui")
         if playerGui then
             for _, obj in pairs(playerGui:GetDescendants()) do
-                if obj:IsA("TextLabel") then
-                    local text = obj.Text:lower()
-                    if text:find("your ranch") or text:find("my ranch") then
-                        local gui = obj:FindFirstAncestorOfClass("BillboardGui")
-                        if gui and gui.Adornee and gui.Adornee:IsA("BasePart") then
-                            -- Ketemu part yang ditempelin UI "Your Ranch"
-                            plotTarget = gui.Adornee.CFrame + Vector3.new(0, 5, 0)
-                            break
+                -- Cari tombol Teleport bawaan game
+                if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+                    local text = ""
+                    if obj:IsA("TextButton") then text = obj.Text:lower() end
+                    if obj.Name:lower():find("teleport") or obj.Name:lower():find("home") or obj.Name:lower():find("ranch") or text:find("ranch") or text:find("plot") then
+                        -- Jika tombol ini punya script koneksi, coba jalankan paksa (jika executor support getconnections)
+                        if getconnections then
+                            for _, conn in pairs(getconnections(obj.MouseButton1Click)) do
+                                pcall(function() conn:Function() end)
+                            end
+                            for _, conn in pairs(getconnections(obj.Activated)) do
+                                pcall(function() conn:Function() end)
+                            end
+                            Wayae.UI.Notify("🏕️ Teleport UI Bawaan", "Menggunakan fitur teleport bawaan dari game!", 4)
+                            return
                         end
                     end
                 end
@@ -156,7 +165,7 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
         char:PivotTo(plotTarget)
         Wayae.UI.Notify("🏕️ Teleport Plot", "Berhasil pulang ke ranch/plot kamu!", 4)
     else
-        Wayae.UI.Notify("⚠️ Plot Tidak Ditemukan", "Script tidak bisa mendeteksi area atas namamu. Mungkin kamu belum klaim plot?", 6)
+        Wayae.UI.Notify("⚠️ Plot Tidak Ditemukan", "Coba gunakan fitur Teleport bawaan game jika script tidak mendeteksinya.", 6)
     end
 end)
 

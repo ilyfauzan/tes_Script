@@ -59,19 +59,32 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
 
             local foundPlot = false
 
-            if (obj:IsA("Model") or obj:IsA("Folder")) and (obj.Name:lower():find(playerName) or obj.Name:lower():find(playerDisplayName)) then
-                foundPlot = true
-            end
-
-            if not foundPlot and (obj:IsA("TextLabel") or obj:IsA("StringValue")) then
-                local text = (obj:IsA("TextLabel") and obj.Text or tostring(obj.Value)):lower()
-                if text:find(playerName) or text:find(playerDisplayName) or text:find("your ranch") or text:find("my ranch") or text:find("your plot") or text:find("my plot") then
+            -- 1. Cek dari nama objek, TAPI WAJIB mengandung kata "plot", "ranch", "base", atau "tycoon" 
+            -- Ini mencegah Pet peliharaan (yang ada nama playernya) dianggap sebagai Plot!
+            if (obj:IsA("Model") or obj:IsA("Folder")) then
+                local name = obj.Name:lower()
+                if (name:find(playerName) or name:find(playerDisplayName)) and (name:find("plot") or name:find("ranch") or name:find("base") or name:find("tycoon")) then
                     foundPlot = true
                 end
             end
 
+            -- 2. Cek dari TextLabel atau StringValue (misal: "Your Ranch", "Fauzan's Ranch")
+            if not foundPlot and (obj:IsA("TextLabel") or obj:IsA("StringValue")) then
+                local text = (obj:IsA("TextLabel") and obj.Text or tostring(obj.Value)):lower()
+                -- Wajib ada kata ranch/plot/base
+                if text:find("ranch") or text:find("plot") or text:find("base") or text:find("tycoon") then
+                    if text:find(playerName) or text:find(playerDisplayName) or text:find("your") or text:find("my") then
+                        foundPlot = true
+                    end
+                end
+            end
+
+            -- 3. Cek dari ObjectValue (misal: Owner = Player) TAPI parentnya wajib bernama Plot/Ranch
             if not foundPlot and obj:IsA("ObjectValue") and obj.Value == player then
-                foundPlot = true
+                local pName = obj.Parent and obj.Parent.Name:lower() or ""
+                if pName:find("plot") or pName:find("ranch") or pName:find("base") or pName:find("tycoon") then
+                    foundPlot = true
+                end
             end
 
             if foundPlot then

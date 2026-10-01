@@ -63,7 +63,7 @@ Wayae.ScanSpecialEggs = function()
             if foundTierName then
                 local hasPrompt = false
                 for _, desc in pairs(obj:GetDescendants()) do
-                    if desc:IsA("ProximityPrompt") and desc.Enabled == true then
+                    if desc:IsA("ProximityPrompt") or desc:IsA("ClickDetector") then
                         hasPrompt = true
                         break
                     end

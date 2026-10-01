@@ -274,11 +274,12 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                         end
                     end
                 else
-                    Wayae.UI.Notify("🤖 Auto Farm", "Tidak ada telur, menunggu spawn berikutnya...", 3)
+                    -- Jika kosong, scan ulang tiap 3 detik
+                    -- (Tidak menampilkan notif terus-terusan biar gak spam)
                 end
                 
-                -- Tunggu 7 Menit (420 Detik)
-                local waitTime = 420
+                -- Tunggu 3 Detik lalu scan lagi
+                local waitTime = 3
                 while waitTime > 0 and Wayae.autoFarmRunning do
                     task.wait(1)
                     waitTime = waitTime - 1

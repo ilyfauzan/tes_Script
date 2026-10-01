@@ -270,11 +270,64 @@ FireRemoteBtn.MouseButton1Click:Connect(function()
     Notify("🚀 " .. fired .. " variasi dikirim ke '" .. remote.Name .. "'!", "Cek emote slot kamu!")
 end)
 
-local DeepScanBtn = CreateButton("🧠 Deep Memory Scan (Cari ID Asli)", ScrollingFrame)
-DeepScanBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 50)
+local DeepScanBtn = CreateButton("🔍 BONGKAR DATABASE EVADE (Buka F9)", ScrollingFrame)
+DeepScanBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
 
 DeepScanBtn.MouseButton1Click:Connect(function()
-    Notify("🧠 Deep Scan Tidak Tersedia", "Gunakan Radar Pencuri Emote di bawah!")
+    Notify("⚠️ MEMBONGKAR DATABASE...", "Buka console (tekan F9) sekarang! Scroll ke paling bawah!")
+    
+    task.spawn(function()
+        print("=========================================")
+        print("🔍 MENCARI 'ROCKIN' STRIDE' DI SEMUA MODULE EVADE...")
+        print("=========================================")
+        
+        local foundAnything = false
+        local emoteName = "rockin"
+        
+        for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+            if obj:IsA("ModuleScript") then
+                pcall(function()
+                    local mod = require(obj)
+                    if type(mod) == "table" then
+                        -- Fungsi rekursif untuk nge-print isi table kalau ada "rockin"
+                        local function searchTable(t, path)
+                            for k, v in pairs(t) do
+                                local newPath = path .. "." .. tostring(k)
+                                if type(k) == "string" and k:lower():find(emoteName) then
+                                    print("🎯 KETEMU DI KEY: " .. newPath)
+                                    print("Isi datanya:")
+                                    for subK, subV in pairs(v) do
+                                        print("   - " .. tostring(subK) .. ": " .. tostring(subV))
+                                    end
+                                    foundAnything = true
+                                elseif type(v) == "table" then
+                                    if type(v.Name) == "string" and v.Name:lower():find(emoteName) then
+                                        print("🎯 KETEMU DI NAMA: " .. newPath)
+                                        for subK, subV in pairs(v) do
+                                            print("   - " .. tostring(subK) .. ": " .. tostring(subV))
+                                        end
+                                        foundAnything = true
+                                    else
+                                        searchTable(v, newPath)
+                                    end
+                                end
+                            end
+                        end
+                        
+                        searchTable(mod, obj.Name)
+                    end
+                end)
+            end
+        end
+        
+        print("=========================================")
+        if foundAnything then
+            print("✅ SELESAI! Coba cari tulisan 'AnimationId' atau 'AssetId' dari hasil di atas!")
+        else
+            print("❌ GAGAL! Evade bener-bener gak nyimpen datanya di client.")
+        end
+        print("=========================================")
+    end)
 end)
 
 -- ========================================================

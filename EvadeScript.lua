@@ -838,6 +838,15 @@ GodStatus.TextSize = 12
 GodStatus.TextWrapped = true
 GodStatus.Parent = ScrollingFrame
 
+local XRayContainer = Instance.new("Frame")
+XRayContainer.Size = UDim2.new(1, 0, 0, 0)
+XRayContainer.BackgroundTransparency = 1
+XRayContainer.Parent = ScrollingFrame
+local XRayLayout = Instance.new("UIListLayout")
+XRayLayout.SortOrder = Enum.SortOrder.LayoutOrder
+XRayLayout.Padding = UDim.new(0, 5)
+XRayLayout.Parent = XRayContainer
+
 local isSniffing = false
 
 GodHookBtn.MouseButton1Click:Connect(function()
@@ -879,17 +888,41 @@ GodHookBtn.MouseButton1Click:Connect(function()
             end
         end
         
-        local resultStr = ""
-        local lastId = nil
-        for id, _ in pairs(foundIds) do
-            resultStr = resultStr .. id .. " "
-            lastId = id
+        -- Bersihkan hasil sebelumnya
+        for _, child in ipairs(XRayContainer:GetChildren()) do
+            if child:IsA("TextButton") then child:Destroy() end
         end
         
-        if lastId then
-            GodStatus.Text = "Ketemu ID: " .. resultStr
-            if IDInput then IDInput.Text = lastId end
-            Notify("🎯 TARGET DIKUNCI!", "ID Dummy disedot! Langsung klik Play!")
+        local count = 0
+        for id, _ in pairs(foundIds) do
+            count = count + 1
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, 0, 0, 30)
+            btn.BackgroundColor3 = Color3.fromRGB(150, 80, 0)
+            btn.Text = "▶️ Coba Play ID: " .. id
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.Font = Enum.Font.GothamBold
+            btn.TextSize = 12
+            btn.Parent = XRayContainer
+            
+            local c = Instance.new("UICorner")
+            c.CornerRadius = UDim.new(0, 5)
+            c.Parent = btn
+            
+            btn.MouseButton1Click:Connect(function()
+                if IDInput then IDInput.Text = id end
+                local ok = PlayAnimNow(id)
+                if ok then
+                    Notify("✅ Animasi Diputar!", "Jika cocok, nyalakan Loop Mode!")
+                end
+            end)
+        end
+        
+        XRayContainer.Size = UDim2.new(1, 0, 0, count * 35)
+        
+        if count > 0 then
+            GodStatus.Text = "Ketemu " .. count .. " animasi! Coba satu-satu di bawah:"
+            Notify("🎯 TARGET DIKUNCI!", "Ditemukan beberapa animasi! Coba klik tombol di bawah untuk ngetes.")
         else
             GodStatus.Text = "❌ Tidak ada dummy yang lagi joget."
             Notify("❌ GAGAL", "Pastikan Dummy di Shop SEDANG BERGERAK, lalu klik tombol ini lagi!")

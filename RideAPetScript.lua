@@ -55,7 +55,19 @@ local function ScanSpecialEggs()
             end
 
             if foundTierName then
-                local eggCFrame = obj:IsA("Model") and obj:GetPivot() or obj.CFrame
+                local eggCFrame
+                if obj:IsA("Model") then
+                    -- Cari PrimaryPart dulu (lebih akurat)
+                    if obj.PrimaryPart then
+                        eggCFrame = obj.PrimaryPart.CFrame
+                    else
+                        -- Pakai BoundingBox biar dapat posisi tengah model (bukan alas)
+                        local cf, size = obj:GetBoundingBox()
+                        eggCFrame = cf
+                    end
+                else
+                    eggCFrame = obj.CFrame
+                end
                 table.insert(detectedEggsList, {
                     Name = foundTierName .. " [" .. obj.Name .. "]",
                     Instance = obj,

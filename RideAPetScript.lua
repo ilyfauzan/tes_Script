@@ -128,12 +128,12 @@ task.spawn(function()
     end
 end)
 
--- ════ DRAG MANUAL (bekerja di mobile) ════
+-- ════ DRAG MANUAL pakai UIS (bekerja di mobile) ════
 local UIS = game:GetService("UserInputService")
 local dragStartPos = nil
 local dragStartBtnPos = nil
 local isDragging = false
-local DRAG_THRESHOLD = 10 -- pixel, lebih dari ini = drag, kurang = tap
+local DRAG_THRESHOLD = 10
 
 ToggleBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch or
@@ -144,7 +144,9 @@ ToggleBtn.InputBegan:Connect(function(input)
     end
 end)
 
-ToggleBtn.InputChanged:Connect(function(input)
+-- Pakai UIS global bukan ToggleBtn.InputChanged
+-- Karena di mobile, event touch movement dikirim lewat UIS bukan dari GuiObject
+UIS.InputChanged:Connect(function(input)
     if (input.UserInputType == Enum.UserInputType.Touch or
         input.UserInputType == Enum.UserInputType.MouseMovement) and dragStartPos then
         local delta = input.Position - dragStartPos
@@ -160,13 +162,15 @@ ToggleBtn.InputChanged:Connect(function(input)
     end
 end)
 
-ToggleBtn.InputEnded:Connect(function(input)
+UIS.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch or
        input.UserInputType == Enum.UserInputType.MouseButton1 then
-        if not isDragging then
-            -- Ini tap = buka menu
-            MainFrame.Visible = true
-            ToggleBtn.Visible = false
+        if dragStartPos and not isDragging then
+            -- Tap singkat = buka menu
+            if ToggleBtn.Visible then
+                MainFrame.Visible = true
+                ToggleBtn.Visible = false
+            end
         end
         dragStartPos = nil
         isDragging = false

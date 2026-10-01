@@ -222,7 +222,8 @@ EggTab:CreateToggle({
 
 local autoLegendaryTeleport = false
 
-local function FindLegendaryEggObject()
+local function FindAllSpecialEggs()
+    local foundEggs = {}
     local searchLocations = {
         workspace:FindFirstChild("Eggs"),
         workspace:FindFirstChild("EggSpawns"),
@@ -231,21 +232,36 @@ local function FindLegendaryEggObject()
         workspace
     }
 
+    local targetKeywords = {"100b", "300b", "1t", "2.5t", "legend", "mythic", "eternal", "secret", "special"}
+
     for _, location in pairs(searchLocations) do
         if location then
             for _, obj in pairs(location:GetDescendants()) do
                 local nameLower = obj.Name:lower()
-                local isLegend = nameLower:find("legend") or nameLower:find("mythic") or nameLower:find("eternal") or nameLower:find("gold") or nameLower:find("secret") or nameLower:find("rare")
-                
-                if isLegend then
-                    if obj:IsA("Model") or obj:IsA("BasePart") then
-                        return obj
+                local matched = false
+                for _, kw in pairs(targetKeywords) do
+                    if nameLower:find(kw) then
+                        matched = true
+                        break
                     end
                 end
-                
-                if obj:IsA("StringValue") or obj:IsA("IntValue") then
-                    if obj.Name:lower():find("rarity") and (obj.Value:lower():find("legend") or obj.Value:lower():find("mythic")) then
-                        return obj.Parent
+
+                if matched then
+                    local targetInst = obj:IsA("Model") and obj or (obj:IsA("BasePart") and obj or nil)
+                    if targetInst and not table.find(foundEggs, targetInst) then
+                        table.insert(foundEggs, targetInst)
+                    end
+                end
+
+                if obj:IsA("BillboardGui") or obj:IsA("SurfaceGui") or obj:IsA("TextLabel") then
+                    if obj:IsA("TextLabel") then
+                        local txt = obj.Text:lower()
+                        if txt:find("100b") or txt:find("300b") or txt:find("1t") or txt:find("2.5t") or txt:find("in map") then
+                            local parentModel = obj:FindFirstAncestorOfClass("Model") or obj:FindFirstAncestorOfClass("BasePart")
+                            if parentModel and not table.find(foundEggs, parentModel) then
+                                table.insert(foundEggs, parentModel)
+                            end
+                        end
                     end
                 end
             end
@@ -258,22 +274,27 @@ local function FindLegendaryEggObject()
             if child:IsA("Beam") and child.Attachment1 then
                 local targetPart = child.Attachment1.Parent
                 if targetPart then
-                    return targetPart
+                    local parentInst = targetPart:IsA("Model") and targetPart or targetPart.Parent
+                    if parentInst and not table.find(foundEggs, parentInst) then
+                        table.insert(foundEggs, parentInst)
+                    end
                 end
             end
         end
     end
 
-    return nil
+    return foundEggs
 end
 
 local function FindLegendaryEgg()
-    local obj = FindLegendaryEggObject()
-    if obj then
-        return obj:IsA("Model") and obj:GetPivot() or obj.CFrame
+    local eggs = FindAllSpecialEggs()
+    if #eggs > 0 then
+        local first = eggs[1]
+        return first:IsA("Model") and first:GetPivot() or first.CFrame
     end
     return nil
 end
+
 
 local legendHighlight = nil
 local function HighlightLegendaryEgg()
@@ -329,7 +350,7 @@ EggTab:CreateButton({
 })
 
 EggTab:CreateToggle({
-   Name = "⚡ Auto Teleport Saat Telur Legendary Spawn",
+   Name = "⚡ Auto Sweep Semua Telur Special (100B, 300B, 1T, 2.5T)",
    CurrentValue = false,
    Flag = "AutoLegendaryToggle",
    Callback = function(Value)
@@ -340,18 +361,25 @@ EggTab:CreateToggle({
                if character and character:FindFirstChild("HumanoidRootPart") then
                    local hrp = character.HumanoidRootPart
                    local baseCFrame = hrp.CFrame
-                   local legendaryCFrame = FindLegendaryEgg()
+                   local specialEggs = FindAllSpecialEggs()
                    
-                   if legendaryCFrame then
+                   if #specialEggs > 0 then
                        Rayfield:Notify({
-                           Title = "⚡ Auto Teleport Telur Legendary!",
-                           Content = "Mengambil Telur Legendary...",
+                           Title = "⚡ Telur Special Terdeteksi!",
+                           Content = "Mengambil " .. tostring(#specialEggs) .. " Telur Special di map...",
                            Duration = 3,
                        })
-                       SafeTweenTeleport(legendaryCFrame, 160)
-                       task.wait(0.5)
+
+                       for _, eggInst in pairs(specialEggs) do
+                           if not autoLegendaryTeleport then break end
+                           local eggCFrame = eggInst:IsA("Model") and eggInst:GetPivot() or eggInst.CFrame
+                           
+                           SafeTweenTeleport(eggCFrame, 160)
+                           task.wait(0.4)
+                       end
+
                        SafeTweenTeleport(baseCFrame, 160)
-                       task.wait(5)
+                       task.wait(4)
                    end
                end
                task.wait(2)
@@ -359,6 +387,7 @@ EggTab:CreateToggle({
        end)
    end,
 })
+
 
 local espEnabled = false
 EggTab:CreateToggle({

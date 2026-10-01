@@ -273,75 +273,97 @@ end)
 local DeepScanBtn = CreateButton("🧠 Deep Memory Scan (Cari ID Asli)", ScrollingFrame)
 DeepScanBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 50)
 
-DeepScanBtn.MouseButton1Click:Connect(function()
-    local emoteName = EmoteNameInput.Text:lower()
-    Notify("🧠 Memulai Scan Aman...", "Mencari data '" .. EmoteNameInput.Text .. "' tanpa nge-lag...")
-    
-    task.spawn(function()
-        task.wait(0.5) -- Biarkan UI merender notifikasi dulu biar ga freeze
+    Notify("🧠 Deep Scan Tidak Tersedia", "Gunakan Radar Pencuri Emote di bawah!")
+end)
+
+-- ========================================================
+-- 📡 RADAR PENCURI EMOTE (SNIFFER)
+-- ========================================================
+local LabelRadar = Instance.new("TextLabel")
+LabelRadar.Size = UDim2.new(1, 0, 0, 20)
+LabelRadar.BackgroundTransparency = 1
+LabelRadar.Text = "📡 Radar Pencuri Emote (Sniffer)"
+LabelRadar.TextColor3 = Color3.fromRGB(200, 200, 200)
+LabelRadar.Font = Enum.Font.GothamBold
+LabelRadar.TextSize = 14
+LabelRadar.TextXAlignment = Enum.TextXAlignment.Left
+LabelRadar.Parent = ScrollingFrame
+
+local RadarBtn = CreateButton("📡 Aktifkan Radar: OFF", ScrollingFrame)
+RadarBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+
+local LastSniffedLabel = Instance.new("TextLabel")
+LastSniffedLabel.Size = UDim2.new(1, 0, 0, 20)
+LastSniffedLabel.BackgroundTransparency = 1
+LastSniffedLabel.Text = "Belum ada yang dicuri..."
+LastSniffedLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+LastSniffedLabel.Font = Enum.Font.Gotham
+LastSniffedLabel.TextSize = 12
+LastSniffedLabel.Parent = ScrollingFrame
+
+local PlaySniffedBtn = CreateButton("▶️ Mainkan Emote Curian", ScrollingFrame)
+PlaySniffedBtn.BackgroundColor3 = Color3.fromRGB(150, 100, 0)
+
+local radarActive = false
+local seenAnims = {}
+local lastSniffedId = nil
+
+RadarBtn.MouseButton1Click:Connect(function()
+    radarActive = not radarActive
+    if radarActive then
+        RadarBtn.Text = "📡 Radar Aktif: MENCARI..."
+        RadarBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
+        Notify("📡 Radar Menyala!", "Berdiri di dekat player lain yang lagi pakai emote. Radar akan menyedot ID-nya otomatis!")
         
-        local foundIds = {}
-        
-        -- 1. Scan semua objek tipe "Animation" di dalam game
-        pcall(function()
-            for _, obj in pairs(game:GetDescendants()) do
-                if obj:IsA("Animation") then
-                    -- Kalau nama animasinya mirip dengan Rockin' Stride
-                    if obj.Name:lower():find(emoteName) then
-                        table.insert(foundIds, obj.AnimationId)
-                    end
-                end
-            end
-        end)
-        
-        -- 2. Scan ModuleScripts (Config files) secara perlahan
-        pcall(function()
-            local modules = {}
-            for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
-                if obj:IsA("ModuleScript") then
-                    table.insert(modules, obj)
-                end
-            end
-            
-            for i, obj in ipairs(modules) do
-                pcall(function()
-                    local mod = require(obj)
-                    if type(mod) == "table" then
-                        for k, v in pairs(mod) do
-                            if type(k) == "string" and k:lower():find(emoteName) then
-                                if type(v) == "table" and (v.AnimationId or v.Id or v.ID) then
-                                    table.insert(foundIds, tostring(v.AnimationId or v.Id or v.ID))
-                                elseif type(v) == "number" or type(v) == "string" then
-                                    table.insert(foundIds, tostring(v))
+        task.spawn(function()
+            while radarActive do
+                for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+                    if p ~= player and p.Character then
+                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                        local animator = hum and (hum:FindFirstChildOfClass("Animator") or hum)
+                        if animator then
+                            pcall(function()
+                                for _, track in pairs(animator:GetPlayingAnimationTracks()) do
+                                    if track.Animation and track.Animation.AnimationId then
+                                        local idStr = track.Animation.AnimationId:match("%d+")
+                                        if idStr and not seenAnims[idStr] then
+                                            -- Abaikan ID animasi dasar (jalan, lari, diam, dll)
+                                            -- Asumsi emote ID itu unik dan baru
+                                            if not idStr:match("^50777") then 
+                                                seenAnims[idStr] = true
+                                                lastSniffedId = idStr
+                                                LastSniffedLabel.Text = "Emote Curian: " .. idStr .. " (dari " .. p.Name .. ")"
+                                                if IDInput then IDInput.Text = idStr end
+                                                Notify("🚨 TARGET TERKUNCI!", p.Name .. " memakai emote baru (ID: " .. idStr .. "). Pencet tombol Play Curian!")
+                                            end
+                                        end
+                                    end
                                 end
-                            end
-                            if type(v) == "table" and type(v.Name) == "string" and v.Name:lower():find(emoteName) then
-                                 if v.AnimationId or v.Id or v.ID then
-                                    table.insert(foundIds, tostring(v.AnimationId or v.Id or v.ID))
-                                 end
-                            end
+                            end)
                         end
                     end
-                end)
-                if i % 50 == 0 then task.wait() end -- Anti lag
+                end
+                task.wait(0.5)
             end
         end)
-        
-        -- Evaluasi hasil
-        if #foundIds > 0 then
-            local targetId = foundIds[1]:match("%d+")
-            if targetId then
-                Notify("🎯 ID ASLI KETEMU: " .. targetId, "Mencoba memutar animasi!")
-                if IDInput then IDInput.Text = targetId end
-                local ok = PlayAnimNow(targetId)
-                if ok then
-                    Notify("✅ Animasi Diputar!", "Jika macet, nyalakan Loop Mode!")
-                end
-            end
-        else
-            Notify("❌ Scan Selesai", "Data tidak ketemu. Sistem Evade sangat ketat.")
-        end
-    end)
+    else
+        RadarBtn.Text = "📡 Aktifkan Radar: OFF"
+        RadarBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        Notify("📡 Radar Mati", "Berhenti mencuri emote.")
+    end
+end)
+
+PlaySniffedBtn.MouseButton1Click:Connect(function()
+    if not lastSniffedId then
+        Notify("❌ Belum Ada Curian", "Nyalakan radar dan tunggu player lain pakai emote!")
+        return
+    end
+    
+    local ok = PlayAnimNow(lastSniffedId)
+    if ok then
+        Notify("✅ Emote Curian Diputar!", "Jika macet, nyalakan Loop Mode!")
+        if IDInput then IDInput.Text = lastSniffedId end
+    end
 end)
 
 

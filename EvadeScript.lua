@@ -153,14 +153,11 @@ StopBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
 local loopActive = false
 local currentTrack = nil
 
-local animateScript = nil
+local currentFakeChar = nil
 
 local function PlayAnimNow(idStr)
     local char = player.Character
     if not char then return false end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum then return false end
-    local animator = hum:FindFirstChildOfClass("Animator") or hum
     
     local trueId = idStr
     local formattedId = "rbxassetid://" .. trueId
@@ -168,29 +165,54 @@ local function PlayAnimNow(idStr)
         formattedId = trueId
     end
     
-    local ok = pcall(function()
+    local ok, err = pcall(function()
+        if currentFakeChar then currentFakeChar:Destroy() end
         if currentTrack then currentTrack:Stop() end
         
-        -- CARA BRUTAL BARU: Timpa semua animasi bawaan Roblox/Evade di badan!
-        -- Jadi pas Abang diem atau jalan, yang keputar malah emote ini.
-        for _, obj in pairs(char:GetDescendants()) do
-            if obj:IsA("Animation") then
-                obj.AnimationId = formattedId
+        -- CARA ULTIMATE: Bikin SHADOW CLONE (Kloning Karakter)
+        -- Bypass total anti-cheat dan custom script dari Evade!
+        char.Archivable = true
+        local clone = char:Clone()
+        
+        -- Hapus semua script di clone biar ga bertabrakan
+        for _, v in pairs(clone:GetDescendants()) do
+            if v:IsA("LocalScript") or v:IsA("Script") then
+                v:Destroy()
             end
         end
         
-        -- Hentikan animasi yang lagi jalan biar engine kepaksa nge-load ulang ID baru
-        for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
-            track:Stop()
+        clone.Parent = game.Workspace
+        currentFakeChar = clone
+        
+        -- Tempel clone ke badan asli
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local cloneHrp = clone:FindFirstChild("HumanoidRootPart")
+        if hrp and cloneHrp then
+            cloneHrp.CFrame = hrp.CFrame
+            local weld = Instance.new("WeldConstraint")
+            weld.Part0 = hrp
+            weld.Part1 = cloneHrp
+            weld.Parent = cloneHrp
         end
         
-        -- Coba play manual juga sebagai backup
+        -- Hilangkan badan asli (jadi tak terlihat)
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
+                v.Transparency = 1
+            elseif v:IsA("Decal") then
+                v.Transparency = 1
+            end
+        end
+        
+        -- Putar animasi di Clone murni
+        local cloneHum = clone:FindFirstChildOfClass("Humanoid")
+        local cloneAnimator = cloneHum:FindFirstChildOfClass("Animator") or cloneHum
         local anim = Instance.new("Animation")
         anim.AnimationId = formattedId
-        currentTrack = animator:LoadAnimation(anim)
+        currentTrack = cloneAnimator:LoadAnimation(anim)
         currentTrack.Priority = Enum.AnimationPriority.Action4
-        currentTrack.Looped = true -- Paksa loop biar kelihatan
-        currentTrack:Play(0, 1, 1)
+        currentTrack.Looped = true
+        currentTrack:Play()
     end)
     return ok
 end
@@ -200,9 +222,9 @@ PlayByIDBtn.MouseButton1Click:Connect(function()
     if id then
         local ok = PlayAnimNow(id)
         if ok then
-            Notify("✅ Animasi Diputar!", "Jika berhenti, nyalakan Loop Mode!")
+            Notify("✅ Animasi Diputar!", "Kloning berhasil! Berhenti klik Stop!")
         else
-            Notify("❌ Gagal", "Gagal memutar animasi. Character belum siap?")
+            Notify("❌ Gagal", "Character belum siap di-kloning?")
         end
     else
         Notify("❌ Input Salah", "Masukkan angka ID yang benar!")
@@ -227,12 +249,25 @@ StopBtn.MouseButton1Click:Connect(function()
     if currentTrack then
         currentTrack:Stop()
         currentTrack = nil
-        Notify("⏹️ Dihentikan", "Animasi stop.")
     end
-    -- Nyalakan lagi skrip animasi bawaan
-    if animateScript then
-        animateScript.Disabled = false
+    if currentFakeChar then
+        currentFakeChar:Destroy()
+        currentFakeChar = nil
     end
+    
+    -- Kembalikan badan asli
+    local char = player.Character
+    if char then
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
+                v.Transparency = 0
+            elseif v:IsA("Decal") then
+                v.Transparency = 0
+            end
+        end
+    end
+    
+    Notify("⏹️ Dihentikan", "Badan asli dikembalikan.")
 end)
 
 -- ========================================================

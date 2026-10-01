@@ -94,13 +94,6 @@ Wayae.ScanSpecialEggs = function()
                 else
                     eggCFrame = obj.CFrame
                 end
-                if foundTierName == "2.5T - Volcanic Egg" then
-                    local cavePos = Vector3.new(-5332, 40912, -3542)
-                    if (eggCFrame.Position - cavePos).Magnitude > 200 then
-                        continue
-                    end
-                    eggCFrame = CFrame.new(cavePos)
-                end
                 local isDuplicate = false
                 for _, existing in ipairs(Wayae.detectedEggsList) do
                     if existing.CFrame and eggCFrame then

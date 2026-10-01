@@ -191,7 +191,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
     if Wayae.autoFarmRunning then
         Wayae.UI.AutoFarmBtn.Text = "🤖 4. Auto Farm Egg: ON"
         Wayae.UI.AutoFarmBtn.BackgroundColor3 = Color3.fromRGB(30, 60, 30)
-        Wayae.UI.Notify("🤖 Auto Farm Aktif", "Akan teleport otomatis setiap 7 Menit!", 4)
+        Wayae.UI.Notify("🤖 Auto Farm Aktif", "Sedang mencari telur di map...", 4)
         
         task.spawn(function()
             while Wayae.autoFarmRunning do
@@ -275,8 +275,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                         end
                     end
                 else
-                    -- Jika kosong, scan ulang tiap 3 detik
-                    -- (Tidak menampilkan notif terus-terusan biar gak spam)
+                    Wayae.UI.Notify("🤖 Auto Farm", "Mencari telur... (Belum ada yang cocok)", 2)
                 end
                 
                 -- Tunggu 3 Detik lalu scan lagi
@@ -288,7 +287,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
             end
         end)
     else
-        Wayae.UI.AutoFarmBtn.Text = "🤖 4. Auto Farm Egg (7 Menit): OFF"
+        Wayae.UI.AutoFarmBtn.Text = "🤖 4. Auto Farm Egg: OFF"
         Wayae.UI.AutoFarmBtn.BackgroundColor3 = Color3.fromRGB(60, 30, 30)
         Wayae.UI.Notify("🤖 Auto Farm Mati", "Auto Farm dihentikan.", 4)
     end

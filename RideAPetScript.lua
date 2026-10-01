@@ -1,24 +1,3 @@
-local HttpService = game:GetService("HttpService")
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-local randomGuiName = "Wayae_" .. HttpService:GenerateGUID(false):sub(1, 8)
-
-local function SafeTweenTeleport(targetCFrame, speedMultiplier)
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-    local hrp = character.HumanoidRootPart
-    
-    local distance = (hrp.Position - targetCFrame.Position).Magnitude
-    local duration = math.clamp(distance / (speedMultiplier or 140), 0.15, 1.5)
-    
-    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
-    tween:Play()
-    tween.Completed:Wait()
-end
-
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
@@ -26,67 +5,16 @@ local Window = Rayfield:CreateWindow({
    LoadingTitle = "Memuat WayaeHUB...",
    LoadingSubtitle = "by Antigravity",
    ConfigurationSaving = {
-      Enabled = true,
-      FolderName = "WayaeHUBConfig",
-      FileName = "Config"
+      Enabled = false
    },
    Discord = {
-      Enabled = false,
+      Enabled = false
    },
    KeySystem = false
 })
 
-local CoreGui = game:GetService("CoreGui")
-
-for _, oldGui in pairs(CoreGui:GetChildren()) do
-    if oldGui.Name:find("Wayae_") or oldGui.Name == "RideAPetToggleButton" then
-        oldGui:Destroy()
-    end
-end
-
-local ToggleGui = Instance.new("ScreenGui")
-ToggleGui.Name = randomGuiName
-if gethui then
-    ToggleGui.Parent = gethui()
-else
-    ToggleGui.Parent = CoreGui
-end
-
-local ToggleButton = Instance.new("ImageButton")
-ToggleButton.Name = HttpService:GenerateGUID(false):sub(1, 6)
-ToggleButton.Size = UDim2.new(0, 50, 0, 50)
-ToggleButton.Position = UDim2.new(0.02, 0, 0.4, 0)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-ToggleButton.BorderSizePixel = 0
-ToggleButton.Active = true
-ToggleButton.Draggable = true
-ToggleButton.Image = "rbxassetid://6031097225"
-ToggleButton.Parent = ToggleGui
-
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0.5, 0)
-ToggleCorner.Parent = ToggleButton
-
-local ToggleStroke = Instance.new("UIStroke")
-ToggleStroke.Color = Color3.fromRGB(0, 170, 255)
-ToggleStroke.Thickness = 2
-ToggleStroke.Parent = ToggleButton
-
-local uiVisible = true
-ToggleButton.MouseButton1Click:Connect(function()
-    uiVisible = not uiVisible
-    if Window and Window.Modify then
-        Rayfield:ToggleUI()
-    else
-        local mainFrame = CoreGui:FindFirstChild("Rayfield") or (gethui and gethui():FindFirstChild("Rayfield"))
-        if mainFrame then
-            mainFrame.Enabled = uiVisible
-        end
-    end
-end)
-
-local EggTab = Window:CreateTab("Egg Hunt (Safe)", 4483362458)
-PlayerTab = Window:CreateTab("Pemain & Speed", 4483362458)
+local EggTab = Window:CreateTab("Egg Hunt", 4483362458)
+local PlayerTab = Window:CreateTab("Pemain & Speed", 4483362458)
 
 local autoEggHunt = false
 local autoLegendaryTeleport = false
@@ -137,7 +65,8 @@ local function FindAllSpecialEggs()
         end
     end
 
-    local character = LocalPlayer.Character
+    local player = game.Players.LocalPlayer
+    local character = player and player.Character
     if character then
         for _, child in pairs(character:GetDescendants()) do
             if child:IsA("Beam") and child.Attachment1 then
@@ -164,34 +93,11 @@ local function FindLegendaryEgg()
     return nil
 end
 
-local legendHighlight = nil
-local function HighlightLegendaryEgg()
-    local eggs = FindAllSpecialEggs()
-    if #eggs > 0 then
-        local targetObj = eggs[1]
-        if not legendHighlight or legendHighlight.Parent ~= targetObj then
-            if legendHighlight then legendHighlight:Destroy() end
-            legendHighlight = Instance.new("Highlight")
-            legendHighlight.Name = "WayaeEggESP"
-            legendHighlight.FillColor = Color3.fromRGB(255, 215, 0)
-            legendHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-            legendHighlight.FillTransparency = 0.3
-            legendHighlight.Parent = targetObj
-        end
-        return true
-    else
-        if legendHighlight then
-            legendHighlight:Destroy()
-            legendHighlight = nil
-        end
-        return false
-    end
-end
-
 EggTab:CreateButton({
    Name = "Ambil Telur Terdekat & Balik ke Base",
    Callback = function()
-       local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+       local player = game.Players.LocalPlayer
+       local character = player.Character or player.CharacterAdded:Wait()
        local hrp = character:FindFirstChild("HumanoidRootPart")
 
        if not hrp then return end
@@ -212,10 +118,9 @@ EggTab:CreateButton({
 
            if targetEgg then
                local eggPosition = targetEgg:IsA("Model") and targetEgg:GetPivot() or targetEgg.CFrame
-               
-               SafeTweenTeleport(eggPosition, 150)
+               hrp.CFrame = eggPosition
                task.wait(0.3)
-               SafeTweenTeleport(baseCFrame, 150)
+               hrp.CFrame = baseCFrame
                
                Rayfield:Notify({
                   Title = "Berhasil!",
@@ -235,10 +140,12 @@ EggTab:CreateToggle({
        autoEggHunt = Value
 
        task.spawn(function()
+           local player = game.Players.LocalPlayer
            while autoEggHunt do
-               local character = LocalPlayer.Character
+               local character = player.Character
                if character and character:FindFirstChild("HumanoidRootPart") then
-                   local baseCFrame = character.HumanoidRootPart.CFrame
+                   local hrp = character.HumanoidRootPart
+                   local baseCFrame = hrp.CFrame
                    local eggFolder = workspace:FindFirstChild("Eggs") 
                        or workspace:FindFirstChild("EggSpawns") 
                        or workspace:FindFirstChild("Collectibles")
@@ -248,12 +155,10 @@ EggTab:CreateToggle({
                            if not autoEggHunt then break end
                            
                            local eggPos = egg:IsA("Model") and egg:GetPivot() or egg.CFrame
-                           
-                           SafeTweenTeleport(eggPos, 140)
+                           hrp.CFrame = eggPos
                            task.wait(0.3)
-                           
-                           SafeTweenTeleport(baseCFrame, 140)
-                           task.wait(0.4)
+                           hrp.CFrame = baseCFrame
+                           task.wait(0.3)
                        end
                    end
                end
@@ -266,7 +171,8 @@ EggTab:CreateToggle({
 EggTab:CreateButton({
    Name = "🎯 Teleport ke Telur Special (100B - 2.5T)",
    Callback = function()
-       local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+       local player = game.Players.LocalPlayer
+       local character = player.Character or player.CharacterAdded:Wait()
        local hrp = character:FindFirstChild("HumanoidRootPart")
 
        if not hrp then return end
@@ -279,9 +185,9 @@ EggTab:CreateButton({
                Content = "Meluncur ke lokasi...",
                Duration = 3,
            })
-           SafeTweenTeleport(legendaryCFrame, 150)
+           hrp.CFrame = legendaryCFrame
            task.wait(0.5)
-           SafeTweenTeleport(baseCFrame, 150)
+           hrp.CFrame = baseCFrame
        else
            Rayfield:Notify({
                Title = "Tidak Ditemukan",
@@ -299,8 +205,9 @@ EggTab:CreateToggle({
    Callback = function(Value)
        autoLegendaryTeleport = Value
        task.spawn(function()
+           local player = game.Players.LocalPlayer
            while autoLegendaryTeleport do
-               local character = LocalPlayer.Character
+               local character = player.Character
                if character and character:FindFirstChild("HumanoidRootPart") then
                    local hrp = character.HumanoidRootPart
                    local baseCFrame = hrp.CFrame
@@ -316,12 +223,11 @@ EggTab:CreateToggle({
                        for _, eggInst in pairs(specialEggs) do
                            if not autoLegendaryTeleport then break end
                            local eggCFrame = eggInst:IsA("Model") and eggInst:GetPivot() or eggInst.CFrame
-                           
-                           SafeTweenTeleport(eggCFrame, 160)
+                           hrp.CFrame = eggCFrame
                            task.wait(0.4)
                        end
 
-                       SafeTweenTeleport(baseCFrame, 160)
+                       hrp.CFrame = baseCFrame
                        task.wait(4)
                    end
                end
@@ -331,51 +237,33 @@ EggTab:CreateToggle({
    end,
 })
 
-local espEnabled = false
-EggTab:CreateToggle({
-   Name = "✨ Sorot Telur Special (Golden ESP)",
-   CurrentValue = false,
-   Flag = "LegendaryESPToggle",
-   Callback = function(Value)
-       espEnabled = Value
-       task.spawn(function()
-           while espEnabled do
-               HighlightLegendaryEgg()
-               task.wait(3)
-           end
-           if legendHighlight then
-               legendHighlight:Destroy()
-               legendHighlight = nil
-           end
-       end)
-   end,
-})
-
 PlayerTab:CreateSlider({
    Name = "Kecepatan Jalan (WalkSpeed)",
-   Range = {16, 120},
+   Range = {16, 200},
    Increment = 1,
    Suffix = "Speed",
    CurrentValue = 16,
    Flag = "WalkSpeedSlider",
    Callback = function(Value)
-       if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-           LocalPlayer.Character.Humanoid.WalkSpeed = Value
+       local player = game.Players.LocalPlayer
+       if player.Character and player.Character:FindFirstChild("Humanoid") then
+           player.Character.Humanoid.WalkSpeed = Value
        end
    end,
 })
 
 PlayerTab:CreateSlider({
    Name = "Kekuatan Lompat (JumpPower)",
-   Range = {50, 250},
+   Range = {50, 300},
    Increment = 5,
    Suffix = "Power",
    CurrentValue = 50,
    Flag = "JumpPowerSlider",
    Callback = function(Value)
-       if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-           LocalPlayer.Character.Humanoid.UseJumpPower = true
-           LocalPlayer.Character.Humanoid.JumpPower = Value
+       local player = game.Players.LocalPlayer
+       if player.Character and player.Character:FindFirstChild("Humanoid") then
+           player.Character.Humanoid.UseJumpPower = true
+           player.Character.Humanoid.JumpPower = Value
        end
    end,
 })

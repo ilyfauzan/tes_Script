@@ -451,6 +451,11 @@ local function ScanSpecialEggs()
                     eggCFrame = obj.CFrame
                 end
 
+                -- Posisi pasti untuk Volcanic Egg (2.5T)
+                if foundTierName == "2.5T - Volcanic Egg" then
+                    eggCFrame = CFrame.new(-5330.2, 40912.4, -3579.8)
+                end
+
                 local isDuplicate = false
                 for _, existing in ipairs(detectedEggsList) do
                     if existing.CFrame and eggCFrame then

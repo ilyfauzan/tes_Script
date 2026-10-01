@@ -114,138 +114,131 @@ local cornerEI = Instance.new("UICorner")
 cornerEI.CornerRadius = UDim.new(0, 6)
 cornerEI.Parent = EmoteNameInput
 
-local InjectBtn = CreateButton("💉 Inject Emote ke Picker UI", ScrollingFrame)
+local InjectBtn = CreateButton("🕵️ Spy & Replay Emote Catjam", ScrollingFrame)
 InjectBtn.BackgroundColor3 = Color3.fromRGB(120, 60, 0)
 
 local ScanRemoteBtn = CreateButton("🔍 Scan RemoteEvent Emote", ScrollingFrame)
 ScanRemoteBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 100)
 
--- Tombol untuk fire remote secara langsung
 local FireRemoteBtn = CreateButton("🚀 Fire Emote Remote Langsung", ScrollingFrame)
 FireRemoteBtn.BackgroundColor3 = Color3.fromRGB(100, 40, 120)
 
--- Simpan remote yang ditemukan
 local foundEmoteRemote = nil
+local equipRemote = nil -- Khusus simpan remote "Equip"
 
 ScanRemoteBtn.MouseButton1Click:Connect(function()
     foundEmoteRemote = nil
-    local playerGui = player:FindFirstChild("PlayerGui")
+    equipRemote = nil
     local results = {}
     
-    -- Scan semua RemoteEvent di ReplicatedStorage
     for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
         if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
             local n = obj.Name:lower()
             if n:find("emote") or n:find("equip") or n:find("item") or n:find("cosmetic") then
-                table.insert(results, obj.Name .. " [" .. obj.ClassName .. "]")
-                if not foundEmoteRemote then
-                    foundEmoteRemote = obj
-                end
+                table.insert(results, obj.Name)
+                if not foundEmoteRemote then foundEmoteRemote = obj end
+                if n == "equip" then equipRemote = obj end
             end
         end
     end
     
     if #results > 0 then
-        Notify("✅ Remote Ketemu!", table.concat(results, " | "):sub(1, 200))
+        Notify("✅ Remote: " .. table.concat(results, " | "):sub(1, 150), equipRemote and "Equip remote siap!" or "Scan lagi kalau perlu")
     else
-        Notify("❌ Tidak ada Remote Emote/Equip ditemukan.", "Coba inject ke UI langsung!")
+        Notify("❌ Tidak ada Remote ditemukan.", "")
+    end
+end)
+
+-- SPY: Cegat click Catjam dan rekam argumentnya, lalu replay dengan Rockin' Stride
+InjectBtn.MouseButton1Click:Connect(function()
+    local emoteName = EmoteNameInput.Text
+    local playerGui = player:FindFirstChild("PlayerGui")
+    if not playerGui then Notify("❌", "PlayerGui tidak ada!") return end
+    
+    -- Cari tombol Catjam di PlayerGui
+    local catjamBtn = nil
+    for _, obj in pairs(playerGui:GetDescendants()) do
+        if (obj:IsA("TextButton") or obj:IsA("ImageButton") or obj:IsA("Frame")) then
+            -- Cari berdasarkan text label di dalamnya
+            for _, child in pairs(obj:GetDescendants()) do
+                if child:IsA("TextLabel") and child.Text:lower():find("catjam") then
+                    catjamBtn = obj
+                    break
+                end
+            end
+            if obj:IsA("TextButton") and obj.Text:lower():find("catjam") then
+                catjamBtn = obj
+            end
+        end
+        if catjamBtn then break end
+    end
+    
+    if not catjamBtn then
+        Notify("⚠️ Catjam button tidak terlihat!", "Buka dulu menu Emote > klik slot emote, LALU pencet tombol ini!")
+        return
+    end
+    
+    -- Spy koneksi click Catjam menggunakan getconnections
+    local spySuccess = false
+    pcall(function()
+        local conns = getconnections(catjamBtn.MouseButton1Click)
+        if #conns > 0 then
+            -- Rekam argumen yang dikirim
+            Notify("🕵️ Spy sukses!", #conns .. " koneksi ditemukan di Catjam. Mencoba replay...")
+            
+            -- Hook remote event untuk rekam argumen
+            if equipRemote then
+                -- Fire dengan berbagai format berdasarkan nama emote
+                local tries = {
+                    emoteName,
+                    {Name = emoteName},
+                    {EmoteName = emoteName},
+                    {Emote = emoteName, Slot = 1},
+                    {item = emoteName},
+                    {ItemName = emoteName},
+                }
+                for _, args in ipairs(tries) do
+                    pcall(function() equipRemote:FireServer(args) end)
+                end
+                spySuccess = true
+            end
+        end
+    end)
+    
+    if spySuccess then
+        Notify("🚀 Replay dikirim!", "Cek emote slot kamu sekarang!")
+    else
+        Notify("❌ getconnections tidak tersedia", "Coba 'Fire Emote Remote Langsung' sebagai gantinya!")
     end
 end)
 
 FireRemoteBtn.MouseButton1Click:Connect(function()
     local emoteName = EmoteNameInput.Text
-    if not foundEmoteRemote then
-        Notify("❌ Scan dulu!", "Pencet 'Scan RemoteEvent Emote' dulu ya Bang!")
+    local remote = equipRemote or foundEmoteRemote
+    if not remote then
+        Notify("❌ Scan dulu!", "Pencet Scan RemoteEvent dulu!")
         return
     end
     
-    -- Coba berbagai cara fire remotenya
-    local tries = {
-        function() foundEmoteRemote:FireServer(emoteName) end,
-        function() foundEmoteRemote:FireServer(1, emoteName) end,
-        function() foundEmoteRemote:FireServer({EmoteName = emoteName}) end,
-        function() foundEmoteRemote:FireServer({Emote = emoteName, Slot = 1}) end,
-        function() foundEmoteRemote:FireServer("Equip", emoteName) end,
-    }
-    
+    -- Coba semua format
     local fired = 0
+    local tries = {
+        function() remote:FireServer(emoteName) end,
+        function() remote:FireServer(1, emoteName) end,
+        function() remote:FireServer({Name = emoteName}) end,
+        function() remote:FireServer({EmoteName = emoteName}) end,
+        function() remote:FireServer({Emote = emoteName, Slot = 1}) end,
+        function() remote:FireServer("Equip", emoteName) end,
+        function() remote:FireServer({item = emoteName}) end,
+        function() remote:FireServer({ItemName = emoteName}) end,
+        function() remote:FireServer(emoteName, 1) end,
+        function() remote:FireServer(emoteName, "Emote") end,
+    }
     for _, fn in ipairs(tries) do
         if pcall(fn) then fired = fired + 1 end
     end
     
-    Notify("🚀 Tembak " .. fired .. " variasi!", "Cek emote slot Abang sekarang!")
-end)
-
-InjectBtn.MouseButton1Click:Connect(function()
-    local emoteName = EmoteNameInput.Text
-    local playerGui = player:FindFirstChild("PlayerGui")
-    if not playerGui then Notify("❌", "PlayerGui tidak ditemukan!") return end
-    
-    -- Cari UI "EQUIP AN ITEM" di dalam PlayerGui
-    local itemPickerFrame = nil
-    local existingBtn = nil
-    
-    for _, obj in pairs(playerGui:GetDescendants()) do
-        local nameL = obj.Name:lower()
-        -- Cari frame picker emote
-        if obj:IsA("TextLabel") and (obj.Text:lower():find("equip") or obj.Text:lower():find("item")) then
-            itemPickerFrame = obj.Parent
-        end
-        -- Cari tombol emote yang sudah ada (Catjam dll)
-        if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-            if obj.Name:lower():find("catjam") or 
-               (obj.Parent and obj.Parent.Name:lower():find("emote")) or
-               (obj.Parent and obj.Parent.Name:lower():find("item")) then
-                existingBtn = obj
-            end
-        end
-    end
-    
-    local debugInfo = {}
-    if itemPickerFrame then table.insert(debugInfo, "Frame: " .. itemPickerFrame.Name) end
-    if existingBtn then table.insert(debugInfo, "Btn: " .. existingBtn.Name .. " Parent: " .. existingBtn.Parent.Name) end
-    
-    if existingBtn then
-        -- Clone tombol yang ada dan ubah jadi Rockin' Stride
-        local newBtn = existingBtn:Clone()
-        newBtn.Parent = existingBtn.Parent
-        
-        -- Ganti semua text di dalam clone
-        if newBtn:IsA("TextButton") then
-            newBtn.Text = emoteName
-        end
-        for _, child in pairs(newBtn:GetDescendants()) do
-            if child:IsA("TextLabel") then
-                if child.Text:lower():find("catjam") or child.Text:lower():find("emote") then
-                    child.Text = emoteName
-                end
-            end
-        end
-        
-        -- Konek ke event click dari tombol asli dan fire dengan nama baru
-        local connections = {}
-        pcall(function() connections = getconnections(existingBtn.MouseButton1Click) end)
-        
-        newBtn.MouseButton1Click:Connect(function()
-            -- Fire semua connection yang ada di tombol asli tapi dengan emote baru
-            for _, conn in pairs(connections) do
-                pcall(function() conn:Fire() end)
-            end
-            -- Juga coba fire remote langsung
-            if foundEmoteRemote then
-                pcall(function() foundEmoteRemote:FireServer(emoteName) end)
-            end
-            Notify("💉 " .. emoteName .. " diklik!", "Semoga server menerimanya!")
-        end)
-        
-        Notify("✅ Berhasil inject '" .. emoteName .. "' ke picker!", "Buka menu Emote Evade, tombol baru sudah muncul!")
-    else
-        -- Buka dulu menu emote Evade baru inject
-        Notify("⚠️ Buka menu EMOTES Evade dulu!", "Masuk ke Customization > EMOTES > klik slot, LALU pencet inject lagi!")
-        if #debugInfo > 0 then
-            Notify("🔍 Debug:", table.concat(debugInfo, " | "):sub(1, 150))
-        end
-    end
+    Notify("🚀 " .. fired .. " variasi dikirim ke '" .. remote.Name .. "'!", "Cek emote slot kamu!")
 end)
 
 

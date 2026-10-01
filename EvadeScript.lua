@@ -866,7 +866,6 @@ BruteForceBtn.MouseButton1Click:Connect(function()
     local eventsFired = 0
     for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
         if obj:IsA("RemoteEvent") then
-            -- Spam berbagai kombinasi argumen yang sering dipakai game Evade
             pcall(function() obj:FireServer("Equip", spoofTarget) end)
             pcall(function() obj:FireServer("EquipEmote", spoofTarget) end)
             pcall(function() obj:FireServer("Emote", spoofTarget) end)
@@ -878,6 +877,39 @@ BruteForceBtn.MouseButton1Click:Connect(function()
         end
     end
     Notify("🔥 Brute-Force Selesai", "Telah mengirim perintah paksa ke " .. eventsFired .. " RemoteEvent!")
+end)
+
+local VisualEmoteBtn = CreateButton("👀 VISUAL ONLY: Putar Rockin' Stride (Kloning)", ScrollingFrame)
+VisualEmoteBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+
+VisualEmoteBtn.MouseButton1Click:Connect(function()
+    local foundAnimId = nil
+    -- Cari animasi internal asli milik Evade (bukan ID gambar decal)
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("Animation") then
+            local name = obj.Name:lower()
+            if name:match("rockin") or name:match("stride") then
+                foundAnimId = obj.AnimationId
+                break
+            end
+        end
+    end
+    
+    if foundAnimId then
+        local numId = foundAnimId:match("%d+")
+        if numId then
+            local ok = PlayAnimNow(numId)
+            if ok then
+                Notify("👀 Berhasil!", "Animasi Rockin' Stride internal ditemukan dan diputar via Kloning!")
+            else
+                Notify("❌ Gagal", "Kloning gagal memutar animasi internal.")
+            end
+        else
+            Notify("❌ Gagal", "ID internal tidak valid.")
+        end
+    else
+        Notify("❌ Tidak Ditemukan", "File animasi Rockin' Stride tidak ada di map ini, atau disembunyikan developer.")
+    end
 end)
 
 local HallowAtmosBtn = CreateButton("🌕 Suasana Map Blood Moon Halloween 2022", ScrollingFrame)

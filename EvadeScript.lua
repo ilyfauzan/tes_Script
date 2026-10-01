@@ -173,55 +173,35 @@ local function PlayAnimNow(idStr)
             currentFakeChar = nil
         end
         
-        -- SHADOW CLONE METHOD (Evade Animation Bypass)
-        char.Archivable = true
-        local clone = char:Clone()
+        -- KITA KEMBALI KE METODE ASLI (TANPA KLONING!)
+        -- Ternyata Kloning malah membuat patung karena rig Evade sangat khusus.
+        -- Kita langsung paksa putar di tubuh asli Abang!
         
-        -- Hapus semua skrip dari dummy agar Evade tidak mengontrolnya
-        for _, v in pairs(clone:GetDescendants()) do
-            if v:IsA("LocalScript") or v:IsA("Script") then
-                v:Destroy()
+        local hum = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChildOfClass("AnimationController")
+        if not hum then return false end
+        
+        local animator = hum:FindFirstChildOfClass("Animator")
+        if not animator then
+            animator = Instance.new("Animator", hum)
+        end
+        
+        local anim = Instance.new("Animation")
+        anim.AnimationId = formattedId
+        
+        currentTrack = animator:LoadAnimation(anim)
+        currentTrack.Priority = Enum.AnimationPriority.Action4 -- Paksa override
+        currentTrack.Looped = true
+        currentTrack:Play(0.1, 99, 1) -- Weight 99 agar sangat memaksa
+        
+        -- Loop agar tidak dimatikan Evade
+        if loopThread then task.cancel(loopThread) end
+        loopThread = task.spawn(function()
+            while task.wait(0.1) do
+                if currentTrack and not currentTrack.IsPlaying then
+                    currentTrack:Play(0.1, 99, 1)
+                end
             end
-        end
-        
-        clone.Parent = game.Workspace
-        currentFakeChar = clone
-        
-        -- Tempelkan Dummy ke Karakter Asli
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        local cloneHrp = clone:FindFirstChild("HumanoidRootPart")
-        if hrp and cloneHrp then
-            cloneHrp.CFrame = hrp.CFrame
-            local weld = Instance.new("WeldConstraint")
-            weld.Part0 = hrp
-            weld.Part1 = cloneHrp
-            weld.Parent = cloneHrp
-        end
-        
-        -- Buat Karakter Asli Tembus Pandang
-        for _, v in pairs(char:GetDescendants()) do
-            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
-                v.Transparency = 1
-            elseif v:IsA("Decal") then
-                v.Transparency = 1
-            end
-        end
-        
-        -- Mainkan Animasi di Dummy
-        local cloneHum = clone:FindFirstChildOfClass("Humanoid")
-        if cloneHum then
-            local cloneAnimator = cloneHum:FindFirstChildOfClass("Animator")
-            if not cloneAnimator then
-                cloneAnimator = Instance.new("Animator", cloneHum)
-            end
-            local anim = Instance.new("Animation")
-            anim.AnimationId = formattedId
-            
-            currentTrack = cloneAnimator:LoadAnimation(anim)
-            currentTrack.Priority = Enum.AnimationPriority.Action4
-            currentTrack.Looped = true
-            currentTrack:Play()
-        end
+        end)
     end)
     return ok
 end

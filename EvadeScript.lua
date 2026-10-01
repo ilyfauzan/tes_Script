@@ -90,35 +90,165 @@ end
 -- FITUR EVADE
 -- ========================================================
 
-local LabelEmote = Instance.new("TextLabel")
-LabelEmote.Size = UDim2.new(1, 0, 0, 20)
-LabelEmote.BackgroundTransparency = 1
-LabelEmote.Text = "🎭 Play by Animation ID"
-LabelEmote.TextColor3 = Color3.fromRGB(200, 200, 200)
-LabelEmote.Font = Enum.Font.GothamBold
-LabelEmote.TextSize = 14
-LabelEmote.TextXAlignment = Enum.TextXAlignment.Left
-LabelEmote.Parent = ScrollingFrame
+local LabelEmoteInject = Instance.new("TextLabel")
+LabelEmoteInject.Size = UDim2.new(1, 0, 0, 20)
+LabelEmoteInject.BackgroundTransparency = 1
+LabelEmoteInject.Text = "🎭 Emote Injector"
+LabelEmoteInject.TextColor3 = Color3.fromRGB(200, 200, 200)
+LabelEmoteInject.Font = Enum.Font.GothamBold
+LabelEmoteInject.TextSize = 14
+LabelEmoteInject.TextXAlignment = Enum.TextXAlignment.Left
+LabelEmoteInject.Parent = ScrollingFrame
 
--- Input ID Animasi langsung
-local IDInput = Instance.new("TextBox")
-IDInput.Size = UDim2.new(1, 0, 0, 40)
-IDInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-IDInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-IDInput.Font = Enum.Font.Gotham
-IDInput.TextSize = 14
-IDInput.PlaceholderText = "Paste Animation ID disini..."
-IDInput.Text = "3360686498" -- Rockin' Stride
-IDInput.Parent = ScrollingFrame
+-- Nama emote yang mau di-inject
+local EmoteNameInput = Instance.new("TextBox")
+EmoteNameInput.Size = UDim2.new(1, 0, 0, 40)
+EmoteNameInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+EmoteNameInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+EmoteNameInput.Font = Enum.Font.Gotham
+EmoteNameInput.TextSize = 14
+EmoteNameInput.PlaceholderText = "Nama emote yang mau di-inject..."
+EmoteNameInput.Text = "Rockin' Stride"
+EmoteNameInput.Parent = ScrollingFrame
+local cornerEI = Instance.new("UICorner")
+cornerEI.CornerRadius = UDim.new(0, 6)
+cornerEI.Parent = EmoteNameInput
 
-local cornerID = Instance.new("UICorner")
-cornerID.CornerRadius = UDim.new(0, 6)
-cornerID.Parent = IDInput
+local InjectBtn = CreateButton("💉 Inject Emote ke Picker UI", ScrollingFrame)
+InjectBtn.BackgroundColor3 = Color3.fromRGB(120, 60, 0)
 
-local loopActive = false
-local loopThread = nil
+local ScanRemoteBtn = CreateButton("🔍 Scan RemoteEvent Emote", ScrollingFrame)
+ScanRemoteBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 100)
 
-local PlayByIDBtn = CreateButton("🎸 Play Animasi (by ID)", ScrollingFrame)
+-- Tombol untuk fire remote secara langsung
+local FireRemoteBtn = CreateButton("🚀 Fire Emote Remote Langsung", ScrollingFrame)
+FireRemoteBtn.BackgroundColor3 = Color3.fromRGB(100, 40, 120)
+
+-- Simpan remote yang ditemukan
+local foundEmoteRemote = nil
+
+ScanRemoteBtn.MouseButton1Click:Connect(function()
+    foundEmoteRemote = nil
+    local playerGui = player:FindFirstChild("PlayerGui")
+    local results = {}
+    
+    -- Scan semua RemoteEvent di ReplicatedStorage
+    for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            local n = obj.Name:lower()
+            if n:find("emote") or n:find("equip") or n:find("item") or n:find("cosmetic") then
+                table.insert(results, obj.Name .. " [" .. obj.ClassName .. "]")
+                if not foundEmoteRemote then
+                    foundEmoteRemote = obj
+                end
+            end
+        end
+    end
+    
+    if #results > 0 then
+        Notify("✅ Remote Ketemu!", table.concat(results, " | "):sub(1, 200))
+    else
+        Notify("❌ Tidak ada Remote Emote/Equip ditemukan.", "Coba inject ke UI langsung!")
+    end
+end)
+
+FireRemoteBtn.MouseButton1Click:Connect(function()
+    local emoteName = EmoteNameInput.Text
+    if not foundEmoteRemote then
+        Notify("❌ Scan dulu!", "Pencet 'Scan RemoteEvent Emote' dulu ya Bang!")
+        return
+    end
+    
+    -- Coba berbagai cara fire remotenya
+    local tries = {
+        function() foundEmoteRemote:FireServer(emoteName) end,
+        function() foundEmoteRemote:FireServer(1, emoteName) end,
+        function() foundEmoteRemote:FireServer({EmoteName = emoteName}) end,
+        function() foundEmoteRemote:FireServer({Emote = emoteName, Slot = 1}) end,
+        function() foundEmoteRemote:FireServer("Equip", emoteName) end,
+    }
+    
+    local fired = 0
+    for _, fn in ipairs(tries) do
+        if pcall(fn) then fired = fired + 1 end
+    end
+    
+    Notify("🚀 Tembak " .. fired .. " variasi!", "Cek emote slot Abang sekarang!")
+end)
+
+InjectBtn.MouseButton1Click:Connect(function()
+    local emoteName = EmoteNameInput.Text
+    local playerGui = player:FindFirstChild("PlayerGui")
+    if not playerGui then Notify("❌", "PlayerGui tidak ditemukan!") return end
+    
+    -- Cari UI "EQUIP AN ITEM" di dalam PlayerGui
+    local itemPickerFrame = nil
+    local existingBtn = nil
+    
+    for _, obj in pairs(playerGui:GetDescendants()) do
+        local nameL = obj.Name:lower()
+        -- Cari frame picker emote
+        if obj:IsA("TextLabel") and (obj.Text:lower():find("equip") or obj.Text:lower():find("item")) then
+            itemPickerFrame = obj.Parent
+        end
+        -- Cari tombol emote yang sudah ada (Catjam dll)
+        if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+            if obj.Name:lower():find("catjam") or 
+               (obj.Parent and obj.Parent.Name:lower():find("emote")) or
+               (obj.Parent and obj.Parent.Name:lower():find("item")) then
+                existingBtn = obj
+            end
+        end
+    end
+    
+    local debugInfo = {}
+    if itemPickerFrame then table.insert(debugInfo, "Frame: " .. itemPickerFrame.Name) end
+    if existingBtn then table.insert(debugInfo, "Btn: " .. existingBtn.Name .. " Parent: " .. existingBtn.Parent.Name) end
+    
+    if existingBtn then
+        -- Clone tombol yang ada dan ubah jadi Rockin' Stride
+        local newBtn = existingBtn:Clone()
+        newBtn.Parent = existingBtn.Parent
+        
+        -- Ganti semua text di dalam clone
+        if newBtn:IsA("TextButton") then
+            newBtn.Text = emoteName
+        end
+        for _, child in pairs(newBtn:GetDescendants()) do
+            if child:IsA("TextLabel") then
+                if child.Text:lower():find("catjam") or child.Text:lower():find("emote") then
+                    child.Text = emoteName
+                end
+            end
+        end
+        
+        -- Konek ke event click dari tombol asli dan fire dengan nama baru
+        local connections = {}
+        pcall(function() connections = getconnections(existingBtn.MouseButton1Click) end)
+        
+        newBtn.MouseButton1Click:Connect(function()
+            -- Fire semua connection yang ada di tombol asli tapi dengan emote baru
+            for _, conn in pairs(connections) do
+                pcall(function() conn:Fire() end)
+            end
+            -- Juga coba fire remote langsung
+            if foundEmoteRemote then
+                pcall(function() foundEmoteRemote:FireServer(emoteName) end)
+            end
+            Notify("💉 " .. emoteName .. " diklik!", "Semoga server menerimanya!")
+        end)
+        
+        Notify("✅ Berhasil inject '" .. emoteName .. "' ke picker!", "Buka menu Emote Evade, tombol baru sudah muncul!")
+    else
+        -- Buka dulu menu emote Evade baru inject
+        Notify("⚠️ Buka menu EMOTES Evade dulu!", "Masuk ke Customization > EMOTES > klik slot, LALU pencet inject lagi!")
+        if #debugInfo > 0 then
+            Notify("🔍 Debug:", table.concat(debugInfo, " | "):sub(1, 150))
+        end
+    end
+end)
+
+
 PlayByIDBtn.BackgroundColor3 = Color3.fromRGB(100, 40, 120)
 
 local LoopBtn = CreateButton("🔁 Loop Mode: OFF", ScrollingFrame)

@@ -61,20 +61,27 @@ local function ScanSpecialEggs()
     return detectedEggsList
 end
 
+local selectedEggIndex = 1
+local eggDropdown = nil
+
 MainTab:CreateButton({
    Name = "🔍 1. Lacak Posisi Telur Special (100B - 2.5T)",
    Callback = function()
        local eggs = ScanSpecialEggs()
        if #eggs > 0 then
-           local listText = ""
+           local options = {}
            for i, eggData in ipairs(eggs) do
-               listText = listText .. tostring(i) .. ". " .. eggData.Name .. " | "
+               table.insert(options, tostring(i) .. ". " .. eggData.Name)
+           end
+           
+           if eggDropdown then
+               eggDropdown:Refresh(options, true)
            end
            
            Rayfield:Notify({
                Title = "🎯 BERHASIL MELACAK!",
-               Content = "Ditemukan " .. tostring(#eggs) .. " Telur: " .. listText,
-               Duration = 6,
+               Content = "Ditemukan " .. tostring(#eggs) .. " Telur Special!",
+               Duration = 4,
            })
        else
            Rayfield:Notify({
@@ -86,8 +93,23 @@ MainTab:CreateButton({
    end,
 })
 
+eggDropdown = MainTab:CreateDropdown({
+   Name = "📌 2. Pilih Telur Target",
+   Options = {"Belum ada telur dilacak"},
+   CurrentOption = {"Belum ada telur dilacak"},
+   MultipleOptions = false,
+   Flag = "SelectedEggDropdown",
+   Callback = function(Option)
+       local selectedText = type(Option) == "table" and Option[1] or Option
+       local idxStr = selectedText:match("^(%d+)%.")
+       if idxStr then
+           selectedEggIndex = tonumber(idxStr)
+       end
+   end,
+})
+
 MainTab:CreateButton({
-   Name = "🚀 2. Teleport ke Telur Hasil Lacak",
+   Name = "🚀 3. Teleport & Diam di Lokasi Telur",
    Callback = function()
        local player = game.Players.LocalPlayer
        local character = player.Character or player.CharacterAdded:Wait()
@@ -100,18 +122,20 @@ MainTab:CreateButton({
        end
 
        if #detectedEggsList > 0 then
-           local target = detectedEggsList[1]
-           hrp.CFrame = target.CFrame
-           
-           Rayfield:Notify({
-               Title = "🚀 Teleport Berhasil!",
-               Content = "Teleport ke lokasi: " .. target.Name,
-               Duration = 4,
-           })
+           local target = detectedEggsList[selectedEggIndex] or detectedEggsList[1]
+           if target and target.CFrame then
+               hrp.CFrame = target.CFrame + Vector3.new(0, 3, 0)
+               
+               Rayfield:Notify({
+                   Title = "🚀 Berhasil Teleport!",
+                   Content = "Anda sekarang berada di posisi " .. target.Name .. "!",
+                   Duration = 4,
+               })
+           end
        else
            Rayfield:Notify({
                Title = "⚠️ Gagal Teleport",
-               Content = "Lacak telur terlebih dahulu atau tunggu telur spawn!",
+               Content = "Klik 'Lacak Posisi Telur' dulu saat telur spawn!",
                Duration = 4,
            })
        end
@@ -119,3 +143,4 @@ MainTab:CreateButton({
 })
 
 Rayfield:LoadConfiguration()
+

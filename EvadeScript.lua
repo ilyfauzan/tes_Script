@@ -277,10 +277,9 @@ DeepScanBtn.MouseButton1Click:Connect(function()
     Notify("⚠️ MENGHACK API ROBLOX...", "Mengambil daftar semua animasi yang pernah dibuat oleh developer Evade...")
     
     task.spawn(function()
-        pcall(function()
+        local success, err = pcall(function()
             -- Hexagon Development Community Group ID: 10854488
-            -- RoProxy digunakan karena Roblox memblokir request langsung dari dalam game
-            local url = "https://catalog.roproxy.com/v1/search/items/details?Category=12&CreatorTargetId=10854488&CreatorType=2&Limit=30"
+            local url = "https://catalog.roproxy.com/v1/search/items/details?Category=12&CreatorTargetId=10854488&CreatorType=2&Limit=120"
             local response = game:HttpGet(url)
             local data = game:GetService("HttpService"):JSONDecode(response)
             
@@ -304,9 +303,13 @@ DeepScanBtn.MouseButton1Click:Connect(function()
                     Notify("✅ Animasi Diputar!", "Jika macet, nyalakan Loop Mode!")
                 end
             else
-                Notify("❌ API GAGAL", "Animasi '" .. EmoteNameInput.Text .. "' disembunyikan dari publik oleh developer.")
+                Notify("❌ API GAGAL", "Animasi '" .. EmoteNameInput.Text .. "' disembunyikan dari publik.")
             end
         end)
+        
+        if not success then
+            Notify("❌ HTTP Error", "Emulator kamu mungkin memblokir script internet: " .. tostring(err))
+        end
     end)
 end)
 

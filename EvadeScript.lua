@@ -275,61 +275,55 @@ DeepScanBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 50)
 
 DeepScanBtn.MouseButton1Click:Connect(function()
     local emoteName = EmoteNameInput.Text:lower()
-    Notify("🧠 Memulai Scan...", "Mencari '" .. EmoteNameInput.Text .. "' di memory. Tunggu 5 detik...")
+    Notify("🧠 Memulai Scan Aman...", "Mencari data '" .. EmoteNameInput.Text .. "' tanpa nge-lag...")
     
     task.spawn(function()
-        local foundIds = {}
-        local scanned = 0
+        task.wait(0.5) -- Biarkan UI merender notifikasi dulu biar ga freeze
         
-        -- 1. Scan ModuleScripts (Aman)
+        local foundIds = {}
+        
+        -- 1. Scan semua objek tipe "Animation" di dalam game
         pcall(function()
             for _, obj in pairs(game:GetDescendants()) do
-                if obj:IsA("ModuleScript") then
-                    pcall(function()
-                        local mod = require(obj)
-                        if type(mod) == "table" then
-                            for k, v in pairs(mod) do
-                                if type(k) == "string" and k:lower():find(emoteName) then
-                                    if type(v) == "table" and (v.AnimationId or v.Id or v.ID) then
-                                        table.insert(foundIds, tostring(v.AnimationId or v.Id or v.ID))
-                                    elseif type(v) == "number" or type(v) == "string" then
-                                        table.insert(foundIds, tostring(v))
-                                    end
-                                end
-                            end
-                        end
-                    end)
+                if obj:IsA("Animation") then
+                    -- Kalau nama animasinya mirip dengan Rockin' Stride
+                    if obj.Name:lower():find(emoteName) then
+                        table.insert(foundIds, obj.AnimationId)
+                    end
                 end
             end
         end)
         
-        -- 2. Scan GC (Beresiko nyangkut, kasih limit)
+        -- 2. Scan ModuleScripts (Config files) secara perlahan
         pcall(function()
-            if getgc then
-                local gc = getgc(true)
-                local maxScan = 50000 -- Limit scan biar ga crash
-                for i, v in ipairs(gc) do
-                    if i > maxScan then break end
-                    
-                    if type(v) == "table" then
-                        local hasEmote = false
-                        local id = nil
-                        pcall(function()
-                            for tk, tv in pairs(v) do
-                                if type(tv) == "string" and tv:lower() == emoteName then
-                                    hasEmote = true
-                                end
-                                if type(tk) == "string" and (tk:lower() == "animationid" or tk:lower() == "anim" or tk:lower() == "id") then
-                                    id = tostring(tv):match("%d+")
+            local modules = {}
+            for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+                if obj:IsA("ModuleScript") then
+                    table.insert(modules, obj)
+                end
+            end
+            
+            for i, obj in ipairs(modules) do
+                pcall(function()
+                    local mod = require(obj)
+                    if type(mod) == "table" then
+                        for k, v in pairs(mod) do
+                            if type(k) == "string" and k:lower():find(emoteName) then
+                                if type(v) == "table" and (v.AnimationId or v.Id or v.ID) then
+                                    table.insert(foundIds, tostring(v.AnimationId or v.Id or v.ID))
+                                elseif type(v) == "number" or type(v) == "string" then
+                                    table.insert(foundIds, tostring(v))
                                 end
                             end
-                        end)
-                        if hasEmote and id then
-                            table.insert(foundIds, id)
+                            if type(v) == "table" and type(v.Name) == "string" and v.Name:lower():find(emoteName) then
+                                 if v.AnimationId or v.Id or v.ID then
+                                    table.insert(foundIds, tostring(v.AnimationId or v.Id or v.ID))
+                                 end
+                            end
                         end
                     end
-                    if i % 10000 == 0 then task.wait(0.1) end
-                end
+                end)
+                if i % 50 == 0 then task.wait() end -- Anti lag
             end
         end)
         
@@ -345,7 +339,7 @@ DeepScanBtn.MouseButton1Click:Connect(function()
                 end
             end
         else
-            Notify("❌ Scan Selesai", "ID '" .. EmoteNameInput.Text .. "' benar-benar tidak ada di memory lokal.")
+            Notify("❌ Scan Selesai", "Data tidak ketemu. Sistem Evade sangat ketat.")
         end
     end)
 end)

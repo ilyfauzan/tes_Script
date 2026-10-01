@@ -52,10 +52,10 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
         plotTarget = player.RespawnLocation.CFrame + Vector3.new(0, 5, 0)
     end
 
-    -- Jika belum ketemu, cari di workspace
     if not plotTarget then
         for _, obj in pairs(workspace:GetDescendants()) do
-            if char and obj:IsDescendantOf(char) then continue end
+            -- Abaikan karakter kita sendiri SEPENUHNYA (termasuk model utama karakter itu sendiri)
+            if char and (obj == char or obj:IsDescendantOf(char)) then continue end
 
             local foundPlot = false
 

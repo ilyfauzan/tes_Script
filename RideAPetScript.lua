@@ -1,11 +1,5 @@
--- ====================================================================
--- RIDE A PET - EGG HUNT & UTILITY SCRIPT (RAYFIELD UI)
--- ====================================================================
-
--- 1. Load Rayfield UI Library
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- 2. Create Main Window
 local Window = Rayfield:CreateWindow({
    Name = "WayaeHUB",
    LoadingTitle = "Memuat WayaeHUB...",
@@ -21,13 +15,9 @@ local Window = Rayfield:CreateWindow({
    KeySystem = false
 })
 
--- ====================================================================
--- FLOATING TOGGLE BUTTON (SIMBOL UNTUK BUKA / TUTUP UI)
--- ====================================================================
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 
--- Hapus tombol lama jika skrip di-execute ulang
 if CoreGui:FindFirstChild("RideAPetToggleButton") then
     CoreGui.RideAPetToggleButton:Destroy()
 end
@@ -48,11 +38,11 @@ ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 ToggleButton.BorderSizePixel = 0
 ToggleButton.Active = true
 ToggleButton.Draggable = true
-ToggleButton.Image = "rbxassetid://6031097225" -- Icon Pet / Egg
+ToggleButton.Image = "rbxassetid://6031097225"
 ToggleButton.Parent = ToggleGui
 
 local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0.5, 0) -- Lingkaran Sempurna
+ToggleCorner.CornerRadius = UDim.new(0.5, 0)
 ToggleCorner.Parent = ToggleButton
 
 local ToggleStroke = Instance.new("UIStroke")
@@ -63,12 +53,9 @@ ToggleStroke.Parent = ToggleButton
 local uiVisible = true
 ToggleButton.MouseButton1Click:Connect(function()
     uiVisible = not uiVisible
-    -- Rayfield builtin toggle / hide window
     if Window and Window.Modify then
-        -- Jika Rayfield mendukung toggle bawaan
         Rayfield:ToggleUI()
     else
-        -- Fallback toggle visual
         local mainFrame = CoreGui:FindFirstChild("Rayfield") or (gethui and gethui():FindFirstChild("Rayfield"))
         if mainFrame then
             mainFrame.Enabled = uiVisible
@@ -76,17 +63,11 @@ ToggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- 3. Create Tabs
 local EggTab = Window:CreateTab("Egg Hunt", 4483362458)
 local PlayerTab = Window:CreateTab("Pemain & Speed", 4483362458)
 
--- ====================================================================
--- TAB 1: EGG HUNT & BASE TELEPORT
--- ====================================================================
-
 local autoEggHunt = false
 
--- Feature A: Ambil Telur Terdekat Instan & Balik ke Base (Single Action)
 EggTab:CreateButton({
    Name = "Ambil Telur Terdekat & Balik ke Base",
    Callback = function()
@@ -103,10 +84,7 @@ EggTab:CreateButton({
            return
        end
 
-       -- Simpan Posisi Base (Posisi Pemain Saat Ini)
        local baseCFrame = hrp.CFrame
-
-       -- Cari Folder Telur di Workspace
        local eggFolder = workspace:FindFirstChild("Eggs") 
            or workspace:FindFirstChild("EggSpawns") 
            or workspace:FindFirstChild("Collectibles")
@@ -121,13 +99,11 @@ EggTab:CreateButton({
            end
 
            if targetEgg then
-               -- Teleport Instan ke Telur
                local eggPosition = targetEgg:IsA("Model") and targetEgg:GetPivot() or targetEgg.CFrame
                hrp.CFrame = eggPosition
                
-               task.wait(0.3) -- Jeda singkat agar server mencatat pengumpulan telur
+               task.wait(0.3)
 
-               -- Teleport Instan Kembali ke Base
                hrp.CFrame = baseCFrame
                
                Rayfield:Notify({
@@ -152,7 +128,6 @@ EggTab:CreateButton({
    end,
 })
 
--- Feature B: Auto Loop Hunt All Eggs to Base (Toggle)
 EggTab:CreateToggle({
    Name = "Auto Loop Hunt All Eggs to Base",
    CurrentValue = false,
@@ -176,13 +151,11 @@ EggTab:CreateToggle({
                        for _, egg in pairs(eggFolder:GetChildren()) do
                            if not autoEggHunt then break end
                            
-                           -- Teleport ke Telur
                            local eggPos = egg:IsA("Model") and egg:GetPivot() or egg.CFrame
                            hrp.CFrame = eggPos
                            
                            task.wait(0.25)
                            
-                           -- Teleport Kembali ke Base
                            hrp.CFrame = baseCFrame
                            task.wait(0.3)
                        end
@@ -194,11 +167,6 @@ EggTab:CreateToggle({
    end,
 })
 
--- ====================================================================
--- TAB 2: PEMAIN & UTILITY SPEED
--- ====================================================================
-
--- Slider WalkSpeed
 PlayerTab:CreateSlider({
    Name = "Kecepatan Jalan (WalkSpeed)",
    Range = {16, 200},
@@ -214,7 +182,6 @@ PlayerTab:CreateSlider({
    end,
 })
 
--- Slider JumpPower
 PlayerTab:CreateSlider({
    Name = "Kekuatan Lompat (JumpPower)",
    Range = {50, 300},
@@ -231,7 +198,6 @@ PlayerTab:CreateSlider({
    end,
 })
 
--- 4. Load Saved Configuration
 Rayfield:LoadConfiguration()
 
-print("[Ride A Pet Hub] Skrip berhasil dimuat!")
+print("[WayaeHUB] Skrip berhasil dimuat!")

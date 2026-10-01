@@ -71,7 +71,7 @@ TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = Header
 
--- Tombol Tutup
+-- Tombol Tutup (minimize ke floating button)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 32, 0, 32)
 CloseBtn.Position = UDim2.new(1, -42, 0, 8)
@@ -87,8 +87,69 @@ local CloseBtnCorner = Instance.new("UICorner")
 CloseBtnCorner.CornerRadius = UDim.new(0, 8)
 CloseBtnCorner.Parent = CloseBtn
 
+-- ════════════════════════════════════════
+--  FLOATING TOGGLE BUTTON
+-- ════════════════════════════════════════
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Name = "WayaeToggle"
+ToggleBtn.Size = UDim2.new(0, 54, 0, 54)
+ToggleBtn.Position = UDim2.new(0, 16, 0.5, -27)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 30, 110)
+ToggleBtn.Text = "🥚"
+ToggleBtn.TextSize = 26
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.BorderSizePixel = 0
+ToggleBtn.Visible = false
+ToggleBtn.ZIndex = 20
+ToggleBtn.Active = true
+ToggleBtn.Draggable = true
+ToggleBtn.Parent = ScreenGui
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(1, 0)
+ToggleCorner.Parent = ToggleBtn
+
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Color = Color3.fromRGB(140, 80, 255)
+ToggleStroke.Thickness = 2
+ToggleStroke.Parent = ToggleBtn
+
+-- Glow effect
+local ToggleGlow = Instance.new("ImageLabel")
+ToggleGlow.Size = UDim2.new(1, 30, 1, 30)
+ToggleGlow.Position = UDim2.new(0, -15, 0, -15)
+ToggleGlow.BackgroundTransparency = 1
+ToggleGlow.Image = "rbxassetid://5028857084"
+ToggleGlow.ImageColor3 = Color3.fromRGB(120, 60, 240)
+ToggleGlow.ImageTransparency = 0.5
+ToggleGlow.ZIndex = 19
+ToggleGlow.Parent = ToggleBtn
+
+-- Animasi glow berdenyut
+task.spawn(function()
+    while true do
+        for i = 1, 20 do
+            if not ToggleBtn.Visible then task.wait(0.5) break end
+            ToggleGlow.ImageTransparency = 0.3 + (i / 20) * 0.5
+            task.wait(0.05)
+        end
+        for i = 20, 1, -1 do
+            if not ToggleBtn.Visible then task.wait(0.5) break end
+            ToggleGlow.ImageTransparency = 0.3 + (i / 20) * 0.5
+            task.wait(0.05)
+        end
+    end
+end)
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    ToggleBtn.Visible = false
+end)
+
 CloseBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
+    MainFrame.Visible = false
+    ToggleBtn.Visible = true
 end)
 
 -- CONTENT AREA

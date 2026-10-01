@@ -23,13 +23,21 @@ ScreenGui.Parent = playerGui
 -- ════════════════════════════════════════
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 340, 0, 480)
-MainFrame.Position = UDim2.new(0.5, -170, 0.5, -240)
+-- RESPONSIVE SETTINGS: Gunakan Scale 0.85 agar otomatis ngikutin ukuran layar HP/Emulator
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainFrame.Size = UDim2.new(0.85, 0, 0.85, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = false  -- Matikan agar tombol di dalam bisa diklik di emulator
 MainFrame.Parent = ScreenGui
+
+-- Batasi maksimalnya sebesar PC/Emulator (340x480), dan minimalnya agar tidak terlalu gepeng
+local SizeConstraint = Instance.new("UISizeConstraint")
+SizeConstraint.MaxSize = Vector2.new(340, 480)
+SizeConstraint.MinSize = Vector2.new(240, 300)
+SizeConstraint.Parent = MainFrame
 
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 12)

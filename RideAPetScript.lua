@@ -20,40 +20,54 @@ local detectedEggsList = {}
 local function ScanSpecialEggs()
     detectedEggsList = {}
     
+    local specialNames = {
+        ["blackhole"] = "100B - Blackhole Egg",
+        ["solaris"] = "300B - Solaris Egg",
+        ["cherub"] = "1T - Cherub Egg",
+        ["volcanic"] = "2.5T - Volcanic Egg"
+    }
+
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") or obj:IsA("BasePart") then
             local nameLower = obj.Name:lower()
-            local isMatch = false
+            local foundTierName = nil
 
-            if nameLower:find("egg") or nameLower:find("telur") or nameLower:find("100b") or nameLower:find("300b") or nameLower:find("1t") or nameLower:find("2.5t") or nameLower:find("spawn") then
-                isMatch = true
+            for keyword, displayName in pairs(specialNames) do
+                if nameLower:find(keyword) then
+                    foundTierName = displayName
+                    break
+                end
             end
 
-            if not isMatch then
+            if not foundTierName then
                 for _, child in pairs(obj:GetChildren()) do
-                    if child:IsA("TextLabel") or child:IsA("BillboardGui") or child:IsA("StringValue") or child:IsA("TouchTransmitter") or child:IsA("ProximityPrompt") then
-                        isMatch = true
-                        break
+                    if child:IsA("TextLabel") or child:IsA("StringValue") then
+                        local textVal = (child:IsA("TextLabel") and child.Text or tostring(child.Value)):lower()
+                        for keyword, displayName in pairs(specialNames) do
+                            if textVal:find(keyword) then
+                                foundTierName = displayName
+                                break
+                            end
+                        end
                     end
+                    if foundTierName then break end
                 end
             end
 
-            if isMatch then
-                local hasParentEggFolder = obj.Parent and (obj.Parent.Name:lower():find("egg") or obj.Parent.Name:lower():find("spawn") or obj.Parent.Name:lower():find("map"))
-                if isMatch or hasParentEggFolder then
-                    local eggCFrame = obj:IsA("Model") and obj:GetPivot() or obj.CFrame
-                    table.insert(detectedEggsList, {
-                        Name = obj.Name .. " (" .. obj.ClassName .. ")",
-                        Instance = obj,
-                        CFrame = eggCFrame
-                    })
-                end
+            if foundTierName then
+                local eggCFrame = obj:IsA("Model") and obj:GetPivot() or obj.CFrame
+                table.insert(detectedEggsList, {
+                    Name = foundTierName .. " [" .. obj.Name .. "]",
+                    Instance = obj,
+                    CFrame = eggCFrame
+                })
             end
         end
     end
 
     return detectedEggsList
 end
+
 
 
 local selectedEggIndex = 1

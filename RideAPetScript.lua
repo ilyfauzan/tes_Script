@@ -1,7 +1,10 @@
 local pcall = pcall
+local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+
+local randomGuiName = "Wayae_" .. HttpService:GenerateGUID(false):sub(1, 8)
 
 pcall(function()
     local oldNamecall
@@ -13,6 +16,18 @@ pcall(function()
             end
         end
         return oldNamecall(self, ...)
+    end)
+
+    local oldIndex
+    oldIndex = hookmetamethod(game, "__index", function(self, key)
+        if not checkcaller() and self:IsA("Humanoid") and self.Parent == LocalPlayer.Character then
+            if key == "WalkSpeed" then
+                return 16
+            elseif key == "JumpPower" then
+                return 50
+            end
+        end
+        return oldIndex(self, key)
     end)
 end)
 
@@ -34,7 +49,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "WayaeHUB",
-   LoadingTitle = "Memuat WayaeHUB (Safe Mode)...",
+   LoadingTitle = "Memuat WayaeHUB...",
    LoadingSubtitle = "by Antigravity",
    ConfigurationSaving = {
       Enabled = true,
@@ -49,12 +64,14 @@ local Window = Rayfield:CreateWindow({
 
 local CoreGui = game:GetService("CoreGui")
 
-if CoreGui:FindFirstChild("RideAPetToggleButton") then
-    CoreGui.RideAPetToggleButton:Destroy()
+for _, oldGui in pairs(CoreGui:GetChildren()) do
+    if oldGui.Name:find("Wayae_") or oldGui.Name == "RideAPetToggleButton" then
+        oldGui:Destroy()
+    end
 end
 
 local ToggleGui = Instance.new("ScreenGui")
-ToggleGui.Name = "RideAPetToggleButton"
+ToggleGui.Name = randomGuiName
 if gethui then
     ToggleGui.Parent = gethui()
 else
@@ -62,7 +79,7 @@ else
 end
 
 local ToggleButton = Instance.new("ImageButton")
-ToggleButton.Name = "OpenCloseButton"
+ToggleButton.Name = HttpService:GenerateGUID(false):sub(1, 6)
 ToggleButton.Size = UDim2.new(0, 50, 0, 50)
 ToggleButton.Position = UDim2.new(0.02, 0, 0.4, 0)
 ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
@@ -194,7 +211,6 @@ EggTab:CreateToggle({
    end,
 })
 
-local walkSpeedConnection = nil
 PlayerTab:CreateSlider({
    Name = "Kecepatan Jalan Safe (WalkSpeed)",
    Range = {16, 120},
@@ -225,5 +241,3 @@ PlayerTab:CreateSlider({
 })
 
 Rayfield:LoadConfiguration()
-
-print("[WayaeHUB] Skrip Safe-Mode 100% berhasil dimuat!")

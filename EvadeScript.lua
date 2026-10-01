@@ -285,7 +285,11 @@ DeepScanBtn.MouseButton1Click:Connect(function()
                 pcall(function()
                     local mod = require(obj)
                     if type(mod) == "table" then
-                        local function searchTable(t)
+                        local function searchTable(t, visited, depth)
+                            if depth > 3 then return end -- Batasi kedalaman maksimal
+                            if visited[t] then return end -- Cegah infinite loop (crash)
+                            visited[t] = true
+                            
                             for k, v in pairs(t) do
                                 if type(k) == "string" and k:lower():find(emoteName) then
                                     if type(v) == "table" then
@@ -303,14 +307,16 @@ DeepScanBtn.MouseButton1Click:Connect(function()
                                             end
                                         end
                                     else
-                                        searchTable(v)
+                                        searchTable(v, visited, depth + 1)
                                     end
                                 end
                             end
                         end
-                        searchTable(mod)
+                        searchTable(mod, {}, 0)
                     end
                 end)
+                task.wait() -- Wajib ada supaya emulator tidak force close!
+
             end
         end
         

@@ -270,18 +270,14 @@ FireRemoteBtn.MouseButton1Click:Connect(function()
     Notify("🚀 " .. fired .. " variasi dikirim ke '" .. remote.Name .. "'!", "Cek emote slot kamu!")
 end)
 
-local DeepScanBtn = CreateButton("🔍 BONGKAR DATABASE EVADE (Buka F9)", ScrollingFrame)
+local DeepScanBtn = CreateButton("🔍 BONGKAR DATABASE EVADE (Mobile Safe)", ScrollingFrame)
 DeepScanBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
 
 DeepScanBtn.MouseButton1Click:Connect(function()
-    Notify("⚠️ MEMBONGKAR DATABASE...", "Buka console (tekan F9) sekarang! Scroll ke paling bawah!")
+    Notify("⚠️ MEMBONGKAR DATABASE...", "Mencari ID Rockin' Stride di file game...")
     
     task.spawn(function()
-        print("=========================================")
-        print("🔍 MENCARI 'ROCKIN' STRIDE' DI SEMUA MODULE EVADE...")
-        print("=========================================")
-        
-        local foundAnything = false
+        local foundIds = {}
         local emoteName = "rockin"
         
         for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
@@ -289,44 +285,55 @@ DeepScanBtn.MouseButton1Click:Connect(function()
                 pcall(function()
                     local mod = require(obj)
                     if type(mod) == "table" then
-                        -- Fungsi rekursif untuk nge-print isi table kalau ada "rockin"
-                        local function searchTable(t, path)
+                        local function searchTable(t)
                             for k, v in pairs(t) do
-                                local newPath = path .. "." .. tostring(k)
                                 if type(k) == "string" and k:lower():find(emoteName) then
-                                    print("🎯 KETEMU DI KEY: " .. newPath)
-                                    print("Isi datanya:")
-                                    for subK, subV in pairs(v) do
-                                        print("   - " .. tostring(subK) .. ": " .. tostring(subV))
+                                    if type(v) == "table" then
+                                        for subK, subV in pairs(v) do
+                                            if tostring(subK):lower():find("id") then
+                                                table.insert(foundIds, tostring(subV))
+                                            end
+                                        end
                                     end
-                                    foundAnything = true
                                 elseif type(v) == "table" then
                                     if type(v.Name) == "string" and v.Name:lower():find(emoteName) then
-                                        print("🎯 KETEMU DI NAMA: " .. newPath)
                                         for subK, subV in pairs(v) do
-                                            print("   - " .. tostring(subK) .. ": " .. tostring(subV))
+                                            if tostring(subK):lower():find("id") then
+                                                table.insert(foundIds, tostring(subV))
+                                            end
                                         end
-                                        foundAnything = true
                                     else
-                                        searchTable(v, newPath)
+                                        searchTable(v)
                                     end
                                 end
                             end
                         end
-                        
-                        searchTable(mod, obj.Name)
+                        searchTable(mod)
                     end
                 end)
             end
         end
         
-        print("=========================================")
-        if foundAnything then
-            print("✅ SELESAI! Coba cari tulisan 'AnimationId' atau 'AssetId' dari hasil di atas!")
+        if #foundIds > 0 then
+            -- Ambil ID pertama yang ketemu dan berupa angka
+            local idKetemu = nil
+            for _, idStr in ipairs(foundIds) do
+                local num = idStr:match("%d+")
+                if num and string.len(num) > 5 then -- Pastikan itu format ID Roblox yang valid
+                    idKetemu = num
+                    break
+                end
+            end
+            
+            if idKetemu then
+                Notify("🎯 KETEMU ID: " .. idKetemu, "Langsung dimasukkan ke kolom ID. Coba Play sekarang!")
+                if IDInput then IDInput.Text = idKetemu end
+            else
+                Notify("❌ GAGAL!", "Ketemu datanya, tapi tidak ada ID angka di dalamnya.")
+            end
         else
-            print("❌ GAGAL! Evade bener-bener gak nyimpen datanya di client.")
+            Notify("❌ GAGAL!", "Evade menyembunyikan datanya sangat rapat di Server.")
         end
-        print("=========================================")
     end)
 end)
 

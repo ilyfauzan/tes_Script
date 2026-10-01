@@ -352,8 +352,37 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                 if Wayae.autoFarmRunning then
                                     local tpSuccess = Wayae.TeleportToPlot()
                                     if tpSuccess then
-                                        -- Tunggu 1.5 detik biar telurnya otomatis disetor ke plot
+                                        -- Tunggu 1.5 detik biar char stabil di plot
                                         task.wait(1.5)
+                                        
+                                        -- 1. Lepas telur dari tangan biar kosong
+                                        local hum = char:FindFirstChildOfClass("Humanoid")
+                                        if hum then
+                                            hum:UnequipTools()
+                                        end
+                                        
+                                        -- 2. Coba cari Nest / Incubator di sekitar plot dan tembak otomatis biar telur beneran disetor
+                                        for _, prompt in pairs(workspace:GetDescendants()) do
+                                            if prompt:IsA("ProximityPrompt") and prompt.Parent and prompt.Parent:IsA("BasePart") then
+                                                local dist = (prompt.Parent.Position - hrp.Position).Magnitude
+                                                if dist < 60 then
+                                                    local actionText = prompt.ActionText:lower()
+                                                    local objectText = prompt.ObjectText:lower()
+                                                    local name = prompt.Name:lower()
+                                                    local parentName = prompt.Parent.Name:lower()
+                                                    
+                                                    if actionText:find("deposit") or actionText:find("incubate") or actionText:find("hatch") or actionText:find("place") or actionText:find("put") or objectText:find("nest") or parentName:find("incubator") or parentName:find("nest") then
+                                                        if fireproximityprompt then
+                                                            fireproximityprompt(prompt, 1)
+                                                            fireproximityprompt(prompt)
+                                                        end
+                                                    end
+                                                end
+                                            end
+                                        end
+                                        
+                                        -- Tunggu sebentar lagi biar animasinya selesai
+                                        task.wait(1)
                                     else
                                         Wayae.UI.Notify("⚠️ Auto Farm", "Gagal teleport ke Plot!", 3)
                                     end

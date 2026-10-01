@@ -10,9 +10,9 @@ if not getgenv().Wayae then
         UI = {}
     }
 end
-import("Wayae_UI_v3")
-import("Wayae_Scanner_v3")
-import("Wayae_Actions_v3")
+import("Wayae_UI_v4")
+import("Wayae_Scanner_v4")
+import("Wayae_Actions_v4")
 if getgenv().Wayae and getgenv().Wayae.UI and getgenv().Wayae.UI.Notify then
     getgenv().Wayae.UI.Notify("✅ Loaded!", "WayaeHUB berhasil dimuat dari modul terpisah!", 3)
 end

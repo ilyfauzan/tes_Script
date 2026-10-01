@@ -684,26 +684,13 @@ VolcanicTestBtn.MouseButton1Click:Connect(function()
     -- Langsung teleport ke koordinat Volcanic Egg yang sudah pasti
     local targetCFrame = CFrame.new(-5332, 40912, -3542)
     
-    -- Buat lantai pijakan sementara (karena map kadang telat load collisionnya / StreamingEnabled)
-    local tempFloor = Instance.new("Part")
-    tempFloor.Size = Vector3.new(50, 5, 50)
-    tempFloor.Position = targetCFrame.Position - Vector3.new(0, 5, 0)
-    tempFloor.Anchored = true
-    tempFloor.Transparency = 1 -- tidak terlihat
-    tempFloor.Parent = workspace
-    
-    -- Reset velocity & teleport tanpa Anchor (biar gamenya gak nge-bug)
+    -- Teleport biasa tanpa anchor, tanpa blok lantai tambahan
+    -- Ketinggian +3 pas untuk berdiri, tidak nabrak atap gua
     hrp.AssemblyLinearVelocity = Vector3.zero
     hrp.AssemblyAngularVelocity = Vector3.zero
-    char:PivotTo(targetCFrame + Vector3.new(0, 5, 0))
+    hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
     
-    Notify("🌋 Teleporting...", "Membuat pijakan sementara agar tidak jatuh...", 2)
-    
-    -- Hapus lantai sementaranya setelah 4 detik (waktu yang cukup untuk map asli ter-load)
-    task.delay(4, function()
-        if tempFloor then tempFloor:Destroy() end
-        Notify("✅ Selesai", "Teleport berhasil, lantai aman!", 3)
-    end)
+    Notify("🌋 Volcanic Teleport", "Teleport berhasil!", 4)
 end)
 GetPosBtn.MouseButton1Click:Connect(function()
     local char = player.Character

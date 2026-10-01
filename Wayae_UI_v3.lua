@@ -187,7 +187,6 @@ end
 
 local MainMenu = MakeContainer("MainMenu")
 local EggMenu = MakeContainer("EggMenu")
-local PlotMenu = MakeContainer("PlotMenu")
 local ExtraMenu = MakeContainer("ExtraMenu")
 MainMenu.Visible = true
 
@@ -221,25 +220,20 @@ end
 local function SwitchMenu(showMenu)
     MainMenu.Visible = false
     EggMenu.Visible = false
-    PlotMenu.Visible = false
     ExtraMenu.Visible = false
     showMenu.Visible = true
 end
 
 local BtnOpenEgg = MakeButton(MainMenu, "🥚 Buka Menu Telur ➔", 1, Color3.fromRGB(80, 40, 40))
-local BtnOpenPlot = MakeButton(MainMenu, "🏕️ Buka Menu Plot ➔", 2, Color3.fromRGB(30, 70, 40))
 local BtnOpenExtra = MakeButton(MainMenu, "⚙️ Buka Menu Ekstra ➔", 3, Color3.fromRGB(40, 40, 80))
 
 BtnOpenEgg.MouseButton1Click:Connect(function() SwitchMenu(EggMenu) end)
-BtnOpenPlot.MouseButton1Click:Connect(function() SwitchMenu(PlotMenu) end)
 BtnOpenExtra.MouseButton1Click:Connect(function() SwitchMenu(ExtraMenu) end)
 
 local BackBtn1 = MakeButton(EggMenu, "⬅️ Kembali ke Utama", 0, Color3.fromRGB(20, 20, 30))
-local BackBtn2 = MakeButton(PlotMenu, "⬅️ Kembali ke Utama", 0, Color3.fromRGB(20, 20, 30))
 local BackBtn3 = MakeButton(ExtraMenu, "⬅️ Kembali ke Utama", 0, Color3.fromRGB(20, 20, 30))
 
 BackBtn1.MouseButton1Click:Connect(function() SwitchMenu(MainMenu) end)
-BackBtn2.MouseButton1Click:Connect(function() SwitchMenu(MainMenu) end)
 BackBtn3.MouseButton1Click:Connect(function() SwitchMenu(MainMenu) end)
 
 Wayae.UI.dropdownOptions = {"Belum ada telur dilacak"}
@@ -340,8 +334,7 @@ Wayae.UI.RefreshDropdown(Wayae.UI.dropdownOptions)
 
 Wayae.UI.ScanBtn = MakeButton(EggMenu, "🔍 1. Lacak Telur Special", 1)
 Wayae.UI.TeleportBtn = MakeButton(EggMenu, "🚀 2. Teleport ke Lokasi Telur", 5)
-
-Wayae.UI.SellBtn = MakeButton(PlotMenu, "🏕️ Teleport ke My Plot / Ranch", 1)
+Wayae.UI.SellBtn = MakeButton(EggMenu, "🏕️ 3. Teleport ke My Plot / Ranch", 6)
 
 Wayae.UI.GetPosBtn = MakeButton(ExtraMenu, "📍 Ambil Posisi Saya Sekarang", 1)
 Wayae.UI.SaveLocBtn = MakeButton(ExtraMenu, "💾 Save Last Location", 2)

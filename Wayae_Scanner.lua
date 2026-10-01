@@ -113,8 +113,17 @@ Wayae.ScanSpecialEggs = function()
                     eggCFrame = obj.CFrame
                 end
 
+                -- FILTER KHUSUS VOLCANIC EGG:
+                -- Karena developer menaruh patung "Tidal Egg" di lobby, patung itu sering terdeteksi.
+                -- Telur Volcanic yang ASLI pasti spawn di dalam gua (koordinat sekitar X: -5332, Y: 40912, Z: -3542).
                 if foundTierName == "2.5T - Volcanic Egg" then
-                    eggCFrame = CFrame.new(-5332, 40912, -3542)
+                    local cavePos = Vector3.new(-5332, 40912, -3542)
+                    -- Kalau jarak telur ini lebih dari 200 stud dari gua, berarti ini patung lobby! SKIP!
+                    if (eggCFrame.Position - cavePos).Magnitude > 200 then
+                        continue
+                    end
+                    -- Gunakan posisi paksa agar aman dari dinding
+                    eggCFrame = CFrame.new(cavePos)
                 end
 
                 local isDuplicate = false

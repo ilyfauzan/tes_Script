@@ -255,10 +255,14 @@ local function SetupMenuHijack()
     -- Pindahkan kloningan ke posisi patung palsu
     clonedChar:PivotTo(visualModel:GetPivot())
     
-    -- Pastikan kloningan terlihat jelas
+    -- Pastikan kloningan terlihat jelas dan JANGAN SAMPAI JATUH (Anchor)
     for _, desc in pairs(clonedChar:GetDescendants()) do
-        if desc:IsA("BasePart") and desc.Name ~= "HumanoidRootPart" then
-            desc.Transparency = 0
+        if desc:IsA("BasePart") then
+            if desc.Name == "HumanoidRootPart" then
+                desc.Anchored = true -- Tahan biar nggak jatuh ke bawah map!
+            else
+                desc.Transparency = 0
+            end
         end
     end
     

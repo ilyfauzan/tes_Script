@@ -198,7 +198,6 @@ local function SetupMenuHijack()
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and obj.Name == "VisualModel" then
             visualModel = obj
-            -- Sembunyikan patung palsu
             for _, desc in pairs(obj:GetDescendants()) do
                 if desc:IsA("BasePart") or desc:IsA("Decal") then
                     pcall(function() desc.Transparency = 1 end)
@@ -214,61 +213,40 @@ local function SetupMenuHijack()
     
     if clonedChar then clonedChar:Destroy() end
     
-    local realChar = GetRealCharacter()
+    -- JANGAN KLONING KARAKTER ASLI (terlalu banyak script Evade yang nempel)
+    -- Kita buat DUMMY BERSIH 100% dari server Roblox
+    Notify("⚠️ Info", "Memanggil Dummy Bersih...")
+    local success, dummy = pcall(function()
+        return game:GetObjects("rbxassetid://1664543044")[1]
+    end)
     
-    if realChar then
-        -- Kita ketemu karakter aslinya, teleport aja
-        realChar.Archivable = true
-        clonedChar = realChar:Clone()
-    else
-        -- GAGAL ketemu karakter asli? NGGAK MASALAH!
-        -- Kita panggil Dummy R15 asli dari Roblox dan pakaikan baju kita sendiri!
-        Notify("⚠️ Info", "Membangun Dummy R15 baru...")
-        local success, dummy = pcall(function()
-            return game:GetObjects("rbxassetid://1664543044")[1]
+    if success and dummy then
+        clonedChar = dummy
+        -- Pakaikan baju dan muka kita
+        pcall(function()
+            local desc = game.Players:GetHumanoidDescriptionFromUserId(player.UserId)
+            clonedChar.Humanoid:ApplyDescription(desc)
         end)
-        
-        if success and dummy then
-            clonedChar = dummy
-            -- Pasang baju dan muka kita
-            pcall(function()
-                local desc = game.Players:GetHumanoidDescriptionFromUserId(player.UserId)
-                clonedChar.Humanoid:ApplyDescription(desc)
-            end)
-        else
-            return nil, "Gagal memanggil Dummy dari Roblox!"
-        end
+    else
+        return nil, "Gagal memanggil Dummy dari Roblox!"
     end
     
-    if not clonedChar then return nil, "Gagal menyiapkan karakter!" end
+    -- Trik Rahasia: Taruh di dalam KAMERA supaya tidak dihapus oleh Anti-Cheat Evade
+    clonedChar.Parent = workspace.CurrentCamera
     
-    -- Matikan semua script di kloningan supaya tidak dibajak Evade
-    for _, desc in pairs(clonedChar:GetDescendants()) do
-        if desc:IsA("Script") or desc:IsA("LocalScript") then
-            desc.Disabled = true
-            desc:Destroy()
-        end
-    end
-    
-    -- Taruh persis di dalam folder yang sama dengan patung palsu (MenuView)
-    clonedChar.Parent = visualModel.Parent
-    
-    -- Pindahkan kloningan ke posisi patung palsu
+    -- Pindahkan ke posisi patung palsu
     clonedChar:PivotTo(visualModel:GetPivot())
     
-    -- Pastikan kloningan terlihat jelas, JANGAN JATUH, dan BISA BERGERAK
+    -- Setting Fisika yang Benar untuk Dummy
     for _, desc in pairs(clonedChar:GetDescendants()) do
         if desc:IsA("BasePart") then
             if desc.Name == "HumanoidRootPart" then
                 desc.Anchored = true -- Tahan di udara
                 desc.Transparency = 1
             else
-                desc.Anchored = false -- WAJIB FALSE supaya sendi Motor6D bisa bergerak!
+                desc.Anchored = false -- Harus lepas biar bisa joget
                 desc.Transparency = 0
-                pcall(function() desc.LocalTransparencyModifier = 0 end)
             end
-        elseif desc:IsA("Decal") then
-            desc.Transparency = 0
         end
     end
     

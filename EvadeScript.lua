@@ -184,7 +184,7 @@ local function GetRealCharacter()
     -- Prioritas 3: Folder Rigs di Workspace (Terlihat di DarkDex)
     if workspace:FindFirstChild("Rigs") then
         local char = workspace.Rigs:FindFirstChild(player.Name)
-        if char and char:FindFirstChild("HumanoidRootPart") then
+        if char and char:IsA("Model") then
             return char
         end
     end

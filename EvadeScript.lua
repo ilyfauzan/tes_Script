@@ -151,6 +151,12 @@ local activeTracks = {}
 local loopThread = nil
 
 local function GetActiveCharacter()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name == "VisualModel" and obj:FindFirstChildOfClass("Humanoid") then
+            return obj
+        end
+    end
+
     local cam = workspace.CurrentCamera
     if cam and cam.CameraSubject then
         local subject = cam.CameraSubject

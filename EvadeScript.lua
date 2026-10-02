@@ -529,23 +529,59 @@ InternalEmoteLabel.TextSize = 14
 InternalEmoteLabel.TextXAlignment = Enum.TextXAlignment.Left
 InternalEmoteLabel.Parent = ScrollingFrame
 
+local rockinIndex = 1
 local RockinBtn = CreateButton("🕺 Play Rockin' Stride", ScrollingFrame)
 RockinBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 RockinBtn.MouseButton1Click:Connect(function()
-    local anim = GetInternalEmote("rockin")
-    if not anim then anim = GetInternalEmote("stride") end
+    local keyword = "rockin"
+    local matches = {}
     
-    if anim then
+    local services = {game:GetService("ReplicatedStorage"), workspace, player}
+    for _, service in pairs(services) do
+        local objects = {}
+        pcall(function() objects = service:GetDescendants() end)
+        for _, obj in pairs(objects) do
+            if obj:IsA("Animation") then
+                local nameMatch = string.find(string.lower(obj.Name), keyword)
+                local parentMatch = obj.Parent and string.find(string.lower(obj.Parent.Name), keyword)
+                if nameMatch or parentMatch then
+                    table.insert(matches, obj)
+                end
+            end
+        end
+    end
+    
+    if #matches == 0 then
+        keyword = "stride"
+        for _, service in pairs(services) do
+            local objects = {}
+            pcall(function() objects = service:GetDescendants() end)
+            for _, obj in pairs(objects) do
+                if obj:IsA("Animation") then
+                    local nameMatch = string.find(string.lower(obj.Name), keyword)
+                    local parentMatch = obj.Parent and string.find(string.lower(obj.Parent.Name), keyword)
+                    if nameMatch or parentMatch then
+                        table.insert(matches, obj)
+                    end
+                end
+            end
+        end
+    end
+    
+    if #matches > 0 then
+        if rockinIndex > #matches then rockinIndex = 1 end
+        local anim = matches[rockinIndex]
         local id = anim.AnimationId:match("%d+")
         if id then
             if IDInput then IDInput.Text = id end
             PlayAnimNow(id)
-            Notify("✅ Berhasil!", "Memutar " .. anim.Name .. " (ID: " .. id .. ")")
+            Notify("✅ Berhasil!", "Memutar Varian " .. rockinIndex .. "/" .. #matches .. " (ID: " .. id .. ")")
         else
             Notify("❌ Gagal", "AnimationId tidak valid.")
         end
+        rockinIndex = rockinIndex + 1
     else
-        Notify("❌ Gagal", "Emote Rockin Stride tidak ditemukan di memori Evade. Coba pancing orang lain/bot biar make dulu!")
+        Notify("❌ Gagal", "Emote Rockin Stride tidak ditemukan di memori Evade.")
     end
 end)
 

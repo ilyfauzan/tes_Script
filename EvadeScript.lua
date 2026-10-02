@@ -251,12 +251,12 @@ StopBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ========================================================
--- 🎬 AUTO-CATCH VISUAL EMOTE (TANGKAP OTOMATIS DARI SHOP)
+-- 🔍 SMART SCANNER (CARI DUMMY SHOP)
 -- ========================================================
 local LabelAutoCatch = Instance.new("TextLabel")
 LabelAutoCatch.Size = UDim2.new(1, 0, 0, 20)
 LabelAutoCatch.BackgroundTransparency = 1
-LabelAutoCatch.Text = "🎬 Auto-Catch Visual Emote (dari Shop)"
+LabelAutoCatch.Text = "🔍 Smart Scanner (Pilih Manual!)"
 LabelAutoCatch.TextColor3 = Color3.fromRGB(100, 220, 255)
 LabelAutoCatch.Font = Enum.Font.GothamBold
 LabelAutoCatch.TextSize = 14
@@ -266,7 +266,7 @@ LabelAutoCatch.Parent = ScrollingFrame
 local LabelAutoCatchInfo = Instance.new("TextLabel")
 LabelAutoCatchInfo.Size = UDim2.new(1, 0, 0, 40)
 LabelAutoCatchInfo.BackgroundTransparency = 1
-LabelAutoCatchInfo.Text = "Aktifkan → buka shop Evade → hover emote → ID otomatis tertangkap!"
+LabelAutoCatchInfo.Text = "Klik emote di shop agar bergerak, lalu tekan Scan. Cari ID yang namanya [Dummy]!"
 LabelAutoCatchInfo.TextColor3 = Color3.fromRGB(160, 160, 160)
 LabelAutoCatchInfo.Font = Enum.Font.Gotham
 LabelAutoCatchInfo.TextSize = 11
@@ -274,21 +274,8 @@ LabelAutoCatchInfo.TextXAlignment = Enum.TextXAlignment.Left
 LabelAutoCatchInfo.TextWrapped = true
 LabelAutoCatchInfo.Parent = ScrollingFrame
 
-local AutoCatchBtn = CreateButton("🎬 Auto-Catch: OFF", ScrollingFrame)
-AutoCatchBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 80)
-
-local ClearCatchBtn = CreateButton("🗑️ Hapus Semua Hasil Tangkapan", ScrollingFrame)
-ClearCatchBtn.BackgroundColor3 = Color3.fromRGB(60, 30, 30)
-
-local CatchStatusLabel = Instance.new("TextLabel")
-CatchStatusLabel.Size = UDim2.new(1, 0, 0, 20)
-CatchStatusLabel.BackgroundTransparency = 1
-CatchStatusLabel.Text = "Belum menangkap emote apapun..."
-CatchStatusLabel.TextColor3 = Color3.fromRGB(255, 220, 80)
-CatchStatusLabel.Font = Enum.Font.Gotham
-CatchStatusLabel.TextSize = 12
-CatchStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-CatchStatusLabel.Parent = ScrollingFrame
+local ScanBtn = CreateButton("🔍 Scan Emote Sekarang", ScrollingFrame)
+ScanBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 180)
 
 local CatchContainer = Instance.new("Frame")
 CatchContainer.Size = UDim2.new(1, 0, 0, 0)
@@ -300,11 +287,6 @@ CatchLayout.Padding = UDim.new(0, 5)
 CatchLayout.SortOrder = Enum.SortOrder.LayoutOrder
 CatchLayout.Parent = CatchContainer
 
-local autoCatchActive = false
-local autoCatchThread = nil
-local caughtEmotes = {}
-local caughtEmoteCount = 0
-
 local baseAnimIds = {
     ["507770239"] = true, ["507777826"] = true, ["507766388"] = true,
     ["507766951"] = true, ["507766666"] = true, ["507765000"] = true,
@@ -312,142 +294,115 @@ local baseAnimIds = {
     ["507767202"] = true,
 }
 
--- Dihapus karena kita ganti pakai HookMetamethod yang jauh lebih akurat
+ScanBtn.MouseButton1Click:Connect(function()
+    ScanBtn.Text = "⏳ Scanning..."
+    task.wait(0.1)
 
-local function AddCaughtEmoteButton(id)
-    caughtEmoteCount = caughtEmoteCount + 1
-    local label = "Emote #" .. caughtEmoteCount
+    for _, child in pairs(CatchContainer:GetChildren()) do
+        if not child:IsA("UIListLayout") then child:Destroy() end
+    end
 
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 38)
-    btn.BackgroundColor3 = Color3.fromRGB(10, 60, 80)
-    btn.TextColor3 = Color3.fromRGB(100, 220, 255)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 12
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    btn.TextTruncate = Enum.TextTruncate.AtEnd
-    btn.Text = "▶️ " .. label .. "  |  ID: " .. id
-    btn.Parent = CatchContainer
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = btn
-
-    local copyBtn = Instance.new("TextButton")
-    copyBtn.Size = UDim2.new(0, 60, 1, 0)
-    copyBtn.Position = UDim2.new(1, -62, 0, 0)
-    copyBtn.BackgroundColor3 = Color3.fromRGB(20, 80, 100)
-    copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    copyBtn.Font = Enum.Font.GothamBold
-    copyBtn.TextSize = 11
-    copyBtn.Text = "📋 Copy"
-    copyBtn.ZIndex = 2
-    copyBtn.Parent = btn
-
-    local copyCorner = Instance.new("UICorner")
-    copyCorner.CornerRadius = UDim.new(0, 5)
-    copyCorner.Parent = copyBtn
-
-    btn.MouseButton1Click:Connect(function()
-        if IDInput then IDInput.Text = id end
-        local ok = PlayAnimNow(id)
-        if ok then
-            Notify("✅ Visual Emote Dimainkan!", "ID: " .. id .. " | Hanya kamu yang bisa lihat!")
-        else
-            Notify("❌ Gagal", "Karakter tidak siap atau animasi tidak valid.")
-        end
-    end)
-
-    copyBtn.MouseButton1Click:Connect(function()
-        if IDInput then IDInput.Text = id end
-        copyBtn.Text = "✅ Copied!"
-        task.delay(1.5, function()
-            if copyBtn and copyBtn.Parent then
-                copyBtn.Text = "📋 Copy"
-            end
-        end)
-    end)
-
-    CatchContainer.Size = UDim2.new(1, 0, 0, CatchLayout.AbsoluteContentSize.Y)
-end
-
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local method = getnamecallmethod()
+    local uniqueAnims = {}
+    local roots = { game:GetService("Workspace"), player:FindFirstChild("PlayerGui") }
     
-    if autoCatchActive then
-        local animId = nil
-        local trackOrAnimator = nil
-        
-        -- Tangkap saat script shop Evade mencoba me-load atau memutar animasi
-        if method == "LoadAnimation" then
-            local anim = select(1, ...)
-            if typeof(anim) == "Instance" and anim:IsA("Animation") then
-                animId = anim.AnimationId
-                trackOrAnimator = self -- Animator
-            end
-        elseif method == "Play" and typeof(self) == "Instance" and self:IsA("AnimationTrack") then
-            if self.Animation then
-                animId = self.Animation.AnimationId
-                trackOrAnimator = self -- AnimationTrack
-            end
-        end
-        
-        if animId and trackOrAnimator then
-            -- FIX: Cari tahu apakah ini milik player asli
-            local current = trackOrAnimator
-            local isPlayerChar = false
-            while current and current ~= game do
-                if current:IsA("Model") then
-                    if game:GetService("Players"):GetPlayerFromCharacter(current) then
-                        isPlayerChar = true
-                        break
+    for _, root in pairs(roots) do
+        if root then
+            for _, obj in pairs(root:GetDescendants()) do
+                if obj:IsA("Animator") then
+                    local modelName = "Unknown"
+                    if obj.Parent then
+                        if obj.Parent.Parent and obj.Parent.Parent:IsA("Model") then
+                            modelName = obj.Parent.Parent.Name
+                        else
+                            modelName = obj.Parent.Name
+                        end
                     end
-                end
-                current = current.Parent
-            end
-
-            -- Hanya tangkap jika BUKAN player asli (artinya ini dummy shop)
-            if not isPlayerChar then
-                local id = animId:match("%d+")
-                if id and not baseAnimIds[id] and not caughtEmotes[id] then
-                    caughtEmotes[id] = true
-                    task.spawn(function()
-                        AddCaughtEmoteButton(id)
-                        CatchStatusLabel.Text = "🎯 " .. caughtEmoteCount .. " emote tertangkap! Klik untuk mainkan."
-                        Notify("🎬 Emote Tertangkap!", "ID: " .. id .. " | Klik tombol biru untuk mainkan!")
+                    
+                    pcall(function()
+                        for _, track in pairs(obj:GetPlayingAnimationTracks()) do
+                            if track.Animation and track.Animation.AnimationId then
+                                local id = track.Animation.AnimationId:match("%d+")
+                                if id and not baseAnimIds[id] then
+                                    local key = modelName .. "_" .. id
+                                    if not uniqueAnims[key] then
+                                        uniqueAnims[key] = {Model = modelName, Id = id}
+                                    end
+                                end
+                            end
+                        end
                     end)
                 end
             end
         end
     end
+
+    local count = 0
+    for _, data in pairs(uniqueAnims) do
+        count = count + 1
+        local btnText = "[" .. data.Model .. "] ID: " .. data.Id
+        
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 38)
+        
+        if data.Model:lower():match("dummy") or data.Model:lower():match("template") then
+            btn.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+            btnText = "🎯 " .. btnText
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        end
+        
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 12
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.TextTruncate = Enum.TextTruncate.AtEnd
+        btn.Text = "  " .. btnText
+        btn.Parent = CatchContainer
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 6)
+        corner.Parent = btn
+
+        local copyBtn = Instance.new("TextButton")
+        copyBtn.Size = UDim2.new(0, 60, 1, 0)
+        copyBtn.Position = UDim2.new(1, -62, 0, 0)
+        copyBtn.BackgroundColor3 = Color3.fromRGB(20, 80, 100)
+        copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        copyBtn.Font = Enum.Font.GothamBold
+        copyBtn.TextSize = 11
+        copyBtn.Text = "📋 Copy"
+        copyBtn.ZIndex = 2
+        copyBtn.Parent = btn
+
+        local copyCorner = Instance.new("UICorner")
+        copyCorner.CornerRadius = UDim.new(0, 5)
+        copyCorner.Parent = copyBtn
+
+        btn.MouseButton1Click:Connect(function()
+            if IDInput then IDInput.Text = data.Id end
+            local ok = PlayAnimNow(data.Id)
+            if ok then
+                Notify("✅ Dimainkan!", "Animasi dari " .. data.Model .. " diputar!")
+            end
+        end)
+
+        copyBtn.MouseButton1Click:Connect(function()
+            if IDInput then IDInput.Text = data.Id end
+            copyBtn.Text = "✅ Copied!"
+            task.delay(1.5, function()
+                if copyBtn and copyBtn.Parent then copyBtn.Text = "📋 Copy" end
+            end)
+        end)
+    end
+
+    CatchContainer.Size = UDim2.new(1, 0, 0, CatchLayout.AbsoluteContentSize.Y)
+    ScanBtn.Text = "🔍 Scan Emote Sekarang"
     
-    return oldNamecall(self, ...)
-end)
-
-AutoCatchBtn.MouseButton1Click:Connect(function()
-    autoCatchActive = not autoCatchActive
-    if autoCatchActive then
-        AutoCatchBtn.Text = "🎬 Auto-Catch: ON (Buka Shop Sekarang!)"
-        AutoCatchBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 180)
-        Notify("🎬 Auto-Catch Aktif!", "Buka Shop Evade lalu klik/hover emote. ID akan otomatis tertangkap tanpa salah sasaran!")
+    if count > 0 then
+        Notify("✅ Selesai!", "Cari dan klik tombol berwarna ORANYE (Dummy)")
     else
-        autoCatchActive = false
-        AutoCatchBtn.Text = "🎬 Auto-Catch: OFF"
-        AutoCatchBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 80)
-        Notify("🎬 Auto-Catch Dimatikan", caughtEmoteCount .. " emote tersimpan. Klik tombol biru untuk mainkan.")
+        Notify("❌ Kosong", "Pastikan emote sedang bergerak di shop lalu klik Scan!")
     end
-end)
-
-ClearCatchBtn.MouseButton1Click:Connect(function()
-    for _, child in pairs(CatchContainer:GetChildren()) do
-        if not child:IsA("UIListLayout") then child:Destroy() end
-    end
-    caughtEmotes = {}
-    caughtEmoteCount = 0
-    CatchContainer.Size = UDim2.new(1, 0, 0, 0)
-    CatchStatusLabel.Text = "Belum menangkap emote apapun..."
-    Notify("🗑️ Dibersihkan", "Semua hasil tangkapan dihapus.")
 end)
 
 CatchLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()

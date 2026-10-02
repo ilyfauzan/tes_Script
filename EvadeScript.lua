@@ -312,48 +312,7 @@ local baseAnimIds = {
     ["507767202"] = true,
 }
 
-local function GetShopAnimatorIds()
-    local found = {}
-    local roots = {
-        game:GetService("Workspace"),
-        player:FindFirstChild("PlayerGui")
-    }
-
-    for _, root in pairs(roots) do
-        if not root then continue end
-        for _, obj in pairs(root:GetDescendants()) do
-            if obj:IsA("Animator") then
-                -- Cari tahu apakah Animator ini milik player asli (orang lain atau diri sendiri)
-                local current = obj
-                local isPlayerChar = false
-                while current and current ~= game do
-                    if current:IsA("Model") then
-                        if game:GetService("Players"):GetPlayerFromCharacter(current) then
-                            isPlayerChar = true
-                            break
-                        end
-                    end
-                    current = current.Parent
-                end
-
-                -- Hanya ambil animasi jika BUKAN dari player asli (yaitu Dummy Shop / NPC)
-                if not isPlayerChar then
-                    pcall(function()
-                        for _, track in pairs(obj:GetPlayingAnimationTracks()) do
-                            if track.Animation and track.Animation.AnimationId then
-                                local id = track.Animation.AnimationId:match("%d+")
-                                if id then
-                                    found[id] = true
-                                end
-                            end
-                        end
-                    end)
-                end
-            end
-        end
-    end
-    return found
-end
+-- Dihapus karena kita ganti pakai HookMetamethod yang jauh lebih akurat
 
 local function AddCaughtEmoteButton(id)
     caughtEmoteCount = caughtEmoteCount + 1
@@ -412,39 +371,49 @@ local function AddCaughtEmoteButton(id)
     CatchContainer.Size = UDim2.new(1, 0, 0, CatchLayout.AbsoluteContentSize.Y)
 end
 
-local function ScanAndCatch()
-    local currentIds = GetShopAnimatorIds()
-    for id, _ in pairs(currentIds) do
-        if not caughtEmotes[id] and not baseAnimIds[id] then
-            caughtEmotes[id] = true
-            task.spawn(function()
-                AddCaughtEmoteButton(id)
-                CatchStatusLabel.Text = "🎯 " .. caughtEmoteCount .. " emote tertangkap! Klik untuk mainkan."
-                Notify("🎬 Emote Tertangkap!", "ID: " .. id .. " | Klik tombol biru untuk mainkan!")
-            end)
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    
+    if autoCatchActive then
+        local animId = nil
+        
+        -- Tangkap saat script shop Evade mencoba me-load atau memutar animasi
+        if method == "LoadAnimation" then
+            local anim = select(1, ...)
+            if typeof(anim) == "Instance" and anim:IsA("Animation") then
+                animId = anim.AnimationId
+            end
+        elseif method == "Play" and typeof(self) == "Instance" and self:IsA("AnimationTrack") then
+            if self.Animation then
+                animId = self.Animation.AnimationId
+            end
+        end
+        
+        if animId then
+            local id = animId:match("%d+")
+            if id and not baseAnimIds[id] and not caughtEmotes[id] then
+                caughtEmotes[id] = true
+                task.spawn(function()
+                    AddCaughtEmoteButton(id)
+                    CatchStatusLabel.Text = "🎯 " .. caughtEmoteCount .. " emote tertangkap! Klik untuk mainkan."
+                    Notify("🎬 Emote Tertangkap!", "ID: " .. id .. " | Klik tombol biru untuk mainkan!")
+                end)
+            end
         end
     end
-end
+    
+    return oldNamecall(self, ...)
+end)
 
 AutoCatchBtn.MouseButton1Click:Connect(function()
     autoCatchActive = not autoCatchActive
     if autoCatchActive then
         AutoCatchBtn.Text = "🎬 Auto-Catch: ON (Buka Shop Sekarang!)"
         AutoCatchBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 180)
-        Notify("🎬 Auto-Catch Aktif!", "Memindai animasi dummy shop dan sekitar secara real-time...")
-
-        autoCatchThread = task.spawn(function()
-            while autoCatchActive do
-                ScanAndCatch()
-                task.wait(0.3)
-            end
-        end)
+        Notify("🎬 Auto-Catch Aktif!", "Buka Shop Evade lalu klik/hover emote. ID akan otomatis tertangkap tanpa salah sasaran!")
     else
         autoCatchActive = false
-        if autoCatchThread then
-            task.cancel(autoCatchThread)
-            autoCatchThread = nil
-        end
         AutoCatchBtn.Text = "🎬 Auto-Catch: OFF"
         AutoCatchBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 80)
         Notify("🎬 Auto-Catch Dimatikan", caughtEmoteCount .. " emote tersimpan. Klik tombol biru untuk mainkan.")

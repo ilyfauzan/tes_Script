@@ -559,22 +559,39 @@ PlayEvadeBtn.MouseButton1Click:Connect(function()
     
     local rs = game:GetService("ReplicatedStorage")
     local targetModule = nil
+    local targetFolder = nil
     
-    -- Cari di seluruh ReplicatedStorage (buat jaga-jaga kalau dia di folder Event, misal Halloween2022)
     local allObjects = {}
     pcall(function() allObjects = rs:GetDescendants() end)
     
     for _, child in pairs(allObjects) do
-        if child:IsA("ModuleScript") and string.lower(child.Name) == string.lower(emoteName) then
-            targetModule = child
-            break
+        if string.lower(child.Name) == string.lower(emoteName) then
+            if child:IsA("ModuleScript") then
+                targetModule = child
+            elseif child:IsA("Folder") then
+                targetFolder = child
+            end
         end
     end
     
-    if targetModule then
-        local id = nil
-        
-        -- Coba cari objek Animation di dalam ModuleScript-nya
+    local id = nil
+    
+    -- PRIORITAS 1: Cek apakah dia berbentuk Folder yang punya animasi R15 (kayak RockinStride asli)
+    if targetFolder then
+        local anims = targetFolder:FindFirstChild("Animations")
+        if anims then
+            local r15 = anims:FindFirstChild("R15")
+            if r15 then
+                local anim = r15:FindFirstChild("Animation")
+                if anim and anim:IsA("Animation") then
+                    id = anim.AnimationId:match("%d+")
+                end
+            end
+        end
+    end
+    
+    -- PRIORITAS 2: Kalau bukan folder animasi, bongkar ModuleScript-nya
+    if not id and targetModule then
         local animObj = targetModule:FindFirstChildOfClass("Animation")
         if animObj then id = animObj.AnimationId:match("%d+") end
         
@@ -620,14 +637,14 @@ PlayEvadeBtn.MouseButton1Click:Connect(function()
                 end
             end
         end
-        
-        if id then
-            if IDInput then IDInput.Text = id end
-            PlayAnimNow(id)
-            Notify("✅ BERHASIL BONGKAR!", "Memutar " .. targetModule.Name .. " (ID: " .. id .. ")")
-        else
-            Notify("❌ Gagal", "ID terlalu rahasia. Lihat kotak teks untuk info debug!")
-        end
+    end
+    
+    if id then
+        if IDInput then IDInput.Text = id end
+        PlayAnimNow(id)
+        Notify("✅ BERHASIL BONGKAR!", "Memutar " .. emoteName .. " (ID: " .. id .. ")")
+    elseif targetModule or targetFolder then
+        Notify("❌ Gagal", "Module/Folder ada, tapi ID terlalu rahasia. Cek teks debug!")
     else
         Notify("❌ Gagal", "Emote '" .. emoteName .. "' tidak ada di folder Evade.")
     end

@@ -168,14 +168,41 @@ local function StopAllAnimations()
     activeTracks = {}
 end
 
-local function GetWhiteDummy()
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+local function GetAnyR15Dummy()
+    -- 1. Coba cari karakter kita sendiri
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("UpperTorso") then
         return player.Character
     end
     if workspace:FindFirstChild("Players") then
         local char = workspace.Players:FindFirstChild(player.Name)
-        if char and char:FindFirstChild("HumanoidRootPart") then return char end
+        if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("UpperTorso") then
+            return char
+        end
     end
+    
+    -- 2. Kalau kita mati/belum spawn, CURI karakter pemain lain atau NPC yang punya sendi R15!
+    for _, plr in pairs(game.Players:GetPlayers()) do
+        local char = plr.Character
+        if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("UpperTorso") then
+            return char
+        end
+        if workspace:FindFirstChild("Players") then
+            local pChar = workspace.Players:FindFirstChild(plr.Name)
+            if pChar and pChar:FindFirstChild("HumanoidRootPart") and pChar:FindFirstChild("UpperTorso") then
+                return pChar
+            end
+        end
+    end
+    
+    -- 3. Pencarian sapu jagat (Cari dummy R15 apapun di seluruh map)
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChild("UpperTorso") then
+            if obj.Name ~= "VisualModel" and not string.find(obj.Name, "WayaeClone_") then
+                return obj
+            end
+        end
+    end
+    
     return nil
 end
 
@@ -205,9 +232,9 @@ local function StartMenuHijack()
     
     pcall(function() game:GetService("RunService"):UnbindFromRenderStep("WayaeHideVisual") end)
     
-    local whiteDummy = GetWhiteDummy()
+    local whiteDummy = GetAnyR15Dummy()
     if not whiteDummy then
-        Notify("❌ Gagal", "Pancing karaktermu dulu! Buka tab EMOTES lalu klik Ganti Avatar lagi.")
+        Notify("❌ Gagal", "Gagal menemukan dummy untuk di-kloning. Tunggu sampai ada pemain lain yang hidup atau kamu spawn.")
         return false
     end
     
@@ -241,6 +268,22 @@ local function StartMenuHijack()
     end
     
     local hum = clonedChar:FindFirstChildOfClass("Humanoid")
+    local vHum = visualRig:FindFirstChildOfClass("Humanoid")
+    
+    -- Copy proporsi tubuh (Tinggi, Lebar, dll)
+    if hum and vHum then
+        local scales = {"BodyHeightScale", "BodyWidthScale", "BodyDepthScale", "HeadScale", "BodyProportionScale", "BodyTypeScale"}
+        for _, sName in pairs(scales) do
+            local vScale = vHum:FindFirstChild(sName)
+            local myScale = hum:FindFirstChild(sName)
+            if vScale and myScale then
+                myScale.Value = vScale.Value
+            elseif vScale and not myScale then
+                vScale:Clone().Parent = hum
+            end
+        end
+    end
+    
     for _, obj in pairs(visualRig:GetChildren()) do
         if obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") then
             obj:Clone().Parent = clonedChar

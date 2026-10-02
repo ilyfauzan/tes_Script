@@ -211,9 +211,17 @@ local function StartMenuHijack()
         return false
     end
     
+    -- BERSIHKAN SEMUA CLONE LAMA (Penyebab Asura/Tangan Numpuk pas re-execute script!)
+    for _, obj in pairs(workspace.CurrentCamera:GetChildren()) do
+        if obj:IsA("Model") and string.find(obj.Name, "WayaeClone_") then
+            obj:Destroy()
+        end
+    end
+    
     -- Kloning patung asli dari Rigs (Bajunya udah 100% nempel sempurna)
     realChar.Archivable = true
     clonedChar = realChar:Clone()
+    clonedChar.Name = "WayaeClone_" .. player.Name
     
     -- Bersihkan script bawaan Evade
     for _, desc in pairs(clonedChar:GetDescendants()) do
@@ -259,24 +267,35 @@ local function StartMenuHijack()
     end
     
     clonedChar.Parent = workspace.CurrentCamera
-    lastValidCFrame = visualModel:GetPivot()
-    clonedChar:PivotTo(lastValidCFrame)
     
-    -- LOOP HIDE & FOLLOW TINGKAT DEWA!
-    -- Meng-copy posisi asli, lalu membuang patung asli ke luar angkasa tiap frame!
+    local pivot = visualModel:GetPivot()
+    if pivot.Y < -1000 then
+        -- Jika CFrame nyangkut di bawah map karena script sebelumnya, reset manual ke origin
+        pivot = CFrame.new(0, 10, 0)
+    end
+    clonedChar:PivotTo(pivot)
+    
+    -- LOOP HIDE TINGKAT DEWA!
     RunService:BindToRenderStep("WayaeHideVisual", 300, function()
         if not clonedChar or not clonedChar.Parent then return end
         
         for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("Model") and obj.Name == "VisualModel" and obj ~= clonedChar then
-                local pivot = obj:GetPivot()
-                -- Kalau belum dibuang ke -9999, artinya Evade baru saja memposisikannya
-                if pivot.Y > -1000 then
-                    lastValidCFrame = pivot
+            if obj:IsA("Model") and obj.Name == "VisualModel" then
+                -- Ambil posisi asli dari Evade
+                local vPivot = obj:GetPivot()
+                if vPivot.Y > -1000 then
+                    clonedChar:PivotTo(vPivot)
                 end
                 
-                clonedChar:PivotTo(lastValidCFrame)
-                pcall(function() obj:PivotTo(CFrame.new(0, -9999, 0)) end)
+                -- Bikin patung aslinya hilang (transparan)
+                for _, desc in pairs(obj:GetDescendants()) do
+                    if desc:IsA("BasePart") or desc:IsA("Decal") then
+                        pcall(function() 
+                            desc.Transparency = 1 
+                            desc.LocalTransparencyModifier = 1
+                        end)
+                    end
+                end
             end
         end
     end)

@@ -377,28 +377,47 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     
     if autoCatchActive then
         local animId = nil
+        local trackOrAnimator = nil
         
         -- Tangkap saat script shop Evade mencoba me-load atau memutar animasi
         if method == "LoadAnimation" then
             local anim = select(1, ...)
             if typeof(anim) == "Instance" and anim:IsA("Animation") then
                 animId = anim.AnimationId
+                trackOrAnimator = self -- Animator
             end
         elseif method == "Play" and typeof(self) == "Instance" and self:IsA("AnimationTrack") then
             if self.Animation then
                 animId = self.Animation.AnimationId
+                trackOrAnimator = self -- AnimationTrack
             end
         end
         
-        if animId then
-            local id = animId:match("%d+")
-            if id and not baseAnimIds[id] and not caughtEmotes[id] then
-                caughtEmotes[id] = true
-                task.spawn(function()
-                    AddCaughtEmoteButton(id)
-                    CatchStatusLabel.Text = "🎯 " .. caughtEmoteCount .. " emote tertangkap! Klik untuk mainkan."
-                    Notify("🎬 Emote Tertangkap!", "ID: " .. id .. " | Klik tombol biru untuk mainkan!")
-                end)
+        if animId and trackOrAnimator then
+            -- FIX: Cari tahu apakah ini milik player asli
+            local current = trackOrAnimator
+            local isPlayerChar = false
+            while current and current ~= game do
+                if current:IsA("Model") then
+                    if game:GetService("Players"):GetPlayerFromCharacter(current) then
+                        isPlayerChar = true
+                        break
+                    end
+                end
+                current = current.Parent
+            end
+
+            -- Hanya tangkap jika BUKAN player asli (artinya ini dummy shop)
+            if not isPlayerChar then
+                local id = animId:match("%d+")
+                if id and not baseAnimIds[id] and not caughtEmotes[id] then
+                    caughtEmotes[id] = true
+                    task.spawn(function()
+                        AddCaughtEmoteButton(id)
+                        CatchStatusLabel.Text = "🎯 " .. caughtEmoteCount .. " emote tertangkap! Klik untuk mainkan."
+                        Notify("🎬 Emote Tertangkap!", "ID: " .. id .. " | Klik tombol biru untuk mainkan!")
+                    end)
+                end
             end
         end
     end

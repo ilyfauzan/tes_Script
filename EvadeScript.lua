@@ -270,7 +270,6 @@ local function StartMenuHijack()
     local hum = clonedChar:FindFirstChildOfClass("Humanoid")
     local vHum = visualRig:FindFirstChildOfClass("Humanoid")
     
-    -- Copy proporsi tubuh (Tinggi, Lebar, dll)
     if hum and vHum then
         local scales = {"BodyHeightScale", "BodyWidthScale", "BodyDepthScale", "HeadScale", "BodyProportionScale", "BodyTypeScale"}
         for _, sName in pairs(scales) do
@@ -284,28 +283,75 @@ local function StartMenuHijack()
         end
     end
     
+    local standardParts = {
+        ["Head"]=true, ["UpperTorso"]=true, ["LowerTorso"]=true, ["HumanoidRootPart"]=true,
+        ["LeftUpperArm"]=true, ["LeftLowerArm"]=true, ["LeftHand"]=true,
+        ["RightUpperArm"]=true, ["RightLowerArm"]=true, ["RightHand"]=true,
+        ["LeftUpperLeg"]=true, ["LeftLowerLeg"]=true, ["LeftFoot"]=true,
+        ["RightUpperLeg"]=true, ["RightLowerLeg"]=true, ["RightFoot"]=true
+    }
+    
     for _, obj in pairs(visualRig:GetChildren()) do
         if obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") then
             obj:Clone().Parent = clonedChar
-        elseif obj:IsA("Accessory") and hum then
+            
+        elseif obj:IsA("Accessory") then
             local acc = obj:Clone()
-            hum:AddAccessory(acc)
-        elseif obj:IsA("MeshPart") then
-            local targetPart = clonedChar:FindFirstChild(obj.Name)
-            if targetPart and targetPart:IsA("MeshPart") then
-                targetPart.MeshId = obj.MeshId
-                targetPart.TextureID = obj.TextureID
-                targetPart.Color = obj.Color
+            acc.Parent = clonedChar
+            local handle = acc:FindFirstChild("Handle")
+            local origHandle = obj:FindFirstChild("Handle")
+            
+            -- Reconstruct weld manually to bypass AddAccessory client limitations
+            if handle and origHandle then
+                local origWeld = origHandle:FindFirstChildOfClass("Weld")
+                if origWeld and origWeld.Part1 then
+                    local targetPart = clonedChar:FindFirstChild(origWeld.Part1.Name)
+                    if targetPart then
+                        local newWeld = Instance.new("Weld")
+                        newWeld.Name = origWeld.Name
+                        newWeld.Part0 = handle
+                        newWeld.Part1 = targetPart
+                        newWeld.C0 = origWeld.C0
+                        newWeld.C1 = origWeld.C1
+                        newWeld.Parent = handle
+                    end
+                else
+                    if hum then pcall(function() hum:AddAccessory(acc) end) end
+                end
+            elseif hum then
+                pcall(function() hum:AddAccessory(acc) end)
             end
-        elseif obj.Name == "Head" then
-            local targetHead = clonedChar:FindFirstChild("Head")
-            if targetHead then
-                targetHead.Color = obj.Color
+            
+        elseif obj:IsA("BasePart") and standardParts[obj.Name] then
+            local targetPart = clonedChar:FindFirstChild(obj.Name)
+            if targetPart and targetPart:IsA("BasePart") then
+                targetPart.Color = obj.Color
+                targetPart.Material = obj.Material
+                if targetPart:IsA("MeshPart") and obj:IsA("MeshPart") then
+                    targetPart.MeshId = obj.MeshId
+                    targetPart.TextureID = obj.TextureID
+                end
+                -- Copas decal (kayak muka)
                 for _, child in pairs(obj:GetChildren()) do
                     if child:IsA("Decal") or child:IsA("SpecialMesh") then
-                        local old = targetHead:FindFirstChildOfClass(child.ClassName)
+                        local old = targetPart:FindFirstChildOfClass(child.ClassName)
                         if old then old:Destroy() end
-                        child:Clone().Parent = targetHead
+                        child:Clone().Parent = targetPart
+                    end
+                end
+            end
+            
+        elseif obj:IsA("BasePart") and not standardParts[obj.Name] then
+            -- Custom parts (seperti rambut yang di-weld langsung tanpa Accessory)
+            local customPart = obj:Clone()
+            customPart.Parent = clonedChar
+            for _, weld in pairs(customPart:GetDescendants()) do
+                if weld:IsA("Weld") or weld:IsA("Motor6D") or weld:IsA("WeldConstraint") then
+                    if weld.Part0 and weld.Part0.Parent == visualRig then
+                        weld.Part0 = clonedChar:FindFirstChild(weld.Part0.Name)
+                    end
+                    if weld.Part1 and weld.Part1.Parent == visualRig then
+                        weld.Part1 = clonedChar:FindFirstChild(weld.Part1.Name)
                     end
                 end
             end

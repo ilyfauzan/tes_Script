@@ -553,7 +553,6 @@ PlayEvadeBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
 
 PlayEvadeBtn.MouseButton1Click:Connect(function()
     local emoteName = EvadeEmoteInput.Text
-    -- Default ke tantangan user kalau dikosongin
     if emoteName == "" or emoteName == "Nama Emote (cth: BoldMarch, Conga)" then 
         emoteName = "BoldMarch" 
     end 
@@ -577,32 +576,48 @@ PlayEvadeBtn.MouseButton1Click:Connect(function()
     end
     
     if targetModule then
-        local success, data = pcall(function() return require(targetModule) end)
-        if success and type(data) == "table" then
-            local id = nil
-            if data.Animation then id = tostring(data.Animation):match("%d+") end
-            if not id and data.AnimationId then id = tostring(data.AnimationId):match("%d+") end
-            if not id then
-                for k, v in pairs(data) do
-                    if type(v) == "string" and v:match("rbxassetid://(%d+)") then
-                        id = v:match("%d+")
-                        break
-                    elseif type(v) == "number" and v > 100000000 then
-                        id = tostring(v)
-                        break
+        local id = nil
+        
+        -- Coba cari objek Animation di dalam ModuleScript-nya
+        local animObj = targetModule:FindFirstChildOfClass("Animation")
+        if animObj then id = animObj.AnimationId:match("%d+") end
+        
+        if not id then
+            local success, data = pcall(function() return require(targetModule) end)
+            if success and type(data) == "table" then
+                -- Fungsi rekursif pencari ID
+                local function findID(tbl)
+                    for k, v in pairs(tbl) do
+                        local key = tostring(k):lower()
+                        if key == "animation" or key == "animationid" or key == "anim" or key == "id" then
+                            if type(v) == "number" then return tostring(v) end
+                            if type(v) == "string" and v:match("%d+") then return v:match("%d+") end
+                            if typeof(v) == "Instance" and v:IsA("Animation") then return v.AnimationId:match("%d+") end
+                        end
                     end
+                    for k, v in pairs(tbl) do
+                        if type(v) == "string" and v:match("rbxassetid://(%d+)") then
+                            return v:match("%d+")
+                        end
+                    end
+                    for k, v in pairs(tbl) do
+                        if type(v) == "table" then
+                            local res = findID(v)
+                            if res then return res end
+                        end
+                    end
+                    return nil
                 end
+                id = findID(data)
             end
-            
-            if id then
-                if IDInput then IDInput.Text = id end
-                PlayAnimNow(id)
-                Notify("✅ TANTANGAN SELESAI!", "Memutar " .. targetModule.Name .. " (ID: " .. id .. ")")
-            else
-                Notify("❌ Gagal", "Module ada, tapi gagal ngekstrak ID.")
-            end
+        end
+        
+        if id then
+            if IDInput then IDInput.Text = id end
+            PlayAnimNow(id)
+            Notify("✅ BERHASIL BONGKAR!", "Memutar " .. targetModule.Name .. " (ID: " .. id .. ")")
         else
-            Notify("❌ Gagal", "Gagal mengekstrak isi ModuleScript.")
+            Notify("❌ Gagal", "Module ada, tapi ID terlalu rahasia/nggak ketemu.")
         end
     else
         Notify("❌ Gagal", "Emote '" .. emoteName .. "' tidak ada di folder Evade.")

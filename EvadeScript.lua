@@ -335,11 +335,6 @@ local function StartMenuHijack()
     return true
 end
 
-local function PlayAnimNow(idStr)
-    local numId = idStr:match("%d+")
-    if not numId then return false end
-    local formattedId = "rbxassetid://" .. numId
-
 local function GetRealCharacters()
     local chars = {}
     if clonedChar and clonedChar.Parent then

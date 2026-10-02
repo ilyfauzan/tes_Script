@@ -315,33 +315,38 @@ local baseAnimIds = {
 
 local function GetShopAnimatorIds()
     local found = {}
-    local playerGui = player:FindFirstChild("PlayerGui")
-    if not playerGui then return found end
+    local roots = {
+        game:GetService("Workspace"),
+        player:FindFirstChild("PlayerGui")
+    }
 
-    for _, obj in pairs(playerGui:GetDescendants()) do
-        if obj:IsA("Animator") then
-            local isOwnChar = false
-            if player.Character then
-                local parent = obj
-                while parent do
-                    if parent == player.Character then
-                        isOwnChar = true
-                        break
+    for _, root in pairs(roots) do
+        if not root then continue end
+        for _, obj in pairs(root:GetDescendants()) do
+            if obj:IsA("Animator") then
+                local isOwnChar = false
+                if player.Character then
+                    local parent = obj
+                    while parent do
+                        if parent == player.Character then
+                            isOwnChar = true
+                            break
+                        end
+                        parent = parent.Parent
                     end
-                    parent = parent.Parent
                 end
-            end
-            if not isOwnChar then
-                pcall(function()
-                    for _, track in pairs(obj:GetPlayingAnimationTracks()) do
-                        if track.Animation and track.Animation.AnimationId then
-                            local id = track.Animation.AnimationId:match("%d+")
-                            if id then
-                                found[id] = true
+                if not isOwnChar then
+                    pcall(function()
+                        for _, track in pairs(obj:GetPlayingAnimationTracks()) do
+                            if track.Animation and track.Animation.AnimationId then
+                                local id = track.Animation.AnimationId:match("%d+")
+                                if id then
+                                    found[id] = true
+                                end
                             end
                         end
-                    end
-                end)
+                    end)
+                end
             end
         end
     end

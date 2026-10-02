@@ -232,12 +232,6 @@ local function StartMenuHijack()
     
     pcall(function() game:GetService("RunService"):UnbindFromRenderStep("WayaeHideVisual") end)
     
-    local whiteDummy = GetAnyR15Dummy()
-    if not whiteDummy then
-        Notify("❌ Gagal", "Gagal menemukan dummy untuk di-kloning. Tunggu sampai ada pemain lain yang hidup atau kamu spawn.")
-        return false
-    end
-    
     local visualRig = GetVisualRig()
     if not visualRig then
         Notify("❌ Gagal", "Baju aslimu belum di-load oleh game. Pindah-pindah tab dulu!")
@@ -250,8 +244,8 @@ local function StartMenuHijack()
         end
     end
     
-    whiteDummy.Archivable = true
-    clonedChar = whiteDummy:Clone()
+    visualRig.Archivable = true
+    clonedChar = visualRig:Clone()
     clonedChar.Name = "WayaeClone_" .. player.Name
     
     for _, desc in pairs(clonedChar:GetDescendants()) do
@@ -261,100 +255,43 @@ local function StartMenuHijack()
         end
     end
     
-    for _, obj in pairs(clonedChar:GetChildren()) do
-        if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") then
-            obj:Destroy()
-        end
-    end
-    
     local hum = clonedChar:FindFirstChildOfClass("Humanoid")
-    local vHum = visualRig:FindFirstChildOfClass("Humanoid")
+    if not hum then
+        hum = Instance.new("Humanoid")
+        hum.Parent = clonedChar
+    end
     
-    if hum and vHum then
-        local scales = {"BodyHeightScale", "BodyWidthScale", "BodyDepthScale", "HeadScale", "BodyProportionScale", "BodyTypeScale"}
-        for _, sName in pairs(scales) do
-            local vScale = vHum:FindFirstChild(sName)
-            local myScale = hum:FindFirstChild(sName)
-            if vScale and myScale then
-                myScale.Value = vScale.Value
-            elseif vScale and not myScale then
-                vScale:Clone().Parent = hum
-            end
+    -- Evade menghapus HumanoidRootPart dari Rigs, kita buat ulang!
+    local hrp = clonedChar:FindFirstChild("HumanoidRootPart")
+    if not hrp then
+        hrp = Instance.new("Part")
+        hrp.Name = "HumanoidRootPart"
+        hrp.Size = Vector3.new(2, 2, 1)
+        hrp.Transparency = 1
+        hrp.CanCollide = false
+        hrp.Parent = clonedChar
+        clonedChar.PrimaryPart = hrp
+        
+        local torso = clonedChar:FindFirstChild("LowerTorso") or clonedChar:FindFirstChild("Torso")
+        if torso then
+            hrp.CFrame = torso.CFrame
         end
     end
     
-    local standardParts = {
-        ["Head"]=true, ["UpperTorso"]=true, ["LowerTorso"]=true, ["HumanoidRootPart"]=true,
-        ["LeftUpperArm"]=true, ["LeftLowerArm"]=true, ["LeftHand"]=true,
-        ["RightUpperArm"]=true, ["RightLowerArm"]=true, ["RightHand"]=true,
-        ["LeftUpperLeg"]=true, ["LeftLowerLeg"]=true, ["LeftFoot"]=true,
-        ["RightUpperLeg"]=true, ["RightLowerLeg"]=true, ["RightFoot"]=true
-    }
+    -- AJAIB: Minta engine Roblox buatkan semua tulang sendi (Motor6D) secara otomatis!
+    -- Engine akan menghubungkan part-part R15 berdasarkan Attachment yang ada di dalamnya
+    pcall(function() hum:BuildRigFromAttachments() end)
     
-    for _, obj in pairs(visualRig:GetChildren()) do
-        if obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") then
-            obj:Clone().Parent = clonedChar
-            
-        elseif obj:IsA("Accessory") then
-            local acc = obj:Clone()
-            acc.Parent = clonedChar
-            local handle = acc:FindFirstChild("Handle")
-            local origHandle = obj:FindFirstChild("Handle")
-            
-            -- Reconstruct weld manually to bypass AddAccessory client limitations
-            if handle and origHandle then
-                local origWeld = origHandle:FindFirstChildOfClass("Weld")
-                if origWeld and origWeld.Part1 then
-                    local targetPart = clonedChar:FindFirstChild(origWeld.Part1.Name)
-                    if targetPart then
-                        local newWeld = Instance.new("Weld")
-                        newWeld.Name = origWeld.Name
-                        newWeld.Part0 = handle
-                        newWeld.Part1 = targetPart
-                        newWeld.C0 = origWeld.C0
-                        newWeld.C1 = origWeld.C1
-                        newWeld.Parent = handle
-                    end
-                else
-                    if hum then pcall(function() hum:AddAccessory(acc) end) end
-                end
-            elseif hum then
-                pcall(function() hum:AddAccessory(acc) end)
-            end
-            
-        elseif obj:IsA("BasePart") and standardParts[obj.Name] then
-            local targetPart = clonedChar:FindFirstChild(obj.Name)
-            if targetPart and targetPart:IsA("BasePart") then
-                targetPart.Color = obj.Color
-                targetPart.Material = obj.Material
-                if targetPart:IsA("MeshPart") and obj:IsA("MeshPart") then
-                    targetPart.MeshId = obj.MeshId
-                    targetPart.TextureID = obj.TextureID
-                end
-                -- Copas decal (kayak muka)
-                for _, child in pairs(obj:GetChildren()) do
-                    if child:IsA("Decal") or child:IsA("SpecialMesh") then
-                        local old = targetPart:FindFirstChildOfClass(child.ClassName)
-                        if old then old:Destroy() end
-                        child:Clone().Parent = targetPart
-                    end
-                end
-            end
-            
-        elseif obj:IsA("BasePart") and not standardParts[obj.Name] then
-            -- Custom parts (seperti rambut yang di-weld langsung tanpa Accessory)
-            local customPart = obj:Clone()
-            customPart.Parent = clonedChar
-            for _, weld in pairs(customPart:GetDescendants()) do
-                if weld:IsA("Weld") or weld:IsA("Motor6D") or weld:IsA("WeldConstraint") then
-                    if weld.Part0 and weld.Part0.Parent == visualRig then
-                        weld.Part0 = clonedChar:FindFirstChild(weld.Part0.Name)
-                    end
-                    if weld.Part1 and weld.Part1.Parent == visualRig then
-                        weld.Part1 = clonedChar:FindFirstChild(weld.Part1.Name)
-                    end
-                end
-            end
+    -- BuildRigFromAttachments nggak bikin Root joint, jadi kita bikin manual
+    local torso = clonedChar:FindFirstChild("LowerTorso") or clonedChar:FindFirstChild("Torso")
+    if torso then
+        local rootJoint = hrp:FindFirstChild("Root") or torso:FindFirstChild("Root")
+        if not rootJoint then
+            rootJoint = Instance.new("Motor6D")
+            rootJoint.Name = "Root"
+            rootJoint.Part0 = hrp
+            rootJoint.Part1 = torso
+            rootJoint.Parent = hrp
         end
     end
     
@@ -366,7 +303,6 @@ local function StartMenuHijack()
                 desc.Transparency = 1
             else
                 desc.Anchored = false
-                desc.Transparency = 0
             end
         end
     end

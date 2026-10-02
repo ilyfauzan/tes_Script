@@ -342,12 +342,23 @@ local function PlayAnimNow(idStr)
 
     StopAllAnimations()
 
-    if not clonedChar or not clonedChar.Parent then
-        Notify("❌ Gagal", "Klik tombol '🚀 Ganti Avatar Sekarang' di atas terlebih dahulu!")
-        return false
+    local char = nil
+    if clonedChar and clonedChar.Parent then
+        char = clonedChar
+    elseif player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        char = player.Character
+    else
+        if workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Players") then
+            char = workspace.Game.Players:FindFirstChild(player.Name)
+        elseif workspace:FindFirstChild("Players") then
+            char = workspace.Players:FindFirstChild(player.Name)
+        end
     end
 
-    local char = clonedChar
+    if not char then
+        Notify("❌ Gagal", "Karakter tidak ditemukan! Kalau di menu, klik Ganti Avatar dulu.")
+        return false
+    end
     local ok, err = pcall(function()
         local animators = {}
         for _, desc in pairs(char:GetDescendants()) do

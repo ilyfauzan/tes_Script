@@ -309,28 +309,36 @@ ScanBtn.MouseButton1Click:Connect(function()
         if root then
             for _, obj in pairs(root:GetDescendants()) do
                 if obj:IsA("Animator") then
+                    local model = obj.Parent and obj.Parent.Parent
                     local modelName = "Unknown"
-                    if obj.Parent then
-                        if obj.Parent.Parent and obj.Parent.Parent:IsA("Model") then
-                            modelName = obj.Parent.Parent.Name
-                        else
-                            modelName = obj.Parent.Name
+                    local isPlayer = false
+
+                    if model and model:IsA("Model") then
+                        modelName = model.Name
+                        -- Cek apakah ini pemain asli yang ada di server
+                        if game:GetService("Players"):GetPlayerFromCharacter(model) then
+                            isPlayer = true
                         end
+                    elseif obj.Parent then
+                        modelName = obj.Parent.Name
                     end
                     
-                    pcall(function()
-                        for _, track in pairs(obj:GetPlayingAnimationTracks()) do
-                            if track.Animation and track.Animation.AnimationId then
-                                local id = track.Animation.AnimationId:match("%d+")
-                                if id and not baseAnimIds[id] then
-                                    local key = modelName .. "_" .. id
-                                    if not uniqueAnims[key] then
-                                        uniqueAnims[key] = {Model = modelName, Id = id}
+                    -- JIKA INI PEMAIN ASLI, ABAIKAN! KITA HANYA CARI DUMMY.
+                    if not isPlayer then
+                        pcall(function()
+                            for _, track in pairs(obj:GetPlayingAnimationTracks()) do
+                                if track.Animation and track.Animation.AnimationId then
+                                    local id = track.Animation.AnimationId:match("%d+")
+                                    if id and not baseAnimIds[id] then
+                                        local key = modelName .. "_" .. id
+                                        if not uniqueAnims[key] then
+                                            uniqueAnims[key] = {Model = modelName, Id = id}
+                                        end
                                     end
                                 end
                             end
-                        end
-                    end)
+                        end)
+                    end
                 end
             end
         end

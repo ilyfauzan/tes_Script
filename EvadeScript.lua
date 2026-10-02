@@ -103,6 +103,25 @@ local function CreateButton(text, parent)
     return btn
 end
 
+local function CreateInput(placeholder, parent)
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(1, 0, 0, 40)
+    input.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    input.TextColor3 = Color3.fromRGB(255, 255, 255)
+    input.Font = Enum.Font.Gotham
+    input.TextSize = 14
+    input.PlaceholderText = placeholder
+    input.Text = ""
+    input.ClearTextOnFocus = false
+    input.Parent = parent
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = input
+    
+    return input
+end
+
 local function Notify(title, text)
     game.StarterGui:SetCore("SendNotification", {
         Title = title;

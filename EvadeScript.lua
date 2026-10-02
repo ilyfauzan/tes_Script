@@ -168,12 +168,15 @@ local function StopAllAnimations()
 end
 
 local function GetRealCharacter()
-    -- Prioritas 1: player.Character bawaan
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        return player.Character
+    -- Prioritas 1: Folder Rigs di Workspace (Karakter paling sempurna untuk Menu)
+    if workspace:FindFirstChild("Rigs") then
+        local char = workspace.Rigs:FindFirstChild(player.Name)
+        if char and char:IsA("Model") then
+            return char
+        end
     end
-    
-    -- Prioritas 2: Folder Players di Workspace (Evade menyembunyikan karakter di sini)
+
+    -- Prioritas 2: Folder Players di Workspace (Biasa dipakai saat gameplay)
     if workspace:FindFirstChild("Players") then
         local char = workspace.Players:FindFirstChild(player.Name)
         if char and char:FindFirstChild("HumanoidRootPart") then
@@ -181,12 +184,9 @@ local function GetRealCharacter()
         end
     end
     
-    -- Prioritas 3: Folder Rigs di Workspace (Terlihat di DarkDex)
-    if workspace:FindFirstChild("Rigs") then
-        local char = workspace.Rigs:FindFirstChild(player.Name)
-        if char and char:IsA("Model") then
-            return char
-        end
+    -- Prioritas 3: player.Character bawaan (Hati-hati: di Evade ini sering berupa dummy putih)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        return player.Character
     end
     
     return nil

@@ -162,18 +162,10 @@ local function StopAllAnimations()
         renderConn:Disconnect()
         renderConn = nil
     end
-    pcall(function()
-        game:GetService("RunService"):UnbindFromRenderStep("WayaeHideVisual")
-    end)
     for _, track in pairs(activeTracks) do
         pcall(function() track:Stop(0) end)
     end
     activeTracks = {}
-    
-    if clonedChar then
-        clonedChar:Destroy()
-        clonedChar = nil
-    end
 end
 
 local function GetVisualRig()

@@ -1,6 +1,6 @@
 local player = game.Players.LocalPlayer
 local coreGui = game:GetService("CoreGui")
-local replicatedStorage = game:GetService("ReplicatedStorage")
+local replicatedStorage = game:GetService("ReplicatedStorage") -- FIX: Sekarang konsisten dipakai di seluruh kode
 
 -- Hapus UI lama jika ada
 for _, gui in pairs(coreGui:GetChildren()) do
@@ -57,11 +57,11 @@ ScrollingFrame.Parent = MainFrame
 
 -- ===================================================
 -- TOMBOL TOGGLE MENGAMBANG - SELALU KELIATAN!
--- Pencet ini buat sembunyikan / tampilkan UI
+-- FIX: Hanya ada 1 tombol toggle, tidak ada duplikat
 -- ===================================================
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
-ToggleBtn.Position = UDim2.new(0, 10, 0, 10) -- pojok kiri atas
+ToggleBtn.Position = UDim2.new(0, 10, 0, 10)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
 ToggleBtn.Text = "👽"
 ToggleBtn.TextSize = 28
@@ -71,15 +71,15 @@ ToggleBtn.ZIndex = 10
 ToggleBtn.Parent = WayaeUI
 
 local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 10)
+ToggleCorner.CornerRadius = UDim.new(1, 0) -- FIX: Bulat penuh (gabungan dari kedua versi lama)
 ToggleCorner.Parent = ToggleBtn
 
 local isVisible = true
 ToggleBtn.MouseButton1Click:Connect(function()
     isVisible = not isVisible
     MainFrame.Visible = isVisible
-    ToggleBtn.BackgroundColor3 = isVisible 
-        and Color3.fromRGB(30, 0, 0) 
+    ToggleBtn.BackgroundColor3 = isVisible
+        and Color3.fromRGB(30, 0, 0)
         or Color3.fromRGB(0, 80, 0)
     ToggleBtn.Text = isVisible and "👽" or "👁️"
 end)
@@ -98,16 +98,15 @@ local function CreateButton(text, parent)
     btn.Font = Enum.Font.GothamSemibold
     btn.TextSize = 14
     btn.Parent = parent
-    
+
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = btn
-    
+
     return btn
 end
 
 local function Notify(title, text)
-    -- Simple notification logic (using Roblox's built-in StarterGui or custom text)
     game.StarterGui:SetCore("SendNotification", {
         Title = title;
         Text = text;
@@ -158,11 +157,11 @@ local currentFakeChar = nil
 local function PlayAnimNow(idStr)
     local char = player.Character
     if not char then return false end
-    
+
     local numId = idStr:match("%d+")
     if not numId then return false end
     local formattedId = "rbxassetid://" .. numId
-    
+
     local ok, err = pcall(function()
         if currentTrack then
             pcall(function() currentTrack:Stop(0) end)
@@ -172,36 +171,36 @@ local function PlayAnimNow(idStr)
             currentFakeChar:Destroy()
             currentFakeChar = nil
         end
-        
-        -- KITA KEMBALI KE METODE ASLI (TANPA KLONING!)
-        -- Ternyata Kloning malah membuat patung karena rig Evade sangat khusus.
-        -- Kita langsung paksa putar di tubuh asli Abang!
-        
+
+        -- Langsung putar di tubuh asli (tanpa kloning)
         local hum = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChildOfClass("AnimationController")
         if not hum then return false end
-        
+
         local animator = hum:FindFirstChildOfClass("Animator")
         if not animator then
             animator = Instance.new("Animator", hum)
         end
-        
+
         local anim = Instance.new("Animation")
         anim.AnimationId = formattedId
-        
+
         currentTrack = animator:LoadAnimation(anim)
         currentTrack.Priority = Enum.AnimationPriority.Action4 -- Paksa override
-        currentTrack.Looped = true
+        currentTrack.Looped = loopActive
         currentTrack:Play(0.1, 99, 1) -- Weight 99 agar sangat memaksa
-        
-        -- Loop agar tidak dimatikan Evade
+
+        -- FIX: Loop protector hanya aktif jika loopActive = true
         if loopThread then task.cancel(loopThread) end
-        loopThread = task.spawn(function()
-            while task.wait(0.1) do
-                if currentTrack and not currentTrack.IsPlaying then
-                    currentTrack:Play(0.1, 99, 1)
+        if loopActive then
+            loopThread = task.spawn(function()
+                while loopActive do
+                    task.wait(0.1)
+                    if currentTrack and not currentTrack.IsPlaying then
+                        currentTrack:Play(0.1, 99, 1)
+                    end
                 end
-            end
-        end)
+            end)
+        end
     end)
     return ok
 end
@@ -211,30 +210,55 @@ PlayByIDBtn.MouseButton1Click:Connect(function()
     if id then
         local ok = PlayAnimNow(id)
         if ok then
-            Notify("✅ Animasi Diputar!", "Kloning berhasil! Berhenti klik Stop!")
+            -- FIX: Pesan notifikasi diperbaiki (tidak lagi sebut "Kloning")
+            Notify("✅ Animasi Diputar!", "Animasi berhasil dijalankan! Klik Stop untuk berhenti.")
         else
-            Notify("❌ Gagal", "Character belum siap di-kloning?")
+            Notify("❌ Gagal", "Character belum siap atau ID tidak valid!")
         end
     else
         Notify("❌ Input Salah", "Masukkan angka ID yang benar!")
     end
 end)
 
+-- FIX: LoopBtn sekarang benar-benar mengontrol loopThread, bukan hanya property .Looped
 LoopBtn.MouseButton1Click:Connect(function()
     loopActive = not loopActive
     if loopActive then
         LoopBtn.Text = "🔁 Loop Mode: ON"
         LoopBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
+        -- Aktifkan loop protector jika animasi sedang berjalan
+        if currentTrack then
+            currentTrack.Looped = true
+            if loopThread then task.cancel(loopThread) end
+            loopThread = task.spawn(function()
+                while loopActive do
+                    task.wait(0.1)
+                    if currentTrack and not currentTrack.IsPlaying then
+                        currentTrack:Play(0.1, 99, 1)
+                    end
+                end
+            end)
+        end
     else
         LoopBtn.Text = "🔁 Loop Mode: OFF"
         LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    end
-    if currentTrack then
-        currentTrack.Looped = loopActive
+        -- FIX: Matikan loopThread dengan benar agar animasi bisa berhenti sendiri
+        if loopThread then
+            task.cancel(loopThread)
+            loopThread = nil
+        end
+        if currentTrack then
+            currentTrack.Looped = false
+        end
     end
 end)
 
 StopBtn.MouseButton1Click:Connect(function()
+    -- FIX: StopBtn juga mematikan loopThread
+    if loopThread then
+        task.cancel(loopThread)
+        loopThread = nil
+    end
     if currentTrack then
         pcall(function() currentTrack:Stop() end)
         currentTrack = nil
@@ -243,7 +267,7 @@ StopBtn.MouseButton1Click:Connect(function()
         currentFakeChar:Destroy()
         currentFakeChar = nil
     end
-    
+
     -- Kembalikan badan asli jadi kelihatan lagi
     local char = player.Character
     if char then
@@ -255,12 +279,12 @@ StopBtn.MouseButton1Click:Connect(function()
             end
         end
     end
-    
-    Notify("⏹️ Dihentikan", "Badan asli dikembalikan.")
+
+    Notify("⏹️ Dihentikan", "Animasi dihentikan.")
 end)
 
 -- ========================================================
--- 🎭 FITUR EVADE
+-- 🎭 FITUR EVADE - EMOTE INJECTOR
 -- ========================================================
 
 local LabelEmoteInject = Instance.new("TextLabel")
@@ -273,7 +297,6 @@ LabelEmoteInject.TextSize = 14
 LabelEmoteInject.TextXAlignment = Enum.TextXAlignment.Left
 LabelEmoteInject.Parent = ScrollingFrame
 
--- Nama emote yang mau di-inject
 local EmoteNameInput = Instance.new("TextBox")
 EmoteNameInput.Size = UDim2.new(1, 0, 0, 40)
 EmoteNameInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -297,14 +320,15 @@ local FireRemoteBtn = CreateButton("🚀 Fire Emote Remote Langsung", ScrollingF
 FireRemoteBtn.BackgroundColor3 = Color3.fromRGB(100, 40, 120)
 
 local foundEmoteRemote = nil
-local equipRemote = nil -- Khusus simpan remote "Equip"
+local equipRemote = nil
 
 ScanRemoteBtn.MouseButton1Click:Connect(function()
     foundEmoteRemote = nil
     equipRemote = nil
     local results = {}
-    
-    for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+
+    -- FIX: Gunakan variabel replicatedStorage yang sudah dideklarasi
+    for _, obj in pairs(replicatedStorage:GetDescendants()) do
         if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
             local n = obj.Name:lower()
             if n:find("emote") or n:find("equip") or n:find("item") or n:find("cosmetic") then
@@ -314,7 +338,7 @@ ScanRemoteBtn.MouseButton1Click:Connect(function()
             end
         end
     end
-    
+
     if #results > 0 then
         Notify("✅ Remote: " .. table.concat(results, " | "):sub(1, 150), equipRemote and "Equip remote siap!" or "Scan lagi kalau perlu")
     else
@@ -322,17 +346,15 @@ ScanRemoteBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- SPY: Cegat click Catjam dan rekam argumentnya, lalu replay dengan Rockin' Stride
+-- SPY: Cegat click Catjam dan rekam argumentnya, lalu replay dengan nama emote target
 InjectBtn.MouseButton1Click:Connect(function()
     local emoteName = EmoteNameInput.Text
     local playerGui = player:FindFirstChild("PlayerGui")
     if not playerGui then Notify("❌", "PlayerGui tidak ada!") return end
-    
-    -- Cari tombol Catjam di PlayerGui
+
     local catjamBtn = nil
     for _, obj in pairs(playerGui:GetDescendants()) do
         if (obj:IsA("TextButton") or obj:IsA("ImageButton") or obj:IsA("Frame")) then
-            -- Cari berdasarkan text label di dalamnya
             for _, child in pairs(obj:GetDescendants()) do
                 if child:IsA("TextLabel") and child.Text:lower():find("catjam") then
                     catjamBtn = obj
@@ -345,23 +367,19 @@ InjectBtn.MouseButton1Click:Connect(function()
         end
         if catjamBtn then break end
     end
-    
+
     if not catjamBtn then
         Notify("⚠️ Catjam button tidak terlihat!", "Buka dulu menu Emote > klik slot emote, LALU pencet tombol ini!")
         return
     end
-    
-    -- Spy koneksi click Catjam menggunakan getconnections
+
     local spySuccess = false
     pcall(function()
         local conns = getconnections(catjamBtn.MouseButton1Click)
         if #conns > 0 then
-            -- Rekam argumen yang dikirim
             Notify("🕵️ Spy sukses!", #conns .. " koneksi ditemukan di Catjam. Mencoba replay...")
-            
-            -- Hook remote event untuk rekam argumen
+
             if equipRemote then
-                -- Fire dengan berbagai format berdasarkan nama emote
                 local tries = {
                     emoteName,
                     {Name = emoteName},
@@ -377,7 +395,7 @@ InjectBtn.MouseButton1Click:Connect(function()
             end
         end
     end)
-    
+
     if spySuccess then
         Notify("🚀 Replay dikirim!", "Cek emote slot kamu sekarang!")
     else
@@ -392,8 +410,7 @@ FireRemoteBtn.MouseButton1Click:Connect(function()
         Notify("❌ Scan dulu!", "Pencet Scan RemoteEvent dulu!")
         return
     end
-    
-    -- Coba semua format
+
     local fired = 0
     local tries = {
         function() remote:FireServer(emoteName) end,
@@ -410,7 +427,7 @@ FireRemoteBtn.MouseButton1Click:Connect(function()
     for _, fn in ipairs(tries) do
         if pcall(fn) then fired = fired + 1 end
     end
-    
+
     Notify("🚀 " .. fired .. " variasi dikirim ke '" .. remote.Name .. "'!", "Cek emote slot kamu!")
 end)
 
@@ -419,12 +436,12 @@ DeepScanBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 150)
 
 DeepScanBtn.MouseButton1Click:Connect(function()
     Notify("⚠️ MENGHACK API ROBLOX...", "Mengambil daftar semua animasi yang pernah dibuat oleh developer Evade...")
-    
+
     task.spawn(function()
         local success, err = pcall(function()
             -- Hexagon Development Community Group ID: 10854488
             local url = "https://catalog.roproxy.com/v1/search/items/details?Category=12&CreatorTargetId=10854488&CreatorType=2&Limit=120"
-            
+
             local responseStr = ""
             if type(request) == "function" then
                 local res = request({Url = url, Method = "GET"})
@@ -435,12 +452,12 @@ DeepScanBtn.MouseButton1Click:Connect(function()
             else
                 responseStr = game:HttpGet(url)
             end
-            
+
             local data = game:GetService("HttpService"):JSONDecode(responseStr)
-            
+
             local foundId = nil
             local emoteName = EmoteNameInput.Text:lower()
-            
+
             if data and data.data then
                 for _, item in ipairs(data.data) do
                     if item.name and item.name:lower():find(emoteName) then
@@ -449,7 +466,7 @@ DeepScanBtn.MouseButton1Click:Connect(function()
                     end
                 end
             end
-            
+
             if foundId then
                 Notify("🎯 HACK BERHASIL!", "ID Ketemu dari database pusat Roblox: " .. foundId)
                 if IDInput then IDInput.Text = foundId end
@@ -461,7 +478,7 @@ DeepScanBtn.MouseButton1Click:Connect(function()
                 Notify("❌ API GAGAL", "Animasi '" .. EmoteNameInput.Text .. "' disembunyikan dari publik.")
             end
         end)
-        
+
         if not success then
             Notify("❌ HTTP Error", "Emulator kamu mungkin memblokir script internet: " .. tostring(err))
         end
@@ -506,7 +523,7 @@ RadarBtn.MouseButton1Click:Connect(function()
         RadarBtn.Text = "📡 Radar Aktif: MENCARI..."
         RadarBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
         Notify("📡 Radar Menyala!", "Berdiri di dekat player lain yang lagi pakai emote. Radar akan menyedot ID-nya otomatis!")
-        
+
         task.spawn(function()
             while radarActive do
                 for _, p in pairs(game:GetService("Players"):GetPlayers()) do
@@ -520,8 +537,7 @@ RadarBtn.MouseButton1Click:Connect(function()
                                         local idStr = track.Animation.AnimationId:match("%d+")
                                         if idStr and not seenAnims[idStr] then
                                             -- Abaikan ID animasi dasar (jalan, lari, diam, dll)
-                                            -- Asumsi emote ID itu unik dan baru
-                                            if not idStr:match("^50777") then 
+                                            if not idStr:match("^50777") then
                                                 seenAnims[idStr] = true
                                                 lastSniffedId = idStr
                                                 LastSniffedLabel.Text = "Emote Curian: " .. idStr .. " (dari " .. p.Name .. ")"
@@ -550,7 +566,7 @@ PlaySniffedBtn.MouseButton1Click:Connect(function()
         Notify("❌ Belum Ada Curian", "Nyalakan radar dan tunggu player lain pakai emote!")
         return
     end
-    
+
     local ok = PlayAnimNow(lastSniffedId)
     if ok then
         Notify("✅ Emote Curian Diputar!", "Jika macet, nyalakan Loop Mode!")
@@ -558,9 +574,9 @@ PlaySniffedBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-
-
-
+-- ========================================================
+-- 🔍 SCAN ANIMASI GAME
+-- ========================================================
 local LabelScan = Instance.new("TextLabel")
 LabelScan.Size = UDim2.new(1, 0, 0, 20)
 LabelScan.BackgroundTransparency = 1
@@ -613,43 +629,21 @@ local AnimListLayout = Instance.new("UIListLayout")
 AnimListLayout.Padding = UDim.new(0, 5)
 AnimListLayout.Parent = AnimContainer
 
-local function PlayAnimById(animId, animName)
-    local char = player.Character
-    if not char then Notify("❌", "Karakter tidak ada!") return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum then return end
-    local animator = hum:FindFirstChildOfClass("Animator") or hum
-    
-    local anim = Instance.new("Animation")
-    anim.AnimationId = animId
-    
-    local ok, err = pcall(function()
-        local track = animator:LoadAnimation(anim)
-        track:Play()
-    end)
-    
-    if ok then
-        Notify("✅ Animasi Dimainkan!", "'" .. animName .. "' berhasil diputar!")
-    else
-        Notify("❌ Error", tostring(err):sub(1, 100))
-    end
-end
-
 local function RefreshAnimList(filterText)
     -- Bersihkan tombol lama
     for _, child in pairs(AnimContainer:GetChildren()) do
         if not child:IsA("UIListLayout") then child:Destroy() end
     end
-    
+
     local filtered = {}
     for _, animData in ipairs(allAnimations) do
         if filterText == "" or animData.Name:lower():find(filterText:lower(), 1, true) then
             table.insert(filtered, animData)
         end
     end
-    
+
     AnimListLabel.Text = "✅ " .. #filtered .. " dari " .. #allAnimations .. " animasi. Klik buat mainkan:"
-    
+
     for _, animData in ipairs(filtered) do
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, 0, 0, 35)
@@ -661,22 +655,31 @@ local function RefreshAnimList(filterText)
         btn.TextXAlignment = Enum.TextXAlignment.Left
         btn.TextTruncate = Enum.TextTruncate.AtEnd
         btn.Parent = AnimContainer
-        
+
         local c = Instance.new("UICorner")
         c.CornerRadius = UDim.new(0, 5)
         c.Parent = btn
-        
+
         local capturedId = animData.Id
         local capturedName = animData.Name
+        -- FIX: Gunakan PlayAnimNow (lebih kuat, tidak bisa di-stop Evade)
         btn.MouseButton1Click:Connect(function()
-            PlayAnimById(capturedId, capturedName)
+            local numId = capturedId:match("%d+")
+            if numId then
+                local ok = PlayAnimNow(numId)
+                if ok then
+                    Notify("✅ Animasi Dimainkan!", "'" .. capturedName .. "' berhasil diputar!")
+                else
+                    Notify("❌ Error", "Gagal memutar animasi.")
+                end
+            end
         end)
     end
-    
+
     AnimContainer.Size = UDim2.new(1, 0, 0, AnimListLayout.AbsoluteContentSize.Y)
 end
 
--- Filter real-time saat Abang ngetik
+-- Filter real-time saat ngetik
 FilterInput:GetPropertyChangedSignal("Text"):Connect(function()
     if #allAnimations > 0 then
         RefreshAnimList(FilterInput.Text)
@@ -687,14 +690,14 @@ ScanBtn.MouseButton1Click:Connect(function()
     allAnimations = {}
     local char = player.Character
     local searchRoots = {
-        game:GetService("ReplicatedStorage"),
+        replicatedStorage, -- FIX: pakai variabel
         game:GetService("ReplicatedFirst"),
         game:GetService("Workspace"),
         char,
         player:FindFirstChild("PlayerGui"),
         player:FindFirstChild("Backpack"),
     }
-    
+
     local seen = {}
     for _, root in pairs(searchRoots) do
         if root == nil then continue end
@@ -705,14 +708,14 @@ ScanBtn.MouseButton1Click:Connect(function()
             end
         end
     end
-    
+
     if #allAnimations == 0 then
         AnimListLabel.Text = "❌ Tidak ada animasi ditemukan!"
         AnimContainer.Size = UDim2.new(1, 0, 0, 0)
     else
         RefreshAnimList(FilterInput.Text)
     end
-    
+
     Notify("🔍 Scan Selesai", "Ditemukan " .. #allAnimations .. " animasi! Ketik di kotak filter untuk cari nama spesifik.")
 end)
 
@@ -734,28 +737,29 @@ local verifiedEmotes = {
     {Name = "🕺 R6 Dance 1", Id = "183264076", Color = Color3.fromRGB(20, 80, 20)},
     {Name = "🕺 R6 Dance 2", Id = "183268422", Color = Color3.fromRGB(20, 80, 20)},
     {Name = "🕺 R6 Dance 3", Id = "183269374", Color = Color3.fromRGB(20, 80, 20)},
-    {Name = "👋 R6 Wave", Id = "128777973", Color = Color3.fromRGB(20, 60, 80)},
-    
+    {Name = "👋 R6 Wave",    Id = "128777973", Color = Color3.fromRGB(20, 60, 80)},
+
     -- Jika Evade R15
     {Name = "🤖 R15 Dance 1", Id = "507771019", Color = Color3.fromRGB(80, 40, 0)},
     {Name = "🤖 R15 Dance 2", Id = "507776043", Color = Color3.fromRGB(80, 40, 0)},
     {Name = "🤖 R15 Dance 3", Id = "507777268", Color = Color3.fromRGB(80, 40, 0)},
-    {Name = "👋 R15 Wave", Id = "507770239", Color = Color3.fromRGB(80, 30, 80)},
+    {Name = "👋 R15 Wave",    Id = "507770239", Color = Color3.fromRGB(80, 30, 80)},
 }
 
 for _, emoteData in ipairs(verifiedEmotes) do
     local btn = CreateButton(emoteData.Name, ScrollingFrame)
     btn.BackgroundColor3 = emoteData.Color
-    
+
     local animId = emoteData.Id
     local animName = emoteData.Name
     btn.MouseButton1Click:Connect(function()
         if IDInput then IDInput.Text = animId end
         local ok = PlayAnimNow(animId)
         if ok then
-            Notify("✅ Berhasil!", animName .. " diputar pakai Kloning Bayangan!")
+            -- FIX: Pesan notifikasi tidak lagi menyebut "Kloning Bayangan"
+            Notify("✅ Berhasil!", animName .. " diputar!")
         else
-            Notify("❌ Gagal", "Tubuh kloning tidak kompatibel (mungkin salah pilih R6/R15).")
+            Notify("❌ Gagal", "Mungkin salah pilih R6/R15.")
         end
     end)
 end
@@ -782,10 +786,10 @@ CustomWaveBtn.MouseButton1Click:Connect(function()
         Notify("🛑 Wave Dimatikan", "Tangan kembali normal.")
         return
     end
-    
+
     local char = game.Players.LocalPlayer.Character
     if not char then return end
-    
+
     local rightShoulder = nil
     -- Cari sendi bahu kanan (dukung R6 dan R15, bahkan custom rig Evade)
     for _, obj in pairs(char:GetDescendants()) do
@@ -794,27 +798,24 @@ CustomWaveBtn.MouseButton1Click:Connect(function()
             break
         end
     end
-    
+
     if not rightShoulder then
         Notify("❌ Gagal", "Sendi tangan kanan tidak ditemukan di karakter ini.")
         return
     end
-    
+
     savedRightShoulder = rightShoulder
     savedC0 = rightShoulder.C0
-    
+
     CustomWaveBtn.Text = "🛑 Hentikan Custom Wave"
     CustomWaveBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
     Notify("👋 Custom Wave Aktif!", "Menggunakan peretasan C0 Murni! Anti-block!")
-    
+
     local startTime = tick()
     -- RenderStepped untuk menimpa semua hal yang dilakukan Evade di frame yang sama
     customWaveLoop = game:GetService("RunService").RenderStepped:Connect(function()
         local t = tick() - startTime
         local waveAngle = math.sin(t * 10) * 0.5
-        
-        -- Kita tidak pakai Transform (karena mungkin Evade tidak pakai Animator), kita langsung retas sendi C0 aslinya!
-        -- BUG FIX: Gunakan savedC0!
         rightShoulder.C0 = savedC0 * CFrame.Angles(math.rad(150), math.rad(waveAngle * 60), 0)
     end)
 end)
@@ -828,13 +829,13 @@ InjectDataBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 150)
 InjectDataBtn.MouseButton1Click:Connect(function()
     Notify("⏳ Mengekstrak Data...", "Membongkar ModuleScript Evade untuk mencari data Emote asli...")
     task.wait(0.1)
-    
+
     local foundModules = 0
     local injected = false
-    
-    for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+
+    -- FIX: Gunakan variabel replicatedStorage
+    for _, obj in pairs(replicatedStorage:GetDescendants()) do
         if obj:IsA("ModuleScript") then
-            -- Bypass anti-require jika ada
             local ok, data = pcall(function() return require(obj) end)
             if ok and type(data) == "table" then
                 local isEmoteTable = false
@@ -844,7 +845,7 @@ InjectDataBtn.MouseButton1Click:Connect(function()
                         break
                     end
                 end
-                
+
                 if isEmoteTable then
                     foundModules = foundModules + 1
                     -- Paksa ubah semua emote menjadi "Owned" = true
@@ -860,7 +861,7 @@ InjectDataBtn.MouseButton1Click:Connect(function()
             end
         end
     end
-    
+
     if injected then
         Notify("✅ BERHASIL MENCURI DATA!", "Semua Emote berhasil di-unlock secara lokal! Coba buka menu Emote (G) di game sekarang!")
     else
@@ -893,7 +894,7 @@ HallowSpoofBtn.MouseButton1Click:Connect(function()
     if spooferActive then
         HallowSpoofBtn.Text = "🕵️ SPOOFER AKTIF! (Pakai Emote Apapun di Game!)"
         HallowSpoofBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-        Notify("🕵️ Spoofer Aktif!", "Sekarang, buka menu Emote bawaan Evade, lalu pakai emote GRATIS (misal: Dance). Skrip akan menukarnya menjadi Rockin' Stride / Emote Event di server!")
+        Notify("🕵️ Spoofer Aktif!", "Sekarang, buka menu Emote bawaan Evade, lalu pakai emote GRATIS (misal: Dance). Skrip akan menukarnya menjadi target emote di server!")
     else
         HallowSpoofBtn.Text = "🕵️ AKTIFKAN SPOOFER EMOTE (Paling Ampuh!)"
         HallowSpoofBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 0)
@@ -906,12 +907,12 @@ local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
     local args = {...}
-    
+
     if spooferActive and (method == "FireServer" or method == "InvokeServer") then
         local changed = false
         for i, v in ipairs(args) do
             if type(v) == "string" then
-                -- Jika argument berupa nama emote (biasanya string panjang tanpa spasi)
+                -- Jika argument berupa nama emote gratis, tukar ke target
                 if v:lower():find("dance") or v:lower():find("wave") or v:lower():find("cheer") or v:lower():find("point") or v:lower():find("laugh") then
                     args[i] = spoofTarget
                     changed = true
@@ -925,7 +926,7 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
                 end
             end
         end
-        
+
         -- Bypass khusus jika nama Remote berkaitan dengan Emote
         if self.Name:lower():match("emote") or self.Name:lower():match("equip") then
             if type(args[1]) == "string" and not changed then
@@ -936,12 +937,12 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
                 changed = true
             end
         end
-        
+
         if changed then
             return oldNamecall(self, unpack(args))
         end
     end
-    
+
     return oldNamecall(self, ...)
 end)
 
@@ -963,7 +964,8 @@ local BruteForceBtn = CreateButton("🔥 BRUTE-FORCE SERVER (Paksa Putar!)", Scr
 BruteForceBtn.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
 BruteForceBtn.MouseButton1Click:Connect(function()
     local eventsFired = 0
-    for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+    -- FIX: Gunakan variabel replicatedStorage
+    for _, obj in pairs(replicatedStorage:GetDescendants()) do
         if obj:IsA("RemoteEvent") then
             pcall(function() obj:FireServer("Equip", spoofTarget) end)
             pcall(function() obj:FireServer("EquipEmote", spoofTarget) end)
@@ -978,20 +980,20 @@ BruteForceBtn.MouseButton1Click:Connect(function()
     Notify("🔥 Brute-Force Selesai", "Telah mengirim perintah paksa ke " .. eventsFired .. " RemoteEvent!")
 end)
 
-local VisualEmoteBtn = CreateButton("👀 VISUAL ONLY: Putar Rockin' Stride (Kloning)", ScrollingFrame)
+local VisualEmoteBtn = CreateButton("👀 VISUAL ONLY: Putar Rockin' Stride", ScrollingFrame)
 VisualEmoteBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
 
 VisualEmoteBtn.MouseButton1Click:Connect(function()
     Notify("⏳ Mencari...", "Sedang mencari file animasi Rockin' Stride di dalam memori game...")
     task.wait(0.1)
-    
+
     local foundAnimId = nil
     local searchRoots = {
-        game:GetService("ReplicatedStorage"),
+        replicatedStorage, -- FIX: pakai variabel
         game:GetService("ReplicatedFirst"),
         game.Players.LocalPlayer:FindFirstChild("PlayerGui")
     }
-    
+
     for _, root in pairs(searchRoots) do
         if root then
             for _, obj in pairs(root:GetDescendants()) do
@@ -1006,15 +1008,15 @@ VisualEmoteBtn.MouseButton1Click:Connect(function()
         end
         if foundAnimId then break end
     end
-    
+
     if foundAnimId then
         local numId = foundAnimId:match("%d+")
         if numId then
             local ok = PlayAnimNow(numId)
             if ok then
-                Notify("👀 Berhasil!", "Animasi Rockin' Stride internal (" .. numId .. ") ditemukan dan diputar via Kloning!")
+                Notify("👀 Berhasil!", "Animasi Rockin' Stride internal (" .. numId .. ") ditemukan dan diputar!")
             else
-                Notify("❌ Gagal", "Kloning gagal memutar animasi internal.")
+                Notify("❌ Gagal", "Gagal memutar animasi internal.")
             end
         else
             Notify("❌ Gagal", "ID internal tidak valid: " .. tostring(foundAnimId))
@@ -1037,40 +1039,40 @@ HallowAtmosBtn.MouseButton1Click:Connect(function()
         Notify("🛑 Blood Moon Mati", "Pencahayaan kembali dikontrol oleh Evade.")
         return
     end
-    
+
     HallowAtmosBtn.Text = "🌕 Matikan Blood Moon 2022"
     HallowAtmosBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
     Notify("🌕 Blood Moon 2022!", "Memaksa suasana Halloween 2022 setiap detik! (Anti-Reset Evade)")
-    
+
     local lighting = game:GetService("Lighting")
-    
-    local cc = lighting:FindFirstChildOfClass("ColorCorrectionEffect") or Instance.new("ColorCorrectionEffect", lighting)
-    local bloom = lighting:FindFirstChildOfClass("BloomEffect") or Instance.new("BloomEffect", lighting)
-    local atmos = lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere", lighting)
-    
-    -- Paksa setiap frame agar Evade tidak bisa meresetnya!
+
+    local cc    = lighting:FindFirstChildOfClass("ColorCorrectionEffect") or Instance.new("ColorCorrectionEffect", lighting)
+    local bloom = lighting:FindFirstChildOfClass("BloomEffect")           or Instance.new("BloomEffect", lighting)
+    local atmos = lighting:FindFirstChildOfClass("Atmosphere")            or Instance.new("Atmosphere", lighting)
+
+    -- Paksa setiap frame agar Evade tidak bisa meresetnya
     hallowAtmosConn = game:GetService("RunService").RenderStepped:Connect(function()
-        lighting.ClockTime = 0
-        lighting.Brightness = 0.8
-        lighting.GlobalShadows = true
-        lighting.Ambient = Color3.fromRGB(50, 10, 60)
+        lighting.ClockTime    = 0
+        lighting.Brightness   = 0.8
+        lighting.GlobalShadows= true
+        lighting.Ambient      = Color3.fromRGB(50, 10, 60)
         lighting.OutdoorAmbient = Color3.fromRGB(80, 25, 10)
-        lighting.FogColor = Color3.fromRGB(30, 10, 5)
-        lighting.FogStart = 0
-        lighting.FogEnd = 250
-        
-        cc.Brightness = -0.05
-        cc.Contrast = 0.35
-        cc.Saturation = 0.2
-        cc.TintColor = Color3.fromRGB(255, 160, 90)
-        
+        lighting.FogColor     = Color3.fromRGB(30, 10, 5)
+        lighting.FogStart     = 0
+        lighting.FogEnd       = 250
+
+        cc.Brightness  = -0.05
+        cc.Contrast    = 0.35
+        cc.Saturation  = 0.2
+        cc.TintColor   = Color3.fromRGB(255, 160, 90)
+
         bloom.Intensity = 0.7
-        bloom.Size = 30
+        bloom.Size      = 30
         bloom.Threshold = 0.4
-        
+
         atmos.Density = 0.6
-        atmos.Color = Color3.fromRGB(90, 30, 10)
-        atmos.Decay = Color3.fromRGB(40, 10, 5)
+        atmos.Color   = Color3.fromRGB(90, 30, 10)
+        atmos.Decay   = Color3.fromRGB(40, 10, 5)
     end)
 end)
 
@@ -1087,14 +1089,17 @@ HallowMusicBtn.MouseButton1Click:Connect(function()
     else
         currentHallowSound = Instance.new("Sound")
         currentHallowSound.SoundId = "rbxassetid://1837849405"
-        currentHallowSound.Volume = 1
-        currentHallowSound.Looped = true
-        currentHallowSound.Parent = game:GetService("SoundService")
+        currentHallowSound.Volume  = 1
+        currentHallowSound.Looped  = true
+        currentHallowSound.Parent  = game:GetService("SoundService")
         currentHallowSound:Play()
         Notify("🎵 Halloween Soundtrack!", "Memutar musik tema Halloween 2022.")
     end
 end)
 
+-- ========================================================
+-- 🛠️ UTILITAS LAINNYA
+-- ========================================================
 local LabelUtilitas = Instance.new("TextLabel")
 LabelUtilitas.Size = UDim2.new(1, 0, 0, 20)
 LabelUtilitas.BackgroundTransparency = 1
@@ -1112,7 +1117,6 @@ ESPBtn.MouseButton1Click:Connect(function()
     if espOn then
         ESPBtn.Text = "👁️ Toggle ESP: ON"
         ESPBtn.BackgroundColor3 = Color3.fromRGB(30, 80, 30)
-        -- Logic ESP Sederhana
         for _, plr in pairs(game.Players:GetPlayers()) do
             if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
                 local hl = Instance.new("Highlight")
@@ -1171,50 +1175,58 @@ XRayLayout.Parent = XRayContainer
 
 local isSniffing = false
 
+-- FIX: ID animasi dasar dijadikan tabel lookup agar tidak ada pengulangan string panjang
+local baseAnimIds = {
+    ["507770239"] = true, ["507777826"] = true, ["507766388"] = true,
+    ["507766951"] = true, ["507766666"] = true, ["507765000"] = true,
+    ["507765644"] = true, ["507767714"] = true, ["507768375"] = true,
+    ["507767202"] = true,
+}
+
 GodHookBtn.MouseButton1Click:Connect(function()
     if isSniffing then return end
     isSniffing = true
     GodHookBtn.Text = "👿 MENGX-RAY SELURUH MAP..."
     GodHookBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
     Notify("👿 X-RAY AKTIF", "Mencari Dummy Shop yang lagi joget...")
-    
+
     task.spawn(function()
         local foundIds = {}
-        
-        -- Cari semua Animator di dalam game (termasuk dummy shop)
+
+        -- Cari semua Animator di dalam Workspace (termasuk dummy shop)
         for _, obj in pairs(game:GetService("Workspace"):GetDescendants()) do
             if obj:IsA("Animator") then
                 for _, track in pairs(obj:GetPlayingAnimationTracks()) do
                     if track.Animation and track.Animation.AnimationId then
                         local id = track.Animation.AnimationId:match("%d+")
-                        -- Filter animasi jalan bawaan
-                        if id and not (id == "507770239" or id == "507777826" or id == "507766388" or id == "507766951" or id == "507766666" or id == "507765000" or id == "507765644" or id == "507767714" or id == "507768375" or id == "507767202") then
+                        -- FIX: Gunakan tabel lookup untuk filter animasi dasar
+                        if id and not baseAnimIds[id] then
                             foundIds[id] = true
                         end
                     end
                 end
             end
         end
-        
-        -- Cari juga di ReplicatedStorage / PlayerGui barangkali Dummy-nya disembunyikan di UI (ViewportFrame)
+
+        -- Cari juga di LocalPlayer (ViewportFrame di UI Shop)
         for _, obj in pairs(game:GetService("Players").LocalPlayer:GetDescendants()) do
             if obj:IsA("Animator") then
                 for _, track in pairs(obj:GetPlayingAnimationTracks()) do
                     if track.Animation and track.Animation.AnimationId then
                         local id = track.Animation.AnimationId:match("%d+")
-                        if id and not (id == "507770239" or id == "507777826" or id == "507766388") then
+                        if id and not baseAnimIds[id] then
                             foundIds[id] = true
                         end
                     end
                 end
             end
         end
-        
+
         -- Bersihkan hasil sebelumnya
         for _, child in ipairs(XRayContainer:GetChildren()) do
             if child:IsA("TextButton") then child:Destroy() end
         end
-        
+
         local count = 0
         for id, _ in pairs(foundIds) do
             count = count + 1
@@ -1226,11 +1238,11 @@ GodHookBtn.MouseButton1Click:Connect(function()
             btn.Font = Enum.Font.GothamBold
             btn.TextSize = 12
             btn.Parent = XRayContainer
-            
+
             local c = Instance.new("UICorner")
             c.CornerRadius = UDim.new(0, 5)
             c.Parent = btn
-            
+
             btn.MouseButton1Click:Connect(function()
                 if IDInput then IDInput.Text = id end
                 local ok = PlayAnimNow(id)
@@ -1239,9 +1251,9 @@ GodHookBtn.MouseButton1Click:Connect(function()
                 end
             end)
         end
-        
+
         XRayContainer.Size = UDim2.new(1, 0, 0, count * 35)
-        
+
         if count > 0 then
             GodStatus.Text = "Ketemu " .. count .. " animasi! Coba satu-satu di bawah:"
             Notify("🎯 TARGET DIKUNCI!", "Ditemukan beberapa animasi! Coba klik tombol di bawah untuk ngetes.")
@@ -1249,82 +1261,232 @@ GodHookBtn.MouseButton1Click:Connect(function()
             GodStatus.Text = "❌ Tidak ada dummy yang lagi joget."
             Notify("❌ GAGAL", "Pastikan Dummy di Shop SEDANG BERGERAK, lalu klik tombol ini lagi!")
         end
-        
+
         task.wait(1)
         isSniffing = false
         GodHookBtn.Text = "👿 Sedot Animasi dari Dummy Shop"
         GodHookBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
     end)
-    -- Memutus sisa code lama agar tidak dieksekusi:
-    if true then return end
-    
-    local oldNamecall
-    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-        local method = getnamecallmethod()
-        
-        if method == "LoadAnimation" then
-            local args = {...}
-            local anim = args[1]
-            if anim and typeof(anim) == "Instance" and anim.ClassName == "Animation" then
-                local id = anim.AnimationId:match("%d+")
-                
-                if id and not (id == "507770239" or id == "507777826" or id == "507766388" or id == "507766951" or id == "507766666" or id == "507765000" or id == "507765644" or id == "507767714" or id == "507768375" or id == "507767202") then
-                    task.spawn(function()
-                        GodStatus.Text = "Tertangkap (Load): " .. id
-                        if IDInput then IDInput.Text = id end
-                    end)
-                end
-            end
-        elseif method == "Play" and typeof(self) == "Instance" and self.ClassName == "AnimationTrack" then
-            if self.Animation then
-                local id = self.Animation.AnimationId:match("%d+")
-                if id and not (id == "507770239" or id == "507777826" or id == "507766388" or id == "507766951" or id == "507766666" or id == "507765000" or id == "507765644" or id == "507767714" or id == "507768375" or id == "507767202") then
-                    task.spawn(function()
-                        GodStatus.Text = "Tertangkap (Play): " .. id
-                        if IDInput then IDInput.Text = id end
-                    end)
-                end
-            end
-        end
-        return oldNamecall(self, ...)
-    end)
-    
-    local oldNewIndex
-    oldNewIndex = hookmetamethod(game, "__newindex", function(self, key, value)
-        if key == "AnimationId" and typeof(self) == "Instance" and self.ClassName == "Animation" then
-            local id = tostring(value):match("%d+")
-            if id and not (id == "507770239" or id == "507777826" or id == "507766388" or id == "507766951" or id == "507766666" or id == "507765000" or id == "507765644" or id == "507767714" or id == "507768375" or id == "507767202") then
-                task.spawn(function()
-                    GodStatus.Text = "Tertangkap (Set): " .. id
-                    if IDInput then IDInput.Text = id end
-                end)
-            end
-        end
-        return oldNewIndex(self, key, value)
-    end)
+    -- FIX: Dead code (~50 baris) setelah "if true then return end" sudah dihapus sepenuhnya
 end)
 
+-- ========================================================
+-- 🎬 AUTO-CATCH VISUAL EMOTE (TANGKAP OTOMATIS DARI SHOP)
+-- ========================================================
+-- Cara pakai:
+--   1. Aktifkan tombol "Auto-Catch"
+--   2. Buka Shop Evade (walau belum beli)
+--   3. Hover/klik emote → dummy preview joget
+--   4. ID otomatis tertangkap dan muncul sebagai tombol
+--   5. Klik tombol → emote langsung dimainkan di karakter kamu (visual only)
+-- ========================================================
+
+local LabelAutoCatch = Instance.new("TextLabel")
+LabelAutoCatch.Size = UDim2.new(1, 0, 0, 20)
+LabelAutoCatch.BackgroundTransparency = 1
+LabelAutoCatch.Text = "🎬 Auto-Catch Visual Emote (dari Shop)"
+LabelAutoCatch.TextColor3 = Color3.fromRGB(100, 220, 255)
+LabelAutoCatch.Font = Enum.Font.GothamBold
+LabelAutoCatch.TextSize = 14
+LabelAutoCatch.TextXAlignment = Enum.TextXAlignment.Left
+LabelAutoCatch.Parent = ScrollingFrame
+
+local LabelAutoCatchInfo = Instance.new("TextLabel")
+LabelAutoCatchInfo.Size = UDim2.new(1, 0, 0, 40)
+LabelAutoCatchInfo.BackgroundTransparency = 1
+LabelAutoCatchInfo.Text = "Aktifkan → buka shop Evade → hover emote → ID otomatis tertangkap!"
+LabelAutoCatchInfo.TextColor3 = Color3.fromRGB(160, 160, 160)
+LabelAutoCatchInfo.Font = Enum.Font.Gotham
+LabelAutoCatchInfo.TextSize = 11
+LabelAutoCatchInfo.TextXAlignment = Enum.TextXAlignment.Left
+LabelAutoCatchInfo.TextWrapped = true
+LabelAutoCatchInfo.Parent = ScrollingFrame
+
+local AutoCatchBtn = CreateButton("🎬 Auto-Catch: OFF", ScrollingFrame)
+AutoCatchBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 80)
+
+local ClearCatchBtn = CreateButton("🗑️ Hapus Semua Hasil Tangkapan", ScrollingFrame)
+ClearCatchBtn.BackgroundColor3 = Color3.fromRGB(60, 30, 30)
+
+local CatchStatusLabel = Instance.new("TextLabel")
+CatchStatusLabel.Size = UDim2.new(1, 0, 0, 20)
+CatchStatusLabel.BackgroundTransparency = 1
+CatchStatusLabel.Text = "Belum menangkap emote apapun..."
+CatchStatusLabel.TextColor3 = Color3.fromRGB(255, 220, 80)
+CatchStatusLabel.Font = Enum.Font.Gotham
+CatchStatusLabel.TextSize = 12
+CatchStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+CatchStatusLabel.Parent = ScrollingFrame
+
+-- Container untuk tombol-tombol emote hasil tangkapan
+local CatchContainer = Instance.new("Frame")
+CatchContainer.Size = UDim2.new(1, 0, 0, 0)
+CatchContainer.BackgroundTransparency = 1
+CatchContainer.Parent = ScrollingFrame
+
+local CatchLayout = Instance.new("UIListLayout")
+CatchLayout.Padding = UDim.new(0, 5)
+CatchLayout.SortOrder = Enum.SortOrder.LayoutOrder
+CatchLayout.Parent = CatchContainer
+
+local autoCatchActive = false
+local autoCatchThread = nil
+local caughtEmotes = {}      -- { [id] = true } untuk cek duplikat
+local caughtEmoteCount = 0
+
+-- Semua root yang perlu dipindai (termasuk PlayerGui untuk ViewportFrame di shop)
+local function GetScanRoots()
+    return {
+        game:GetService("Workspace"),
+        player:FindFirstChild("PlayerGui"),   -- ← ViewportFrame shop ada di sini!
+        replicatedStorage,
+        game:GetService("ReplicatedFirst"),
+    }
+end
+
+local function AddCaughtEmoteButton(id)
+    caughtEmoteCount = caughtEmoteCount + 1
+    local label = "Emote #" .. caughtEmoteCount
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 38)
+    btn.BackgroundColor3 = Color3.fromRGB(10, 60, 80)
+    btn.TextColor3 = Color3.fromRGB(100, 220, 255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 12
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.TextTruncate = Enum.TextTruncate.AtEnd
+    btn.Text = "▶️ " .. label .. "  |  ID: " .. id
+    btn.Parent = CatchContainer
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    -- Tombol copy ID kecil di kanan
+    local copyBtn = Instance.new("TextButton")
+    copyBtn.Size = UDim2.new(0, 60, 1, 0)
+    copyBtn.Position = UDim2.new(1, -62, 0, 0)
+    copyBtn.BackgroundColor3 = Color3.fromRGB(20, 80, 100)
+    copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    copyBtn.Font = Enum.Font.GothamBold
+    copyBtn.TextSize = 11
+    copyBtn.Text = "📋 Copy"
+    copyBtn.ZIndex = 2
+    copyBtn.Parent = btn
+
+    local copyCorner = Instance.new("UICorner")
+    copyCorner.CornerRadius = UDim.new(0, 5)
+    copyCorner.Parent = copyBtn
+
+    -- Klik tombol utama → langsung play di karakter
+    btn.MouseButton1Click:Connect(function()
+        if IDInput then IDInput.Text = id end
+        local ok = PlayAnimNow(id)
+        if ok then
+            Notify("✅ Visual Emote Dimainkan!", "ID: " .. id .. " | Hanya kamu yang bisa lihat!")
+        else
+            Notify("❌ Gagal", "Karakter tidak siap atau animasi tidak valid.")
+        end
+    end)
+
+    -- Klik copy → taruh ID ke input box
+    copyBtn.MouseButton1Click:Connect(function()
+        if IDInput then IDInput.Text = id end
+        copyBtn.Text = "✅ Copied!"
+        task.delay(1.5, function()
+            if copyBtn and copyBtn.Parent then
+                copyBtn.Text = "📋 Copy"
+            end
+        end)
+    end)
+
+    -- Update ukuran container
+    CatchContainer.Size = UDim2.new(1, 0, 0, CatchLayout.AbsoluteContentSize.Y)
+end
+
+local function ScanAndCatch()
+    local roots = GetScanRoots()
+    for _, root in pairs(roots) do
+        if not root then continue end
+        -- Scan semua Animator (termasuk di dalam ViewportFrame shop!)
+        local ok = pcall(function()
+            for _, obj in pairs(root:GetDescendants()) do
+                if obj:IsA("Animator") then
+                    pcall(function()
+                        for _, track in pairs(obj:GetPlayingAnimationTracks()) do
+                            if track.Animation and track.Animation.AnimationId then
+                                local id = track.Animation.AnimationId:match("%d+")
+                                -- Filter animasi dasar bawaan Roblox
+                                if id and not baseAnimIds[id] and not caughtEmotes[id] then
+                                    caughtEmotes[id] = true
+                                    -- Update UI di main thread
+                                    task.spawn(function()
+                                        AddCaughtEmoteButton(id)
+                                        CatchStatusLabel.Text = "🎯 " .. caughtEmoteCount .. " emote tertangkap! Klik untuk mainkan."
+                                        Notify("🎬 Emote Tertangkap!", "ID: " .. id .. " | Klik tombol biru untuk mainkan!")
+                                    end)
+                                end
+                            end
+                        end
+                    end)
+                end
+            end
+        end)
+    end
+end
+
+AutoCatchBtn.MouseButton1Click:Connect(function()
+    autoCatchActive = not autoCatchActive
+    if autoCatchActive then
+        AutoCatchBtn.Text = "🎬 Auto-Catch: ON (Buka Shop Sekarang!)"
+        AutoCatchBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 180)
+        Notify("🎬 Auto-Catch Aktif!", "Sekarang buka Shop Evade dan hover/klik emote apapun. ID akan otomatis tertangkap!")
+
+        -- Jalankan scanner di background setiap 0.3 detik
+        autoCatchThread = task.spawn(function()
+            while autoCatchActive do
+                ScanAndCatch()
+                task.wait(0.3)
+            end
+        end)
+    else
+        autoCatchActive = false
+        if autoCatchThread then
+            task.cancel(autoCatchThread)
+            autoCatchThread = nil
+        end
+        AutoCatchBtn.Text = "🎬 Auto-Catch: OFF"
+        AutoCatchBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 80)
+        Notify("🎬 Auto-Catch Dimatikan", caughtEmoteCount .. " emote sudah tersimpan. Klik tombol biru untuk mainkan.")
+    end
+end)
+
+ClearCatchBtn.MouseButton1Click:Connect(function()
+    -- Bersihkan semua tombol hasil tangkapan
+    for _, child in pairs(CatchContainer:GetChildren()) do
+        if not child:IsA("UIListLayout") then child:Destroy() end
+    end
+    caughtEmotes = {}
+    caughtEmoteCount = 0
+    CatchContainer.Size = UDim2.new(1, 0, 0, 0)
+    CatchStatusLabel.Text = "Belum menangkap emote apapun..."
+    Notify("🗑️ Dibersihkan", "Semua hasil tangkapan dihapus.")
+end)
+
+-- Update otomatis ukuran container saat ada button baru
+CatchLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    CatchContainer.Size = UDim2.new(1, 0, 0, CatchLayout.AbsoluteContentSize.Y)
+end)
+
+-- FIX: CloseBtn sekarang juga sinkronkan state isVisible dan tampilan ToggleBtn
 local CloseBtn = CreateButton("❌ Sembunyikan UI", ScrollingFrame)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
 CloseBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
-end)
-
--- Tombol Floating untuk Munculin/Sembunyiin UI
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
-ToggleBtn.Position = UDim2.new(0, 10, 0, 10) -- Pojok kiri atas
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
-ToggleBtn.Text = "👽"
-ToggleBtn.TextSize = 24
-ToggleBtn.Parent = WayaeUI
-
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(1, 0) -- Bikin bulat
-ToggleCorner.Parent = ToggleBtn
-
-ToggleBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
+    isVisible = false
+    ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 80, 0)
+    ToggleBtn.Text = "👁️"
 end)
 
 -- Update konten scroll

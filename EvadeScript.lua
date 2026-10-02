@@ -194,6 +194,18 @@ local function StopAllAnimations()
     activeAnimId = nil
 end
 
+local function KillScriptsInModel(model)
+    local killed = 0
+    for _, desc in pairs(model:GetDescendants()) do
+        if desc:IsA("LocalScript") or desc:IsA("Script") then
+            pcall(function() desc.Disabled = true end)
+            pcall(function() desc:Destroy() end)
+            killed = killed + 1
+        end
+    end
+    return killed
+end
+
 local function PlayAnimNow(idStr)
     local char = GetActiveCharacter()
     if not char then return false end
@@ -205,7 +217,11 @@ local function PlayAnimNow(idStr)
     StopAllAnimations()
     activeAnimId = formattedId
 
+    -- LANGKAH 1: Matikan SEMUA script di dalam model (bunuh controller animasi Evade)
+    local killed = KillScriptsInModel(char)
+
     local ok, err = pcall(function()
+        -- LANGKAH 2: Cari semua Animator
         local animators = {}
         for _, desc in pairs(char:GetDescendants()) do
             if desc:IsA("Animator") then
@@ -213,22 +229,17 @@ local function PlayAnimNow(idStr)
             end
         end
 
+        -- LANGKAH 3: Kalau tidak ada Animator, cari Humanoid/AnimationController dan buat Animator baru
         if #animators == 0 then
             local hum = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChildOfClass("AnimationController")
-            if hum then
-                local animator = Instance.new("Animator", hum)
-                table.insert(animators, animator)
+            if not hum then
+                hum = Instance.new("Humanoid", char)
             end
+            local animator = Instance.new("Animator", hum)
+            table.insert(animators, animator)
         end
 
-        if #animators == 0 then
-            error("Tidak ada Animator di karakter: " .. char.Name)
-        end
-
-        local anim = Instance.new("Animation")
-        anim.AnimationId = formattedId
-
-        -- Pertama: BUNUH semua animasi yang sedang jalan di karakter ini
+        -- LANGKAH 4: Hentikan SEMUA animasi yang sedang jalan
         for _, animator in ipairs(animators) do
             pcall(function()
                 for _, existingTrack in pairs(animator:GetPlayingAnimationTracks()) do
@@ -238,7 +249,10 @@ local function PlayAnimNow(idStr)
             end)
         end
 
-        -- Kedua: Muat dan mainkan animasi kita
+        -- LANGKAH 5: Muat dan mainkan animasi kita
+        local anim = Instance.new("Animation")
+        anim.AnimationId = formattedId
+
         for _, animator in ipairs(animators) do
             local track = animator:LoadAnimation(anim)
             track.Priority = Enum.AnimationPriority.Action4
@@ -248,32 +262,9 @@ local function PlayAnimNow(idStr)
             table.insert(activeTracks, track)
         end
 
-        -- SENJATA PAMUNGKAS: Jalankan setiap FRAME (60x/detik)
-        -- Ini akan membunuh semua animasi lain dan memaksa animasi kita tetap jalan
+        -- LANGKAH 6: RenderStepped override setiap frame
         renderConn = RunService.RenderStepped:Connect(function()
             if #activeTracks == 0 then return end
-            
-            for _, animator in ipairs(animators) do
-                pcall(function()
-                    for _, existingTrack in pairs(animator:GetPlayingAnimationTracks()) do
-                        -- Cek apakah ini track milik kita
-                        local isOurs = false
-                        for _, ourTrack in pairs(activeTracks) do
-                            if existingTrack == ourTrack then
-                                isOurs = true
-                                break
-                            end
-                        end
-                        -- Kalau bukan milik kita, BUNUH!
-                        if not isOurs then
-                            existingTrack:Stop(0)
-                            existingTrack:AdjustWeight(0)
-                        end
-                    end
-                end)
-            end
-            
-            -- Paksa animasi kita tetap jalan
             for _, track in pairs(activeTracks) do
                 pcall(function()
                     if not track.IsPlaying then
@@ -287,6 +278,8 @@ local function PlayAnimNow(idStr)
     
     if not ok then
         Notify("❌ Play Error", tostring(err))
+    else
+        Notify("☢️ NUKLIR v2 di " .. char.Name, "Script Evade dimatikan: " .. killed .. " | Animasi dipaksa!")
     end
     return ok, char.Name
 end
@@ -294,26 +287,94 @@ end
 PlayByIDBtn.MouseButton1Click:Connect(function()
     local id = IDInput.Text:match("%d+")
     if id then
-        local ok, charName = PlayAnimNow(id)
-        if ok then
-            Notify("✅ NUKLIR AKTIF di " .. tostring(charName), "Animasi dipaksa 60x/detik! Evade tidak bisa menghentikan ini!")
-        else
-            if not charName then Notify("❌ Gagal", "Karakter tidak ditemukan!") end
-        end
+        PlayAnimNow(id)
     else
         Notify("❌ Input Salah", "Masukkan angka ID yang benar!")
     end
 end)
 
 LoopBtn.MouseButton1Click:Connect(function()
-    -- Loop sekarang selalu ON karena RenderStepped sudah menangani semuanya
-    Notify("ℹ️ Info", "Loop otomatis aktif! Animasi akan terus dipaksa jalan oleh sistem NUKLIR.")
+    Notify("ℹ️ Info", "Loop otomatis aktif! Animasi dipaksa jalan setiap frame.")
 end)
 
 StopBtn.MouseButton1Click:Connect(function()
     StopAllAnimations()
     Notify("⏹️ Dihentikan", "Animasi dan sistem NUKLIR dihentikan.")
 end)
+
+-- 🔬 DEBUG: Tombol untuk melihat isi VisualModel
+local DebugBtn = CreateButton("🔬 Debug: Lihat Isi VisualModel", ScrollingFrame)
+DebugBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 80)
+DebugBtn.MouseButton1Click:Connect(function()
+    local char = GetActiveCharacter()
+    if not char then
+        Notify("❌ Tidak ditemukan", "VisualModel tidak ada!")
+        return
+    end
+    
+    local info = "Model: " .. char.Name .. " | Parent: " .. tostring(char.Parent and char.Parent.Name) .. "\n"
+    local humanoids = 0
+    local animControllers = 0
+    local animators = 0
+    local motor6ds = 0
+    local scripts = 0
+    local parts = 0
+    
+    for _, desc in pairs(char:GetDescendants()) do
+        if desc:IsA("Humanoid") then humanoids = humanoids + 1 end
+        if desc:IsA("AnimationController") then animControllers = animControllers + 1 end
+        if desc:IsA("Animator") then animators = animators + 1 end
+        if desc:IsA("Motor6D") then motor6ds = motor6ds + 1 end
+        if desc:IsA("LocalScript") or desc:IsA("Script") then scripts = scripts + 1 end
+        if desc:IsA("BasePart") then parts = parts + 1 end
+    end
+    
+    info = info .. "Humanoid: " .. humanoids .. " | AnimController: " .. animControllers
+    info = info .. " | Animator: " .. animators .. " | Motor6D: " .. motor6ds
+    info = info .. " | Scripts: " .. scripts .. " | Parts: " .. parts
+    
+    -- Cek apakah rig R6 atau R15
+    local hasR15 = char:FindFirstChild("UpperTorso") or char:FindFirstChild("RightUpperArm")
+    local hasR6 = char:FindFirstChild("Torso") or char:FindFirstChild("Right Arm")
+    local rigType = "Unknown"
+    if hasR15 then rigType = "R15" elseif hasR6 then rigType = "R6" end
+    info = info .. " | Rig: " .. rigType
+    
+    Notify("🔬 Debug " .. char.Name, info)
+end)
+
+-- 🎮 TOMBOL FIRE REMOTE: Coba pakai sistem internal Evade
+local RemoteBtn = CreateButton("🎮 Fire Emote via Remote Evade", ScrollingFrame)
+RemoteBtn.BackgroundColor3 = Color3.fromRGB(0, 60, 100)
+RemoteBtn.MouseButton1Click:Connect(function()
+    local id = IDInput.Text:match("%d+")
+    if not id then
+        Notify("❌ Input Salah", "Masukkan ID dulu!")
+        return
+    end
+    
+    local fired = 0
+    -- Cari semua RemoteEvent yang mungkin berhubungan dengan emote
+    for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            local name = obj.Name:lower()
+            if name:find("emote") or name:find("anim") or name:find("dance") or name:find("play") or name:find("cosmetic") then
+                pcall(function()
+                    obj:FireServer(id)
+                    obj:FireServer(tonumber(id))
+                    obj:FireServer("rbxassetid://" .. id)
+                end)
+                fired = fired + 1
+                Notify("🎮 Remote Fired", obj.Name .. " (" .. fired .. ")")
+            end
+        end
+    end
+    
+    if fired == 0 then
+        Notify("⚠️ Tidak Ada Remote", "Tidak ditemukan RemoteEvent terkait emote di ReplicatedStorage.")
+    end
+end)
+
 
 -- ========================================================
 -- 🔍 SMART SCANNER (CARI DUMMY SHOP)

@@ -561,7 +561,10 @@ PlayEvadeBtn.MouseButton1Click:Connect(function()
     local targetModule = nil
     
     local allObjects = {}
-    pcall(function() allObjects = rs:GetDescendants() end)
+    pcall(function() 
+        for _, obj in ipairs(rs:GetDescendants()) do table.insert(allObjects, obj) end
+        for _, obj in ipairs(workspace:GetDescendants()) do table.insert(allObjects, obj) end
+    end)
     
     local id = nil
     
@@ -608,10 +611,8 @@ PlayEvadeBtn.MouseButton1Click:Connect(function()
                         if type(v) == "string" and v:match("rbxassetid://(%d+)") then
                             return v:match("%d+")
                         end
-                        -- Brute force cari angka panjang
-                        if type(v) == "number" and v > 10000000 then
-                            return tostring(v)
-                        end
+                        -- HAPUS BRUTE FORCE: Jangan sembarangan ngambil angka panjang
+                        -- karena nyatanya developer pakai angka 1000000000 sbg jebakan!
                     end
                     for k, v in pairs(tbl) do
                         if type(v) == "table" then

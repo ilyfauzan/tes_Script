@@ -277,6 +277,9 @@ LabelAutoCatchInfo.Parent = ScrollingFrame
 local ScanBtn = CreateButton("🔍 Scan Emote Sekarang", ScrollingFrame)
 ScanBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 180)
 
+local SniperBtn = CreateButton("🎯 Sniper Mode: Siap Menembak", ScrollingFrame)
+SniperBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+
 local CatchContainer = Instance.new("Frame")
 CatchContainer.Size = UDim2.new(1, 0, 0, 0)
 CatchContainer.BackgroundTransparency = 1
@@ -293,6 +296,49 @@ local baseAnimIds = {
     ["507765644"] = true, ["507767714"] = true, ["507768375"] = true,
     ["507767202"] = true,
 }
+
+local sniperActive = false
+SniperBtn.MouseButton1Click:Connect(function()
+    sniperActive = not sniperActive
+    if sniperActive then
+        SniperBtn.Text = "🎯 Sniper: ON (KLIK EMOTE DI SHOP SEKARANG!)"
+        SniperBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        Notify("🎯 Sniper Aktif", "Cepat klik emote di shop! Script akan menangkap 1 animasi yang paling baru diload.")
+    else
+        SniperBtn.Text = "🎯 Sniper Mode: Siap Menembak"
+        SniperBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    end
+end)
+
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    if sniperActive then
+        local method = getnamecallmethod()
+        if method == "LoadAnimation" or method == "Play" then
+            local anim = nil
+            if method == "LoadAnimation" then
+                anim = select(1, ...)
+            elseif typeof(self) == "Instance" and self:IsA("AnimationTrack") then
+                anim = self.Animation
+            end
+            
+            if anim and typeof(anim) == "Instance" and anim:IsA("Animation") then
+                local id = anim.AnimationId:match("%d+")
+                if id and not baseAnimIds[id] then
+                    sniperActive = false
+                    task.spawn(function()
+                        SniperBtn.Text = "🎯 Sniper Mode: Siap Menembak"
+                        SniperBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+                        if IDInput then IDInput.Text = id end
+                        Notify("🎯 HEADSHOT!", "ID " .. id .. " tertangkap!")
+                        PlayAnimNow(id)
+                    end)
+                end
+            end
+        end
+    end
+    return oldNamecall(self, ...)
+end)
 
 ScanBtn.MouseButton1Click:Connect(function()
     ScanBtn.Text = "⏳ Scanning..."

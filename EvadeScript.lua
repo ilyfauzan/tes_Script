@@ -53,8 +53,7 @@ ScrollingFrame.Size = UDim2.new(1, -20, 1, -60)
 ScrollingFrame.Position = UDim2.new(0, 10, 0, 50)
 ScrollingFrame.BackgroundTransparency = 1
 ScrollingFrame.ScrollBarThickness = 4
-ScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 1500) -- Hardcoded to bypass executor UI bugs
 ScrollingFrame.Parent = MainFrame
 
 local ToggleBtn = Instance.new("TextButton")
@@ -86,10 +85,6 @@ local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Padding = UDim.new(0, 10)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Parent = ScrollingFrame
-
-UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 30)
-end)
 
 local function CreateButton(text, parent)
     local btn = Instance.new("TextButton")

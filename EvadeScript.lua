@@ -529,59 +529,39 @@ InternalEmoteLabel.TextSize = 14
 InternalEmoteLabel.TextXAlignment = Enum.TextXAlignment.Left
 InternalEmoteLabel.Parent = ScrollingFrame
 
-local rockinIndex = 1
-local RockinBtn = CreateButton("🕺 Play Rockin' Stride", ScrollingFrame)
+local RockinBtn = CreateButton("🕺 Play Rockin' Stride (ASLI)", ScrollingFrame)
 RockinBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 RockinBtn.MouseButton1Click:Connect(function()
-    local keyword = "rockin"
-    local matches = {}
+    local trueAnim = nil
     
-    local services = {game:GetService("ReplicatedStorage"), workspace, player}
-    for _, service in pairs(services) do
-        local objects = {}
-        pcall(function() objects = service:GetDescendants() end)
-        for _, obj in pairs(objects) do
-            if obj:IsA("Animation") then
-                local nameMatch = string.find(string.lower(obj.Name), keyword)
-                local parentMatch = obj.Parent and string.find(string.lower(obj.Parent.Name), keyword)
-                if nameMatch or parentMatch then
-                    table.insert(matches, obj)
-                end
-            end
-        end
-    end
-    
-    if #matches == 0 then
-        keyword = "stride"
-        for _, service in pairs(services) do
-            local objects = {}
-            pcall(function() objects = service:GetDescendants() end)
-            for _, obj in pairs(objects) do
-                if obj:IsA("Animation") then
-                    local nameMatch = string.find(string.lower(obj.Name), keyword)
-                    local parentMatch = obj.Parent and string.find(string.lower(obj.Parent.Name), keyword)
-                    if nameMatch or parentMatch then
-                        table.insert(matches, obj)
+    -- Mencari path spesifik sesuai screenshot user
+    for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+        if obj:IsA("Folder") and obj.Name == "RockinStride" then
+            local anims = obj:FindFirstChild("Animations")
+            if anims then
+                local r15 = anims:FindFirstChild("R15")
+                if r15 then
+                    local anim = r15:FindFirstChild("Animation")
+                    if anim and anim:IsA("Animation") then
+                        trueAnim = anim
+                        break
                     end
                 end
             end
         end
     end
     
-    if #matches > 0 then
-        if rockinIndex > #matches then rockinIndex = 1 end
-        local anim = matches[rockinIndex]
-        local id = anim.AnimationId:match("%d+")
+    if trueAnim then
+        local id = trueAnim.AnimationId:match("%d+")
         if id then
             if IDInput then IDInput.Text = id end
             PlayAnimNow(id)
-            Notify("✅ Berhasil!", "Memutar Varian " .. rockinIndex .. "/" .. #matches .. " (ID: " .. id .. ")")
+            Notify("✅ Berhasil!", "Memutar TRUE Rockin' Stride (ID: " .. id .. ")")
         else
             Notify("❌ Gagal", "AnimationId tidak valid.")
         end
-        rockinIndex = rockinIndex + 1
     else
-        Notify("❌ Gagal", "Emote Rockin Stride tidak ditemukan di memori Evade.")
+        Notify("❌ Gagal", "File asli Rockin Stride tidak ditemukan di memori Evade.")
     end
 end)
 

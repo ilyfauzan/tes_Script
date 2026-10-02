@@ -585,7 +585,7 @@ PlayEvadeBtn.MouseButton1Click:Connect(function()
                 local function findID(tbl)
                     for k, v in pairs(tbl) do
                         local key = tostring(k):lower()
-                        if key == "animation" or key == "animationid" or key == "anim" or key == "id" then
+                        if key == "animation" or key == "animationid" or key == "anim" or key == "id" or key == "asset" then
                             if type(v) == "number" then return tostring(v) end
                             if type(v) == "string" and v:match("%d+") then return v:match("%d+") end
                             if typeof(v) == "Instance" and v:IsA("Animation") then return v.AnimationId:match("%d+") end
@@ -594,6 +594,10 @@ PlayEvadeBtn.MouseButton1Click:Connect(function()
                     for k, v in pairs(tbl) do
                         if type(v) == "string" and v:match("rbxassetid://(%d+)") then
                             return v:match("%d+")
+                        end
+                        -- Brute force cari angka panjang
+                        if type(v) == "number" and v > 10000000 then
+                            return tostring(v)
                         end
                     end
                     for k, v in pairs(tbl) do
@@ -605,6 +609,15 @@ PlayEvadeBtn.MouseButton1Click:Connect(function()
                     return nil
                 end
                 id = findID(data)
+                
+                -- DEBUG DUMP KALAU GAGAL
+                if not id then
+                    local keys = {}
+                    for k, v in pairs(data) do
+                        table.insert(keys, tostring(k) .. ":" .. type(v))
+                    end
+                    EvadeEmoteInput.Text = "Isi: " .. table.concat(keys, ", ")
+                end
             end
         end
         
@@ -613,7 +626,7 @@ PlayEvadeBtn.MouseButton1Click:Connect(function()
             PlayAnimNow(id)
             Notify("✅ BERHASIL BONGKAR!", "Memutar " .. targetModule.Name .. " (ID: " .. id .. ")")
         else
-            Notify("❌ Gagal", "Module ada, tapi ID terlalu rahasia/nggak ketemu.")
+            Notify("❌ Gagal", "ID terlalu rahasia. Lihat kotak teks untuk info debug!")
         end
     else
         Notify("❌ Gagal", "Emote '" .. emoteName .. "' tidak ada di folder Evade.")

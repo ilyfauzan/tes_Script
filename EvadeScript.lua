@@ -1333,15 +1333,46 @@ local autoCatchActive = false
 local autoCatchThread = nil
 local caughtEmotes = {}      -- { [id] = true } untuk cek duplikat
 local caughtEmoteCount = 0
+local baselineIds = {}       -- Snapshot ID yang sudah ada SEBELUM Auto-Catch aktif
 
--- Semua root yang perlu dipindai (termasuk PlayerGui untuk ViewportFrame di shop)
-local function GetScanRoots()
-    return {
-        game:GetService("Workspace"),
-        player:FindFirstChild("PlayerGui"),   -- ← ViewportFrame shop ada di sini!
-        replicatedStorage,
-        game:GetService("ReplicatedFirst"),
-    }
+-- FIX: Hanya scan PlayerGui (tempat ViewportFrame shop Evade berada)
+-- Workspace sengaja TIDAK discan agar tidak tangkap NPC/player lain
+local function GetShopAnimatorIds()
+    local found = {}
+    local playerGui = player:FindFirstChild("PlayerGui")
+    if not playerGui then return found end
+
+    for _, obj in pairs(playerGui:GetDescendants()) do
+        -- FIX: Hanya ambil dari ViewportFrame (tempat dummy shop)
+        -- dan pastikan bukan Animator milik karakter player sendiri
+        if obj:IsA("Animator") then
+            -- Pastikan Animator ini bukan milik karakter kita sendiri
+            local isOwnChar = false
+            if player.Character then
+                local parent = obj
+                while parent do
+                    if parent == player.Character then
+                        isOwnChar = true
+                        break
+                    end
+                    parent = parent.Parent
+                end
+            end
+            if not isOwnChar then
+                pcall(function()
+                    for _, track in pairs(obj:GetPlayingAnimationTracks()) do
+                        if track.Animation and track.Animation.AnimationId then
+                            local id = track.Animation.AnimationId:match("%d+")
+                            if id then
+                                found[id] = true
+                            end
+                        end
+                    end
+                end)
+            end
+        end
+    end
+    return found
 end
 
 local function AddCaughtEmoteButton(id)
@@ -1406,42 +1437,41 @@ local function AddCaughtEmoteButton(id)
 end
 
 local function ScanAndCatch()
-    local roots = GetScanRoots()
-    for _, root in pairs(roots) do
-        if not root then continue end
-        -- Scan semua Animator (termasuk di dalam ViewportFrame shop!)
-        local ok = pcall(function()
-            for _, obj in pairs(root:GetDescendants()) do
-                if obj:IsA("Animator") then
-                    pcall(function()
-                        for _, track in pairs(obj:GetPlayingAnimationTracks()) do
-                            if track.Animation and track.Animation.AnimationId then
-                                local id = track.Animation.AnimationId:match("%d+")
-                                -- Filter animasi dasar bawaan Roblox
-                                if id and not baseAnimIds[id] and not caughtEmotes[id] then
-                                    caughtEmotes[id] = true
-                                    -- Update UI di main thread
-                                    task.spawn(function()
-                                        AddCaughtEmoteButton(id)
-                                        CatchStatusLabel.Text = "🎯 " .. caughtEmoteCount .. " emote tertangkap! Klik untuk mainkan."
-                                        Notify("🎬 Emote Tertangkap!", "ID: " .. id .. " | Klik tombol biru untuk mainkan!")
-                                    end)
-                                end
-                            end
-                        end
-                    end)
-                end
-            end
-        end)
+    -- FIX: Hanya ambil dari PlayerGui (ViewportFrame shop), bukan seluruh game
+    local currentIds = GetShopAnimatorIds()
+
+    for id, _ in pairs(currentIds) do
+        -- FIX: Abaikan jika ID sudah ada sebelum Auto-Catch aktif (baseline)
+        -- Abaikan juga animasi dasar Roblox
+        if not caughtEmotes[id] and not baselineIds[id] and not baseAnimIds[id] then
+            caughtEmotes[id] = true
+            task.spawn(function()
+                AddCaughtEmoteButton(id)
+                CatchStatusLabel.Text = "🎯 " .. caughtEmoteCount .. " emote tertangkap! Klik untuk mainkan."
+                Notify("🎬 Emote Tertangkap!", "ID: " .. id .. " | Klik tombol biru untuk mainkan!")
+            end)
+        end
     end
 end
 
 AutoCatchBtn.MouseButton1Click:Connect(function()
     autoCatchActive = not autoCatchActive
     if autoCatchActive then
+        -- FIX: Ambil snapshot semua ID yang SUDAH ADA sekarang sebagai baseline
+        -- Agar animasi yang sudah berjalan sebelum shop dibuka tidak ikut tertangkap
+        baselineIds = {}
+        local existing = GetShopAnimatorIds()
+        for id, _ in pairs(existing) do
+            baselineIds[id] = true
+        end
+        -- Tandai juga ID yang sudah pernah ditangkap sebelumnya
+        for id, _ in pairs(caughtEmotes) do
+            baselineIds[id] = true
+        end
+
         AutoCatchBtn.Text = "🎬 Auto-Catch: ON (Buka Shop Sekarang!)"
         AutoCatchBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 180)
-        Notify("🎬 Auto-Catch Aktif!", "Sekarang buka Shop Evade dan hover/klik emote apapun. ID akan otomatis tertangkap!")
+        Notify("🎬 Auto-Catch Aktif!", "Buka Shop Evade lalu klik/hover emote. Hanya emote BARU yang akan tertangkap!")
 
         -- Jalankan scanner di background setiap 0.3 detik
         autoCatchThread = task.spawn(function()
@@ -1458,7 +1488,7 @@ AutoCatchBtn.MouseButton1Click:Connect(function()
         end
         AutoCatchBtn.Text = "🎬 Auto-Catch: OFF"
         AutoCatchBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 80)
-        Notify("🎬 Auto-Catch Dimatikan", caughtEmoteCount .. " emote sudah tersimpan. Klik tombol biru untuk mainkan.")
+        Notify("🎬 Auto-Catch Dimatikan", caughtEmoteCount .. " emote tersimpan. Klik tombol biru untuk mainkan.")
     end
 end)
 

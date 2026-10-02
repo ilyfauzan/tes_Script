@@ -526,42 +526,65 @@ InternalEmoteLabel.Text = "🎸 IN-GAME EMOTES (ROCKIN STRIDE DLL)"
 InternalEmoteLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
 InternalEmoteLabel.Font = Enum.Font.GothamBold
 InternalEmoteLabel.TextSize = 14
-InternalEmoteLabel.TextXAlignment = Enum.TextXAlignment.Left
-InternalEmoteLabel.Parent = ScrollingFrame
+local EvadeEmoteInput = CreateInput("Nama Emote (cth: BoldMarch, Conga)", ScrollingFrame)
+local PlayEvadeBtn = CreateButton("🎭 Play Emote Evade", ScrollingFrame)
+PlayEvadeBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
 
-local RockinBtn = CreateButton("🕺 Play Rockin' Stride (ASLI)", ScrollingFrame)
-RockinBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-RockinBtn.MouseButton1Click:Connect(function()
-    local trueAnim = nil
+PlayEvadeBtn.MouseButton1Click:Connect(function()
+    local emoteName = EvadeEmoteInput.Text
+    -- Default ke tantangan user kalau dikosongin
+    if emoteName == "" or emoteName == "Nama Emote (cth: BoldMarch, Conga)" then 
+        emoteName = "BoldMarch" 
+    end 
     
-    -- Mencari path spesifik sesuai screenshot user
-    for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
-        if obj:IsA("Folder") and obj.Name == "RockinStride" then
-            local anims = obj:FindFirstChild("Animations")
-            if anims then
-                local r15 = anims:FindFirstChild("R15")
-                if r15 then
-                    local anim = r15:FindFirstChild("Animation")
-                    if anim and anim:IsA("Animation") then
-                        trueAnim = anim
+    local rs = game:GetService("ReplicatedStorage")
+    local emotesFolder = rs:FindFirstChild("Items") 
+        and rs.Items:FindFirstChild("BaseItems") 
+        and rs.Items.BaseItems:FindFirstChild("Emotes")
+        
+    if not emotesFolder then
+        Notify("❌ Gagal", "Folder Emotes Evade tidak ditemukan!")
+        return
+    end
+    
+    local targetModule = nil
+    for _, child in pairs(emotesFolder:GetChildren()) do
+        if child:IsA("ModuleScript") and string.lower(child.Name) == string.lower(emoteName) then
+            targetModule = child
+            break
+        end
+    end
+    
+    if targetModule then
+        local success, data = pcall(function() return require(targetModule) end)
+        if success and type(data) == "table" then
+            local id = nil
+            if data.Animation then id = tostring(data.Animation):match("%d+") end
+            if not id and data.AnimationId then id = tostring(data.AnimationId):match("%d+") end
+            if not id then
+                for k, v in pairs(data) do
+                    if type(v) == "string" and v:match("rbxassetid://(%d+)") then
+                        id = v:match("%d+")
+                        break
+                    elseif type(v) == "number" and v > 100000000 then
+                        id = tostring(v)
                         break
                     end
                 end
             end
-        end
-    end
-    
-    if trueAnim then
-        local id = trueAnim.AnimationId:match("%d+")
-        if id then
-            if IDInput then IDInput.Text = id end
-            PlayAnimNow(id)
-            Notify("✅ Berhasil!", "Memutar TRUE Rockin' Stride (ID: " .. id .. ")")
+            
+            if id then
+                if IDInput then IDInput.Text = id end
+                PlayAnimNow(id)
+                Notify("✅ TANTANGAN SELESAI!", "Memutar " .. targetModule.Name .. " (ID: " .. id .. ")")
+            else
+                Notify("❌ Gagal", "Module ada, tapi gagal ngekstrak ID.")
+            end
         else
-            Notify("❌ Gagal", "AnimationId tidak valid.")
+            Notify("❌ Gagal", "Gagal mengekstrak isi ModuleScript.")
         end
     else
-        Notify("❌ Gagal", "File asli Rockin Stride tidak ditemukan di memori Evade.")
+        Notify("❌ Gagal", "Emote '" .. emoteName .. "' tidak ada di folder Evade.")
     end
 end)
 

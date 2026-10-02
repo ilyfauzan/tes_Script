@@ -151,31 +151,34 @@ local activeTracks = {}
 local loopThread = nil
 
 local function GetActiveCharacter()
+    local bestChar = nil
+    local bestDist = 99999
+    local camPos = workspace.CurrentCamera and workspace.CurrentCamera.CFrame.Position or Vector3.new(0,0,0)
+
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj.Name == "VisualModel" and obj:FindFirstChildOfClass("Humanoid") then
-            return obj
+        if obj:IsA("Model") and (obj.Name == "VisualModel" or obj.Name == player.Name) and (obj:FindFirstChildOfClass("Humanoid") or obj:FindFirstChildOfClass("AnimationController")) then
+            local dist = 99999
+            pcall(function() dist = (obj:GetPivot().Position - camPos).Magnitude end)
+            if dist < bestDist then
+                bestDist = dist
+                bestChar = obj
+            end
         end
+    end
+    
+    if bestChar and bestDist < 100 then
+        return bestChar
     end
 
     local cam = workspace.CurrentCamera
     if cam and cam.CameraSubject then
         local subject = cam.CameraSubject
-        if subject:IsA("Humanoid") then
-            return subject.Parent
-        elseif subject:IsA("BasePart") then
+        if subject:IsA("Humanoid") or subject:IsA("BasePart") then
             return subject.Parent
         end
     end
     
-    local char = player.Character
-    if workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Players") then
-        local customChar = workspace.Game.Players:FindFirstChild(player.Name)
-        if customChar then char = customChar end
-    end
-    if not char then
-        char = workspace:FindFirstChild(player.Name)
-    end
-    return char
+    return player.Character
 end
 
 local function PlayAnimNow(idStr)

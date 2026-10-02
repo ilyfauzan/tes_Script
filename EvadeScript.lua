@@ -168,25 +168,15 @@ local function StopAllAnimations()
 end
 
 local function GetRealCharacter()
-    -- Prioritas 1: Folder Rigs di Workspace (Karakter paling sempurna untuk Menu)
-    if workspace:FindFirstChild("Rigs") then
-        local char = workspace.Rigs:FindFirstChild(player.Name)
-        if char and char:IsA("Model") then
-            return char
-        end
-    end
-
-    -- Prioritas 2: Folder Players di Workspace (Biasa dipakai saat gameplay)
-    if workspace:FindFirstChild("Players") then
-        local char = workspace.Players:FindFirstChild(player.Name)
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            return char
-        end
-    end
-    
-    -- Prioritas 3: player.Character bawaan (Hati-hati: di Evade ini sering berupa dummy putih)
+    -- Evade menggunakan dummy putih sebagai player.Character di menu,
+    -- dummy ini PUNYA sendi yang sempurna untuk animasi R15. Kita akan pakai ini!
     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         return player.Character
+    end
+    
+    if workspace:FindFirstChild("Players") then
+        local char = workspace.Players:FindFirstChild(player.Name)
+        if char and char:FindFirstChild("HumanoidRootPart") then return char end
     end
     
     return nil
@@ -212,14 +202,14 @@ local function SetupMenuHijack()
     
     local realChar = GetRealCharacter()
     if not realChar then
-        return nil, "Karakter aslimu tidak ditemukan di Rigs!"
+        return nil, "Karakter aslimu tidak ditemukan!"
     end
     
-    -- Kloning karakter asli karena bajunya 100% sempurna
+    -- Kloning si dummy putih bawaan (karena fisika-nya jalan 100%)
     realChar.Archivable = true
     clonedChar = realChar:Clone()
     
-    -- Bersihkan script bawaan Evade di dalam kloningan
+    -- Bersihkan script bawaan Evade
     for _, desc in pairs(clonedChar:GetDescendants()) do
         if desc:IsA("Script") or desc:IsA("LocalScript") then
             desc.Disabled = true
@@ -227,7 +217,15 @@ local function SetupMenuHijack()
         end
     end
     
-    -- Taruh di Kamera biar nggak didelete Evade
+    -- TARIK BAJU DARI ROBLOX UNTUK DUMMY PUTIH INI
+    pcall(function()
+        local desc = game.Players:GetHumanoidDescriptionFromUserId(player.UserId)
+        if desc then
+            clonedChar.Humanoid:ApplyDescription(desc)
+        end
+    end)
+    
+    -- Taruh di Kamera biar nggak didelete
     clonedChar.Parent = workspace.CurrentCamera
     clonedChar:PivotTo(visualModel:GetPivot())
     

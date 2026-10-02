@@ -53,6 +53,8 @@ ScrollingFrame.Size = UDim2.new(1, -20, 1, -60)
 ScrollingFrame.Position = UDim2.new(0, 10, 0, 50)
 ScrollingFrame.BackgroundTransparency = 1
 ScrollingFrame.ScrollBarThickness = 4
+ScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 ScrollingFrame.Parent = MainFrame
 
 local ToggleBtn = Instance.new("TextButton")

@@ -111,6 +111,12 @@ local function Notify(title, text)
 end
 
 -- ========================================================
+-- 👽 GANTI AVATAR (WAJIB KLIK 1X)
+-- ========================================================
+local HijackBtn = CreateButton("🚀 Ganti Avatar Sekarang (Wajib 1x)", ScrollingFrame)
+HijackBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+
+-- ========================================================
 -- 🎸 MAIN ANIMASI BY ID (MANUAL)
 -- ========================================================
 local LabelPlayID = Instance.new("TextLabel")
@@ -180,7 +186,9 @@ local function GetVisualRig()
     return nil
 end
 
-local function SetupMenuHijack()
+local lastValidCFrame = CFrame.new()
+
+local function StartMenuHijack()
     local visualModel = nil
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and obj.Name == "VisualModel" then
@@ -190,7 +198,8 @@ local function SetupMenuHijack()
     end
     
     if not visualModel then
-        return nil, "Buka menu EQUIPMENT dulu (biar patung menunya muncul)!"
+        Notify("❌ Gagal", "Buka menu EQUIPMENT dulu (biar patung menunya muncul)!")
+        return false
     end
     
     if clonedChar then clonedChar:Destroy() end
@@ -198,7 +207,8 @@ local function SetupMenuHijack()
     
     local realChar = GetVisualRig()
     if not realChar then
-        return nil, "Karakter aslimu tidak ditemukan di Rigs! Pastikan kamu ada di menu yang memunculkan karakter."
+        Notify("❌ Gagal", "Karakter aslimu tidak ditemukan di Rigs! Pastikan kamu ada di menu yang memunculkan karakter.")
+        return false
     end
     
     -- Kloning patung asli dari Rigs (Bajunya udah 100% nempel sempurna)
@@ -213,8 +223,7 @@ local function SetupMenuHijack()
         end
     end
     
-    -- FIX UTAMA: Evade sengaja menghapus HumanoidRootPart dari Rigs biar nggak bisa dianimasikan.
-    -- Solusi: KITA BUATKAN TULANG ROOT BARU SECARA PAKSA!
+    -- FIX UTAMA: Buat Tulang Root Baru Secara Paksa
     local hrp = clonedChar:FindFirstChild("HumanoidRootPart")
     if not hrp then
         hrp = Instance.new("Part")
@@ -224,7 +233,6 @@ local function SetupMenuHijack()
         hrp.CanCollide = false
         hrp.Parent = clonedChar
         
-        -- Sambungkan ke LowerTorso (untuk R15) atau Torso (untuk R6)
         local torso = clonedChar:FindFirstChild("LowerTorso") or clonedChar:FindFirstChild("Torso")
         if torso then
             hrp.CFrame = torso.CFrame
@@ -236,10 +244,6 @@ local function SetupMenuHijack()
             clonedChar.PrimaryPart = hrp
         end
     end
-    
-    -- Taruh di Kamera biar nggak didelete
-    clonedChar.Parent = workspace.CurrentCamera
-    clonedChar:PivotTo(visualModel:GetPivot())
     
     -- Setting Fisika (Anchor HRP biar melayang dan nggak jatuh tembus lantai)
     for _, desc in pairs(clonedChar:GetDescendants()) do
@@ -254,21 +258,31 @@ local function SetupMenuHijack()
         end
     end
     
-    -- Paksa VisualModel palsu menghilang dengan PRIORITAS TERTINGGI (BindToRenderStep Last)
-    -- Supaya script kita jalan SETELAH script Evade men-spawn patung, jadi kita bisa langsung bikin transparan!
+    clonedChar.Parent = workspace.CurrentCamera
+    lastValidCFrame = visualModel:GetPivot()
+    clonedChar:PivotTo(lastValidCFrame)
+    
+    -- LOOP HIDE & FOLLOW TINGKAT DEWA!
+    -- Meng-copy posisi asli, lalu membuang patung asli ke luar angkasa tiap frame!
     RunService:BindToRenderStep("WayaeHideVisual", 300, function()
+        if not clonedChar or not clonedChar.Parent then return end
+        
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("Model") and obj.Name == "VisualModel" and obj ~= clonedChar then
-                for _, desc in pairs(obj:GetDescendants()) do
-                    if desc:IsA("BasePart") or desc:IsA("Decal") then
-                        pcall(function() desc.Transparency = 1 end)
-                    end
+                local pivot = obj:GetPivot()
+                -- Kalau belum dibuang ke -9999, artinya Evade baru saja memposisikannya
+                if pivot.Y > -1000 then
+                    lastValidCFrame = pivot
                 end
+                
+                clonedChar:PivotTo(lastValidCFrame)
+                pcall(function() obj:PivotTo(CFrame.new(0, -9999, 0)) end)
             end
         end
     end)
     
-    return clonedChar, "Sukses"
+    Notify("🚀 Sukses", "Avatar diganti! Sekarang kamu bisa play animasi apa saja!")
+    return true
 end
 
 local function PlayAnimNow(idStr)
@@ -278,12 +292,12 @@ local function PlayAnimNow(idStr)
 
     StopAllAnimations()
 
-    local char, msg = SetupMenuHijack()
-    if not char then
-        Notify("❌ Gagal", msg)
+    if not clonedChar or not clonedChar.Parent then
+        Notify("❌ Gagal", "Klik tombol '🚀 Ganti Avatar Sekarang' di atas terlebih dahulu!")
         return false
     end
 
+    local char = clonedChar
     local ok, err = pcall(function()
         local animators = {}
         for _, desc in pairs(char:GetDescendants()) do
@@ -325,11 +339,13 @@ local function PlayAnimNow(idStr)
     
     if not ok then
         Notify("❌ Play Error", tostring(err))
-    else
-        Notify("☢️ BAJAK MENU BERHASIL", "Kloning karakter asli telah dipanggil!")
     end
     return ok
 end
+
+HijackBtn.MouseButton1Click:Connect(function()
+    StartMenuHijack()
+end)
 
 PlayByIDBtn.MouseButton1Click:Connect(function()
     local id = IDInput.Text:match("%d+")

@@ -250,19 +250,25 @@ local function SetupMenuHijack()
         end
     end
     
-    clonedChar.Parent = workspace
+    -- Taruh persis di dalam folder yang sama dengan patung palsu (MenuView)
+    clonedChar.Parent = visualModel.Parent
     
     -- Pindahkan kloningan ke posisi patung palsu
     clonedChar:PivotTo(visualModel:GetPivot())
     
-    -- Pastikan kloningan terlihat jelas dan JANGAN SAMPAI JATUH (Anchor)
+    -- Pastikan kloningan terlihat jelas, JANGAN JATUH, dan BISA BERGERAK
     for _, desc in pairs(clonedChar:GetDescendants()) do
         if desc:IsA("BasePart") then
             if desc.Name == "HumanoidRootPart" then
-                desc.Anchored = true -- Tahan biar nggak jatuh ke bawah map!
+                desc.Anchored = true -- Tahan di udara
+                desc.Transparency = 1
             else
+                desc.Anchored = false -- WAJIB FALSE supaya sendi Motor6D bisa bergerak!
                 desc.Transparency = 0
+                pcall(function() desc.LocalTransparencyModifier = 0 end)
             end
+        elseif desc:IsA("Decal") then
+            desc.Transparency = 0
         end
     end
     

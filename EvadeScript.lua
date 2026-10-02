@@ -167,18 +167,24 @@ local function StopAllAnimations()
     end
 end
 
-local function GetRealCharacter()
-    -- Evade menggunakan dummy putih sebagai player.Character di menu,
-    -- dummy ini PUNYA sendi yang sempurna untuk animasi R15. Kita akan pakai ini!
+local function GetWhiteDummy()
     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         return player.Character
     end
-    
     if workspace:FindFirstChild("Players") then
         local char = workspace.Players:FindFirstChild(player.Name)
         if char and char:FindFirstChild("HumanoidRootPart") then return char end
     end
-    
+    return nil
+end
+
+local function GetVisualRig()
+    if workspace:FindFirstChild("Rigs") then
+        local char = workspace.Rigs:FindFirstChild(player.Name)
+        if char and char:IsA("Model") then
+            return char
+        end
+    end
     return nil
 end
 
@@ -200,7 +206,7 @@ local function SetupMenuHijack()
     if clonedChar then clonedChar:Destroy() end
     if hideVisualConn then hideVisualConn:Disconnect() end
     
-    local realChar = GetRealCharacter()
+    local realChar = GetWhiteDummy()
     if not realChar then
         return nil, "Karakter aslimu tidak ditemukan!"
     end
@@ -217,13 +223,46 @@ local function SetupMenuHijack()
         end
     end
     
-    -- TARIK BAJU DARI ROBLOX UNTUK DUMMY PUTIH INI
-    pcall(function()
-        local desc = game.Players:GetHumanoidDescriptionFromUserId(player.UserId)
-        if desc then
-            clonedChar.Humanoid:ApplyDescription(desc)
+    -- TARIK BAJU SECARA MANUAL DARI RIGS LOKAL (Instan, Tanpa Loading/Error)
+    local visualRig = GetVisualRig()
+    if visualRig then
+        -- Bersihkan kosmetik bawaan dummy putih
+        for _, obj in pairs(clonedChar:GetChildren()) do
+            if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") then
+                obj:Destroy()
+            end
         end
-    end)
+        
+        local hum = clonedChar:FindFirstChildOfClass("Humanoid")
+        -- Pasang kosmetik dari Rig asli ke Dummy Putih
+        for _, obj in pairs(visualRig:GetChildren()) do
+            if obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") then
+                obj:Clone().Parent = clonedChar
+            elseif obj:IsA("Accessory") and hum then
+                local acc = obj:Clone()
+                hum:AddAccessory(acc)
+            elseif obj:IsA("MeshPart") then
+                local targetPart = clonedChar:FindFirstChild(obj.Name)
+                if targetPart and targetPart:IsA("MeshPart") then
+                    targetPart.MeshId = obj.MeshId
+                    targetPart.TextureID = obj.TextureID
+                    targetPart.Color = obj.Color
+                end
+            elseif obj.Name == "Head" then
+                local targetHead = clonedChar:FindFirstChild("Head")
+                if targetHead then
+                    targetHead.Color = obj.Color
+                    for _, child in pairs(obj:GetChildren()) do
+                        if child:IsA("Decal") or child:IsA("SpecialMesh") then
+                            local old = targetHead:FindFirstChildOfClass(child.ClassName)
+                            if old then old:Destroy() end
+                            child:Clone().Parent = targetHead
+                        end
+                    end
+                end
+            end
+        end
+    end
     
     -- Taruh di Kamera biar nggak didelete
     clonedChar.Parent = workspace.CurrentCamera

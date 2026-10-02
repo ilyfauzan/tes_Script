@@ -192,17 +192,13 @@ local function GetRealCharacter()
     return nil
 end
 
+local hideVisualConn = nil
+
 local function SetupMenuHijack()
-    -- Cari VisualModel (patung menu palsu) dan sembunyikan
     local visualModel = nil
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and obj.Name == "VisualModel" then
             visualModel = obj
-            for _, desc in pairs(obj:GetDescendants()) do
-                if desc:IsA("BasePart") or desc:IsA("Decal") then
-                    pcall(function() desc.Transparency = 1 end)
-                end
-            end
             break
         end
     end
@@ -212,43 +208,54 @@ local function SetupMenuHijack()
     end
     
     if clonedChar then clonedChar:Destroy() end
+    if hideVisualConn then hideVisualConn:Disconnect() end
     
-    -- JANGAN KLONING KARAKTER ASLI (terlalu banyak script Evade yang nempel)
-    -- Kita buat DUMMY BERSIH 100% dari server Roblox
-    Notify("⚠️ Info", "Memanggil Dummy Bersih...")
-    local success, dummy = pcall(function()
-        return game:GetObjects("rbxassetid://1664543044")[1]
-    end)
-    
-    if success and dummy then
-        clonedChar = dummy
-        -- Pakaikan baju dan muka kita
-        pcall(function()
-            local desc = game.Players:GetHumanoidDescriptionFromUserId(player.UserId)
-            clonedChar.Humanoid:ApplyDescription(desc)
-        end)
-    else
-        return nil, "Gagal memanggil Dummy dari Roblox!"
+    local realChar = GetRealCharacter()
+    if not realChar then
+        return nil, "Karakter aslimu tidak ditemukan di Rigs!"
     end
     
-    -- Trik Rahasia: Taruh di dalam KAMERA supaya tidak dihapus oleh Anti-Cheat Evade
-    clonedChar.Parent = workspace.CurrentCamera
+    -- Kloning karakter asli karena bajunya 100% sempurna
+    realChar.Archivable = true
+    clonedChar = realChar:Clone()
     
-    -- Pindahkan ke posisi patung palsu
+    -- Bersihkan script bawaan Evade di dalam kloningan
+    for _, desc in pairs(clonedChar:GetDescendants()) do
+        if desc:IsA("Script") or desc:IsA("LocalScript") then
+            desc.Disabled = true
+            desc:Destroy()
+        end
+    end
+    
+    -- Taruh di Kamera biar nggak didelete Evade
+    clonedChar.Parent = workspace.CurrentCamera
     clonedChar:PivotTo(visualModel:GetPivot())
     
-    -- Setting Fisika yang Benar untuk Dummy
+    -- Setting Fisika
     for _, desc in pairs(clonedChar:GetDescendants()) do
         if desc:IsA("BasePart") then
             if desc.Name == "HumanoidRootPart" then
-                desc.Anchored = true -- Tahan di udara
+                desc.Anchored = true
                 desc.Transparency = 1
             else
-                desc.Anchored = false -- Harus lepas biar bisa joget
+                desc.Anchored = false
                 desc.Transparency = 0
             end
         end
     end
+    
+    -- Paksa VisualModel palsu menghilang SETIAP FRAME (biar nggak numpuk!)
+    hideVisualConn = RunService.RenderStepped:Connect(function()
+        if visualModel and visualModel.Parent then
+            for _, desc in pairs(visualModel:GetDescendants()) do
+                if desc:IsA("BasePart") or desc:IsA("Decal") then
+                    pcall(function() desc.Transparency = 1 end)
+                end
+            end
+        else
+            hideVisualConn:Disconnect()
+        end
+    end)
     
     return clonedChar, "Sukses"
 end

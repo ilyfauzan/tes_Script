@@ -207,13 +207,20 @@ local function SetupMenuHijack()
     if hideVisualConn then hideVisualConn:Disconnect() end
     
     local realChar = GetWhiteDummy()
-    if not realChar then
-        return nil, "Karakter aslimu tidak ditemukan!"
+    if realChar then
+        realChar.Archivable = true
+        clonedChar = realChar:Clone()
+    else
+        -- Jika Evade belum memberikan dummy bawaan, kita panggil dari server Roblox!
+        local success, dummy = pcall(function()
+            return game:GetObjects("rbxassetid://1664543044")[1]
+        end)
+        if success and dummy then
+            clonedChar = dummy
+        else
+            return nil, "Karakter aslimu tidak ditemukan!"
+        end
     end
-    
-    -- Kloning si dummy putih bawaan (karena fisika-nya jalan 100%)
-    realChar.Archivable = true
-    clonedChar = realChar:Clone()
     
     -- Bersihkan script bawaan Evade
     for _, desc in pairs(clonedChar:GetDescendants()) do

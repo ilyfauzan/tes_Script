@@ -379,6 +379,7 @@ ScanBtn.MouseButton1Click:Connect(function()
 
     local uniqueAnims = {}
     local roots = { game:GetService("Workspace"), player:FindFirstChild("PlayerGui") }
+    local camPos = workspace.CurrentCamera and workspace.CurrentCamera.CFrame.Position or Vector3.new(0,0,0)
     
     for _, root in pairs(roots) do
         if root then
@@ -387,19 +388,19 @@ ScanBtn.MouseButton1Click:Connect(function()
                     local model = obj.Parent and obj.Parent.Parent
                     local modelName = "Unknown"
                     local isPlayer = false
+                    local dist = 9999
 
                     if model and model:IsA("Model") then
                         modelName = model.Name
-                        -- Cek apakah ini pemain asli yang ada di server
                         if game:GetService("Players"):GetPlayerFromCharacter(model) then
                             isPlayer = true
                         end
+                        pcall(function() dist = (model:GetPivot().Position - camPos).Magnitude end)
                     elseif obj.Parent then
                         modelName = obj.Parent.Name
                     end
                     
-                    -- JIKA INI PEMAIN ASLI, ABAIKAN! KITA HANYA CARI DUMMY.
-                    if not isPlayer then
+                    if not isPlayer and dist < 50 then
                         pcall(function()
                             for _, track in pairs(obj:GetPlayingAnimationTracks()) do
                                 if track.Animation and track.Animation.AnimationId then
@@ -407,7 +408,7 @@ ScanBtn.MouseButton1Click:Connect(function()
                                     if id and not baseAnimIds[id] then
                                         local key = modelName .. "_" .. id
                                         if not uniqueAnims[key] then
-                                            uniqueAnims[key] = {Model = modelName, Id = id}
+                                            uniqueAnims[key] = {Model = modelName, Id = id, Dist = math.floor(dist)}
                                         end
                                     end
                                 end
@@ -419,17 +420,23 @@ ScanBtn.MouseButton1Click:Connect(function()
         end
     end
 
-    local count = 0
+    local sortedAnims = {}
     for _, data in pairs(uniqueAnims) do
+        table.insert(sortedAnims, data)
+    end
+    table.sort(sortedAnims, function(a, b) return a.Dist < b.Dist end)
+
+    local count = 0
+    for _, data in ipairs(sortedAnims) do
         count = count + 1
-        local btnText = "[" .. data.Model .. "] ID: " .. data.Id
+        local btnText = "[" .. data.Model .. "] Jarak: " .. data.Dist .. " | ID: " .. data.Id
         
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, 0, 0, 38)
         
-        if data.Model:lower():match("dummy") or data.Model:lower():match("template") then
+        if count == 1 then
             btn.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
-            btnText = "🎯 " .. btnText
+            btnText = "🎯 TERDEKAT: " .. btnText
         else
             btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         end

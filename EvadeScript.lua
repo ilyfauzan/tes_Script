@@ -467,8 +467,12 @@ local function GetInternalEmote(keyword)
         local objects = {}
         pcall(function() objects = service:GetDescendants() end)
         for _, obj in pairs(objects) do
-            if obj:IsA("Animation") and string.find(string.lower(obj.Name), keyword) then
-                return obj
+            if obj:IsA("Animation") then
+                local nameMatch = string.find(string.lower(obj.Name), keyword)
+                local parentMatch = obj.Parent and string.find(string.lower(obj.Parent.Name), keyword)
+                if nameMatch or parentMatch then
+                    return obj
+                end
             end
         end
     end

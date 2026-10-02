@@ -146,11 +146,23 @@ local StopBtn = CreateButton("⛔ Stop Animasi", ScrollingFrame)
 StopBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
 
 local loopActive = false
-local currentTrack = nil
+local activeTracks = {}
 local loopThread = nil
 
-local function PlayAnimNow(idStr)
+local function GetActiveCharacter()
     local char = player.Character
+    if workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Players") then
+        local customChar = workspace.Game.Players:FindFirstChild(player.Name)
+        if customChar then char = customChar end
+    end
+    if not char then
+        char = workspace:FindFirstChild(player.Name)
+    end
+    return char
+end
+
+local function PlayAnimNow(idStr)
+    local char = GetActiveCharacter()
     if not char then return false end
 
     local numId = idStr:match("%d+")
@@ -158,34 +170,48 @@ local function PlayAnimNow(idStr)
     local formattedId = "rbxassetid://" .. numId
 
     local ok, err = pcall(function()
-        if currentTrack then
-            pcall(function() currentTrack:Stop(0) end)
-            currentTrack = nil
+        for _, track in pairs(activeTracks) do
+            pcall(function() track:Stop(0) end)
+        end
+        activeTracks = {}
+
+        local animators = {}
+        for _, desc in pairs(char:GetDescendants()) do
+            if desc:IsA("Animator") then
+                table.insert(animators, desc)
+            end
         end
 
-        local hum = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChildOfClass("AnimationController")
-        if not hum then return false end
-
-        local animator = hum:FindFirstChildOfClass("Animator")
-        if not animator then
-            animator = Instance.new("Animator", hum)
+        if #animators == 0 then
+            local hum = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChildOfClass("AnimationController")
+            if hum then
+                local animator = Instance.new("Animator", hum)
+                table.insert(animators, animator)
+            end
         end
 
         local anim = Instance.new("Animation")
         anim.AnimationId = formattedId
 
-        currentTrack = animator:LoadAnimation(anim)
-        currentTrack.Priority = Enum.AnimationPriority.Action4
-        currentTrack.Looped = loopActive
-        currentTrack:Play(0.1, 99, 1)
+        for _, animator in ipairs(animators) do
+            local track = animator:LoadAnimation(anim)
+            track.Priority = Enum.AnimationPriority.Action4
+            track.Looped = loopActive
+            track:Play(0.1, 99, 1)
+            task.delay(0.1, function() pcall(function() track:AdjustWeight(99) end) end)
+            table.insert(activeTracks, track)
+        end
 
         if loopThread then task.cancel(loopThread) end
         if loopActive then
             loopThread = task.spawn(function()
                 while loopActive do
                     task.wait(0.1)
-                    if currentTrack and not currentTrack.IsPlaying then
-                        currentTrack:Play(0.1, 99, 1)
+                    for _, track in pairs(activeTracks) do
+                        if not track.IsPlaying then
+                            track:Play(0.1, 99, 1)
+                            pcall(function() track:AdjustWeight(99) end)
+                        end
                     end
                 end
             end)
@@ -199,9 +225,9 @@ PlayByIDBtn.MouseButton1Click:Connect(function()
     if id then
         local ok = PlayAnimNow(id)
         if ok then
-            Notify("✅ Animasi Diputar!", "Animasi berhasil dijalankan! Klik Stop untuk berhenti.")
+            Notify("✅ Animasi Diputar!", "Jika tidak gerak, nyalakan LOOP MODE!")
         else
-            Notify("❌ Gagal", "Character belum siap atau ID tidak valid!")
+            Notify("❌ Gagal", "Karakter belum siap!")
         end
     else
         Notify("❌ Input Salah", "Masukkan angka ID yang benar!")
@@ -211,20 +237,23 @@ end)
 LoopBtn.MouseButton1Click:Connect(function()
     loopActive = not loopActive
     if loopActive then
-        LoopBtn.Text = "🔁 Loop Mode: ON"
+        LoopBtn.Text = "🔁 Loop Mode: ON (MEMAKSA ANIMASI)"
         LoopBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
-        if currentTrack then
-            currentTrack.Looped = true
-            if loopThread then task.cancel(loopThread) end
-            loopThread = task.spawn(function()
-                while loopActive do
-                    task.wait(0.1)
-                    if currentTrack and not currentTrack.IsPlaying then
-                        currentTrack:Play(0.1, 99, 1)
+        for _, track in pairs(activeTracks) do
+            track.Looped = true
+        end
+        if loopThread then task.cancel(loopThread) end
+        loopThread = task.spawn(function()
+            while loopActive do
+                task.wait(0.1)
+                for _, track in pairs(activeTracks) do
+                    if not track.IsPlaying then
+                        track:Play(0.1, 99, 1)
+                        pcall(function() track:AdjustWeight(99) end)
                     end
                 end
-            end)
-        end
+            end
+        end)
     else
         LoopBtn.Text = "🔁 Loop Mode: OFF"
         LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -232,8 +261,8 @@ LoopBtn.MouseButton1Click:Connect(function()
             task.cancel(loopThread)
             loopThread = nil
         end
-        if currentTrack then
-            currentTrack.Looped = false
+        for _, track in pairs(activeTracks) do
+            track.Looped = false
         end
     end
 end)
@@ -243,10 +272,10 @@ StopBtn.MouseButton1Click:Connect(function()
         task.cancel(loopThread)
         loopThread = nil
     end
-    if currentTrack then
-        pcall(function() currentTrack:Stop() end)
-        currentTrack = nil
+    for _, track in pairs(activeTracks) do
+        pcall(function() track:Stop() end)
     end
+    activeTracks = {}
     Notify("⏹️ Dihentikan", "Animasi dihentikan.")
 end)
 

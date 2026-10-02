@@ -340,39 +340,73 @@ local function PlayAnimNow(idStr)
     if not numId then return false end
     local formattedId = "rbxassetid://" .. numId
 
+local function GetRealCharacters()
+    local chars = {}
+    if clonedChar and clonedChar.Parent then
+        table.insert(chars, clonedChar)
+        return chars -- Kalau ada clonedChar (di menu), cukup ini saja
+    end
+    
+    -- Prioritaskan custom in-game characters Evade
+    if workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Players") then
+        local c = workspace.Game.Players:FindFirstChild(player.Name)
+        if c then table.insert(chars, c) end
+    end
+    
+    if workspace:FindFirstChild("Players") then
+        local c = workspace.Players:FindFirstChild(player.Name)
+        if c then table.insert(chars, c) end
+    end
+    
+    local wChar = workspace:FindFirstChild(player.Name)
+    if wChar and wChar:IsA("Model") and wChar:FindFirstChildOfClass("Humanoid") then
+        table.insert(chars, wChar)
+    end
+    
+    -- Terakhir cek player.Character (kadang ini cuma dummy invisible di Evade)
+    if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        table.insert(chars, player.Character)
+    end
+    
+    return chars
+end
+
+local function PlayAnimNow(idStr)
+    local numId = idStr:match("%d+")
+    if not numId then return false end
+    local formattedId = "rbxassetid://" .. numId
+
     StopAllAnimations()
 
-    local char = nil
-    if clonedChar and clonedChar.Parent then
-        char = clonedChar
-    elseif player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-        char = player.Character
-    else
-        if workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Players") then
-            char = workspace.Game.Players:FindFirstChild(player.Name)
-        elseif workspace:FindFirstChild("Players") then
-            char = workspace.Players:FindFirstChild(player.Name)
-        end
-    end
-
-    if not char then
-        Notify("❌ Gagal", "Karakter tidak ditemukan! Kalau di menu, klik Ganti Avatar dulu.")
+    local chars = GetRealCharacters()
+    if #chars == 0 then
+        Notify("❌ Gagal", "Karakter tidak ditemukan sama sekali di dalam map.")
         return false
     end
+    
     local ok, err = pcall(function()
         local animators = {}
-        for _, desc in pairs(char:GetDescendants()) do
-            if desc:IsA("Animator") then
-                table.insert(animators, desc)
+        for _, char in pairs(chars) do
+            for _, desc in pairs(char:GetDescendants()) do
+                if desc:IsA("Animator") then
+                    table.insert(animators, desc)
+                end
+            end
+            
+            -- Kalau nggak ada animator sama sekali di karakter ini, buatin
+            local found = false
+            for _, desc in pairs(char:GetDescendants()) do
+                if desc:IsA("Animator") then found = true break end
+            end
+            if not found then
+                local hum = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChildOfClass("AnimationController")
+                if not hum then hum = Instance.new("Humanoid", char) end
+                local animator = Instance.new("Animator", hum)
+                table.insert(animators, animator)
             end
         end
 
-        if #animators == 0 then
-            local hum = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChildOfClass("AnimationController")
-            if not hum then hum = Instance.new("Humanoid", char) end
-            local animator = Instance.new("Animator", hum)
-            table.insert(animators, animator)
-        end
+        if #animators == 0 then return end
 
         local anim = Instance.new("Animation")
         anim.AnimationId = formattedId

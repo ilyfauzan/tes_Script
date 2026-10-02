@@ -156,6 +156,10 @@ local function StopAllAnimations()
         renderConn:Disconnect()
         renderConn = nil
     end
+    if hideVisualConn then
+        hideVisualConn:Disconnect()
+        hideVisualConn = nil
+    end
     for _, track in pairs(activeTracks) do
         pcall(function() track:Stop(0) end)
     end
@@ -253,16 +257,20 @@ local function SetupMenuHijack()
         end
     end
     
-    -- Paksa VisualModel palsu menghilang SETIAP FRAME (biar nggak numpuk!)
+    -- Paksa VisualModel palsu menghilang SETIAP FRAME secara dinamis!
+    -- (Dicari terus tiap frame karena Evade sering bikin ulang patungnya pas ganti menu)
     hideVisualConn = RunService.RenderStepped:Connect(function()
-        if visualModel and visualModel.Parent then
-            for _, desc in pairs(visualModel:GetDescendants()) do
-                if desc:IsA("BasePart") or desc:IsA("Decal") then
-                    pcall(function() desc.Transparency = 1 end)
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj.Name == "VisualModel" and obj ~= clonedChar then
+                for _, desc in pairs(obj:GetDescendants()) do
+                    if desc:IsA("BasePart") or desc:IsA("Decal") then
+                        pcall(function() 
+                            desc.Transparency = 1 
+                            desc.LocalTransparencyModifier = 1
+                        end)
+                    end
                 end
             end
-        else
-            hideVisualConn:Disconnect()
         end
     end)
     

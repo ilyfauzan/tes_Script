@@ -470,6 +470,7 @@ ScanBtn.MouseButton1Click:Connect(function()
 
         btn.MouseButton1Click:Connect(function()
             if IDInput then IDInput.Text = data.Id end
+            pcall(function() setclipboard(tostring(data.Id)) end)
             local ok = PlayAnimNow(data.Id)
             if ok then
                 Notify("✅ Dimainkan!", "Animasi dari " .. data.Model .. " diputar!")
@@ -478,6 +479,7 @@ ScanBtn.MouseButton1Click:Connect(function()
 
         copyBtn.MouseButton1Click:Connect(function()
             if IDInput then IDInput.Text = data.Id end
+            pcall(function() setclipboard(tostring(data.Id)) end)
             copyBtn.Text = "✅ Copied!"
             task.delay(1.5, function()
                 if copyBtn and copyBtn.Parent then copyBtn.Text = "📋 Copy" end
@@ -528,6 +530,7 @@ for _, emoteData in ipairs(verifiedEmotes) do
     btn.BackgroundColor3 = emoteData.Color
     btn.MouseButton1Click:Connect(function()
         if IDInput then IDInput.Text = emoteData.Id end
+        pcall(function() setclipboard(tostring(emoteData.Id)) end)
         local ok = PlayAnimNow(emoteData.Id)
         if ok then
             Notify("✅ Berhasil!", emoteData.Name .. " diputar!")

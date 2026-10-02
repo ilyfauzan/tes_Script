@@ -559,32 +559,28 @@ PlayEvadeBtn.MouseButton1Click:Connect(function()
     
     local rs = game:GetService("ReplicatedStorage")
     local targetModule = nil
-    local targetFolder = nil
     
     local allObjects = {}
     pcall(function() allObjects = rs:GetDescendants() end)
+    
+    local id = nil
     
     for _, child in pairs(allObjects) do
         if string.lower(child.Name) == string.lower(emoteName) then
             if child:IsA("ModuleScript") then
                 targetModule = child
             elseif child:IsA("Folder") then
-                targetFolder = child
-            end
-        end
-    end
-    
-    local id = nil
-    
-    -- PRIORITAS 1: Cek apakah dia berbentuk Folder yang punya animasi R15 (kayak RockinStride asli)
-    if targetFolder then
-        local anims = targetFolder:FindFirstChild("Animations")
-        if anims then
-            local r15 = anims:FindFirstChild("R15")
-            if r15 then
-                local anim = r15:FindFirstChild("Animation")
-                if anim and anim:IsA("Animation") then
-                    id = anim.AnimationId:match("%d+")
+                -- LANGSUNG CEK kalau dia Folder, apakah dia punya Animations/R15/Animation
+                local anims = child:FindFirstChild("Animations")
+                if anims then
+                    local r15 = anims:FindFirstChild("R15")
+                    if r15 then
+                        local anim = r15:FindFirstChild("Animation")
+                        if anim and anim:IsA("Animation") then
+                            id = anim.AnimationId:match("%d+")
+                            if id then break end -- Langsung stop kalau ketemu ID asli!
+                        end
+                    end
                 end
             end
         end

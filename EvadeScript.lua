@@ -148,39 +148,7 @@ StopBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
 
 local RunService = game:GetService("RunService")
 local activeTracks = {}
-local activeAnimId = nil
 local renderConn = nil
-
-local function GetActiveCharacter()
-    local bestChar = nil
-    local bestDist = 99999
-    local camPos = workspace.CurrentCamera and workspace.CurrentCamera.CFrame.Position or Vector3.new(0,0,0)
-
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and (obj.Name == "VisualModel" or obj.Name == player.Name) and (obj:FindFirstChildOfClass("Humanoid") or obj:FindFirstChildOfClass("AnimationController")) then
-            local dist = 99999
-            pcall(function() dist = (obj:GetPivot().Position - camPos).Magnitude end)
-            if dist < bestDist then
-                bestDist = dist
-                bestChar = obj
-            end
-        end
-    end
-    
-    if bestChar and bestDist < 100 then
-        return bestChar
-    end
-
-    local cam = workspace.CurrentCamera
-    if cam and cam.CameraSubject then
-        local subject = cam.CameraSubject
-        if subject:IsA("Humanoid") or subject:IsA("BasePart") then
-            return subject.Parent
-        end
-    end
-    
-    return player.Character
-end
 
 local function StopAllAnimations()
     if renderConn then
@@ -191,37 +159,71 @@ local function StopAllAnimations()
         pcall(function() track:Stop(0) end)
     end
     activeTracks = {}
-    activeAnimId = nil
 end
 
-local function KillScriptsInModel(model)
-    local killed = 0
+local function CountMotor6D(model)
+    local count = 0
     for _, desc in pairs(model:GetDescendants()) do
-        if desc:IsA("LocalScript") or desc:IsA("Script") then
-            pcall(function() desc.Disabled = true end)
-            pcall(function() desc:Destroy() end)
-            killed = killed + 1
+        if desc:IsA("Motor6D") then count = count + 1 end
+    end
+    return count
+end
+
+local function FindBestAnimTarget()
+    -- Prioritaskan model yang PUNYA Motor6D (sendi), karena tanpa Motor6D animasi tak akan bergerak
+    local candidates = {}
+    
+    -- 1. player.Character (biasanya punya Motor6D)
+    if player.Character then
+        table.insert(candidates, {model = player.Character, source = "player.Character"})
+    end
+    
+    -- 2. Semua VisualModel di workspace
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name == "VisualModel" and (obj:FindFirstChildOfClass("Humanoid") or obj:FindFirstChildOfClass("AnimationController")) then
+            table.insert(candidates, {model = obj, source = "VisualModel"})
         end
     end
-    return killed
+    
+    -- 3. Karakter custom di workspace.Game.Players
+    if workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Players") then
+        local customChar = workspace.Game.Players:FindFirstChild(player.Name)
+        if customChar then
+            table.insert(candidates, {model = customChar, source = "Game.Players"})
+        end
+    end
+    
+    -- Pilih yang punya Motor6D paling banyak
+    local best = nil
+    local bestMotor = -1
+    for _, c in ipairs(candidates) do
+        local m = CountMotor6D(c.model)
+        if m > bestMotor then
+            bestMotor = m
+            best = c
+        end
+    end
+    
+    return best
 end
 
 local function PlayAnimNow(idStr)
-    local char = GetActiveCharacter()
-    if not char then return false end
-
     local numId = idStr:match("%d+")
     if not numId then return false end
     local formattedId = "rbxassetid://" .. numId
 
     StopAllAnimations()
-    activeAnimId = formattedId
 
-    -- LANGKAH 1: Matikan SEMUA script di dalam model (bunuh controller animasi Evade)
-    local killed = KillScriptsInModel(char)
+    local target = FindBestAnimTarget()
+    if not target then
+        Notify("❌ Gagal", "Tidak ada karakter yang bisa dianimasikan!")
+        return false
+    end
+    
+    local char = target.model
+    local motor6dCount = CountMotor6D(char)
 
     local ok, err = pcall(function()
-        -- LANGKAH 2: Cari semua Animator
         local animators = {}
         for _, desc in pairs(char:GetDescendants()) do
             if desc:IsA("Animator") then
@@ -229,7 +231,6 @@ local function PlayAnimNow(idStr)
             end
         end
 
-        -- LANGKAH 3: Kalau tidak ada Animator, cari Humanoid/AnimationController dan buat Animator baru
         if #animators == 0 then
             local hum = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChildOfClass("AnimationController")
             if not hum then
@@ -239,7 +240,7 @@ local function PlayAnimNow(idStr)
             table.insert(animators, animator)
         end
 
-        -- LANGKAH 4: Hentikan SEMUA animasi yang sedang jalan
+        -- Hentikan SEMUA animasi yang sedang jalan
         for _, animator in ipairs(animators) do
             pcall(function()
                 for _, existingTrack in pairs(animator:GetPlayingAnimationTracks()) do
@@ -249,7 +250,14 @@ local function PlayAnimNow(idStr)
             end)
         end
 
-        -- LANGKAH 5: Muat dan mainkan animasi kita
+        -- Matikan script animate bawaan
+        for _, desc in pairs(char:GetDescendants()) do
+            if (desc:IsA("LocalScript") or desc:IsA("Script")) and desc.Name:lower():find("animate") then
+                pcall(function() desc.Disabled = true end)
+            end
+        end
+
+        -- Muat dan mainkan animasi
         local anim = Instance.new("Animation")
         anim.AnimationId = formattedId
 
@@ -262,14 +270,26 @@ local function PlayAnimNow(idStr)
             table.insert(activeTracks, track)
         end
 
-        -- LANGKAH 6: RenderStepped override setiap frame
+        -- RenderStepped: paksa animasi tetap jalan + bunuh animasi lain
         renderConn = RunService.RenderStepped:Connect(function()
             if #activeTracks == 0 then return end
+            for _, animator in ipairs(animators) do
+                pcall(function()
+                    for _, existingTrack in pairs(animator:GetPlayingAnimationTracks()) do
+                        local isOurs = false
+                        for _, ourTrack in pairs(activeTracks) do
+                            if existingTrack == ourTrack then isOurs = true break end
+                        end
+                        if not isOurs then
+                            existingTrack:Stop(0)
+                            existingTrack:AdjustWeight(0)
+                        end
+                    end
+                end)
+            end
             for _, track in pairs(activeTracks) do
                 pcall(function()
-                    if not track.IsPlaying then
-                        track:Play(0, 99, 1)
-                    end
+                    if not track.IsPlaying then track:Play(0, 99, 1) end
                     track:AdjustWeight(99)
                 end)
             end
@@ -279,9 +299,9 @@ local function PlayAnimNow(idStr)
     if not ok then
         Notify("❌ Play Error", tostring(err))
     else
-        Notify("☢️ NUKLIR v2 di " .. char.Name, "Script Evade dimatikan: " .. killed .. " | Animasi dipaksa!")
+        Notify("☢️ ANIMASI AKTIF", "Target: " .. target.source .. " (" .. char.Name .. ") | Motor6D: " .. motor6dCount)
     end
-    return ok, char.Name
+    return ok
 end
 
 PlayByIDBtn.MouseButton1Click:Connect(function()
@@ -299,48 +319,70 @@ end)
 
 StopBtn.MouseButton1Click:Connect(function()
     StopAllAnimations()
-    Notify("⏹️ Dihentikan", "Animasi dan sistem NUKLIR dihentikan.")
+    Notify("⏹️ Dihentikan", "Animasi dihentikan.")
 end)
 
--- 🔬 DEBUG: Tombol untuk melihat isi VisualModel
-local DebugBtn = CreateButton("🔬 Debug: Lihat Isi VisualModel", ScrollingFrame)
+-- 🔬 DEBUG LENGKAP: Bandingkan VisualModel vs player.Character
+local DebugBtn = CreateButton("🔬 Debug: Bandingkan Semua Model", ScrollingFrame)
 DebugBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 80)
 DebugBtn.MouseButton1Click:Connect(function()
-    local char = GetActiveCharacter()
-    if not char then
-        Notify("❌ Tidak ditemukan", "VisualModel tidak ada!")
-        return
+    local function DebugModel(model, label)
+        if not model then
+            Notify("❌ " .. label, "Tidak ditemukan!")
+            return
+        end
+        local humanoids, animators, motor6ds, scripts, parts, welds = 0, 0, 0, 0, 0, 0
+        local childNames = {}
+        
+        for _, child in pairs(model:GetChildren()) do
+            table.insert(childNames, child.Name .. "(" .. child.ClassName .. ")")
+        end
+        
+        for _, desc in pairs(model:GetDescendants()) do
+            if desc:IsA("Humanoid") then humanoids = humanoids + 1 end
+            if desc:IsA("Animator") then animators = animators + 1 end
+            if desc:IsA("Motor6D") then motor6ds = motor6ds + 1 end
+            if desc:IsA("LocalScript") or desc:IsA("Script") then scripts = scripts + 1 end
+            if desc:IsA("BasePart") then parts = parts + 1 end
+            if desc:IsA("Weld") or desc:IsA("WeldConstraint") then welds = welds + 1 end
+        end
+        
+        local hasR15 = model:FindFirstChild("UpperTorso") or model:FindFirstChild("RightUpperArm")
+        local hasR6 = model:FindFirstChild("Torso") or model:FindFirstChild("Right Arm")
+        local rigType = hasR15 and "R15" or (hasR6 and "R6" or "Unknown")
+        
+        local info = label .. ": " .. model.Name .. " | Rig: " .. rigType
+        info = info .. " | Motor6D: " .. motor6ds .. " | Hum: " .. humanoids
+        info = info .. " | Anim: " .. animators .. " | Weld: " .. welds
+        info = info .. " | Scripts: " .. scripts .. " | Parts: " .. parts
+        info = info .. "\nChildren: " .. table.concat(childNames, ", ")
+        
+        Notify("🔬 " .. label, info)
     end
     
-    local info = "Model: " .. char.Name .. " | Parent: " .. tostring(char.Parent and char.Parent.Name) .. "\n"
-    local humanoids = 0
-    local animControllers = 0
-    local animators = 0
-    local motor6ds = 0
-    local scripts = 0
-    local parts = 0
+    -- Debug player.Character
+    DebugModel(player.Character, "player.Character")
     
-    for _, desc in pairs(char:GetDescendants()) do
-        if desc:IsA("Humanoid") then humanoids = humanoids + 1 end
-        if desc:IsA("AnimationController") then animControllers = animControllers + 1 end
-        if desc:IsA("Animator") then animators = animators + 1 end
-        if desc:IsA("Motor6D") then motor6ds = motor6ds + 1 end
-        if desc:IsA("LocalScript") or desc:IsA("Script") then scripts = scripts + 1 end
-        if desc:IsA("BasePart") then parts = parts + 1 end
+    -- Debug VisualModel terdekat
+    task.wait(0.5)
+    local camPos = workspace.CurrentCamera and workspace.CurrentCamera.CFrame.Position or Vector3.new(0,0,0)
+    local bestVM = nil
+    local bestDist = 99999
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name == "VisualModel" then
+            local dist = 99999
+            pcall(function() dist = (obj:GetPivot().Position - camPos).Magnitude end)
+            if dist < bestDist then bestDist = dist bestVM = obj end
+        end
     end
+    DebugModel(bestVM, "VisualModel")
     
-    info = info .. "Humanoid: " .. humanoids .. " | AnimController: " .. animControllers
-    info = info .. " | Animator: " .. animators .. " | Motor6D: " .. motor6ds
-    info = info .. " | Scripts: " .. scripts .. " | Parts: " .. parts
-    
-    -- Cek apakah rig R6 atau R15
-    local hasR15 = char:FindFirstChild("UpperTorso") or char:FindFirstChild("RightUpperArm")
-    local hasR6 = char:FindFirstChild("Torso") or char:FindFirstChild("Right Arm")
-    local rigType = "Unknown"
-    if hasR15 then rigType = "R15" elseif hasR6 then rigType = "R6" end
-    info = info .. " | Rig: " .. rigType
-    
-    Notify("🔬 Debug " .. char.Name, info)
+    -- Debug Game.Players jika ada
+    task.wait(0.5)
+    if workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Players") then
+        local gp = workspace.Game.Players:FindFirstChild(player.Name)
+        DebugModel(gp, "Game.Players." .. player.Name)
+    end
 end)
 
 -- 🎮 TOMBOL FIRE REMOTE: Coba pakai sistem internal Evade
@@ -354,24 +396,28 @@ RemoteBtn.MouseButton1Click:Connect(function()
     end
     
     local fired = 0
-    -- Cari semua RemoteEvent yang mungkin berhubungan dengan emote
     for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
             local name = obj.Name:lower()
-            if name:find("emote") or name:find("anim") or name:find("dance") or name:find("play") or name:find("cosmetic") then
+            if name:find("emote") or name:find("anim") or name:find("dance") or name:find("play") or name:find("cosmetic") or name:find("equip") then
                 pcall(function()
-                    obj:FireServer(id)
-                    obj:FireServer(tonumber(id))
-                    obj:FireServer("rbxassetid://" .. id)
+                    if obj:IsA("RemoteEvent") then
+                        obj:FireServer(id)
+                        obj:FireServer(tonumber(id))
+                        obj:FireServer("rbxassetid://" .. id)
+                    else
+                        obj:InvokeServer(id)
+                        obj:InvokeServer(tonumber(id))
+                    end
                 end)
                 fired = fired + 1
-                Notify("🎮 Remote Fired", obj.Name .. " (" .. fired .. ")")
+                Notify("🎮 Remote: " .. obj.Name, obj.ClassName)
             end
         end
     end
     
     if fired == 0 then
-        Notify("⚠️ Tidak Ada Remote", "Tidak ditemukan RemoteEvent terkait emote di ReplicatedStorage.")
+        Notify("⚠️ Tidak Ada Remote", "Tidak ditemukan Remote terkait emote.")
     end
 end)
 

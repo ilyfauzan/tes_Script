@@ -167,17 +167,6 @@ local function StopAllAnimations()
     end
 end
 
-local function GetWhiteDummy()
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        return player.Character
-    end
-    if workspace:FindFirstChild("Players") then
-        local char = workspace.Players:FindFirstChild(player.Name)
-        if char and char:FindFirstChild("HumanoidRootPart") then return char end
-    end
-    return nil
-end
-
 local function GetVisualRig()
     if workspace:FindFirstChild("Rigs") then
         local char = workspace.Rigs:FindFirstChild(player.Name)
@@ -206,21 +195,14 @@ local function SetupMenuHijack()
     if clonedChar then clonedChar:Destroy() end
     if hideVisualConn then hideVisualConn:Disconnect() end
     
-    local realChar = GetWhiteDummy()
-    if realChar then
-        realChar.Archivable = true
-        clonedChar = realChar:Clone()
-    else
-        -- Jika Evade belum memberikan dummy bawaan, kita panggil dari server Roblox!
-        local success, dummy = pcall(function()
-            return game:GetObjects("rbxassetid://1664543044")[1]
-        end)
-        if success and dummy then
-            clonedChar = dummy
-        else
-            return nil, "Karakter aslimu tidak ditemukan!"
-        end
+    local realChar = GetVisualRig()
+    if not realChar then
+        return nil, "Karakter aslimu tidak ditemukan di Rigs! Pastikan kamu ada di menu yang memunculkan karakter."
     end
+    
+    -- Kloning patung asli dari Rigs (Bajunya udah 100% nempel sempurna)
+    realChar.Archivable = true
+    clonedChar = realChar:Clone()
     
     -- Bersihkan script bawaan Evade
     for _, desc in pairs(clonedChar:GetDescendants()) do
@@ -230,44 +212,27 @@ local function SetupMenuHijack()
         end
     end
     
-    -- TARIK BAJU SECARA MANUAL DARI RIGS LOKAL (Instan, Tanpa Loading/Error)
-    local visualRig = GetVisualRig()
-    if visualRig then
-        -- Bersihkan kosmetik bawaan dummy putih
-        for _, obj in pairs(clonedChar:GetChildren()) do
-            if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") then
-                obj:Destroy()
-            end
-        end
+    -- FIX UTAMA: Evade sengaja menghapus HumanoidRootPart dari Rigs biar nggak bisa dianimasikan.
+    -- Solusi: KITA BUATKAN TULANG ROOT BARU SECARA PAKSA!
+    local hrp = clonedChar:FindFirstChild("HumanoidRootPart")
+    if not hrp then
+        hrp = Instance.new("Part")
+        hrp.Name = "HumanoidRootPart"
+        hrp.Size = Vector3.new(2, 2, 1)
+        hrp.Transparency = 1
+        hrp.CanCollide = false
+        hrp.Parent = clonedChar
         
-        local hum = clonedChar:FindFirstChildOfClass("Humanoid")
-        -- Pasang kosmetik dari Rig asli ke Dummy Putih
-        for _, obj in pairs(visualRig:GetChildren()) do
-            if obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") then
-                obj:Clone().Parent = clonedChar
-            elseif obj:IsA("Accessory") and hum then
-                local acc = obj:Clone()
-                hum:AddAccessory(acc)
-            elseif obj:IsA("MeshPart") then
-                local targetPart = clonedChar:FindFirstChild(obj.Name)
-                if targetPart and targetPart:IsA("MeshPart") then
-                    targetPart.MeshId = obj.MeshId
-                    targetPart.TextureID = obj.TextureID
-                    targetPart.Color = obj.Color
-                end
-            elseif obj.Name == "Head" then
-                local targetHead = clonedChar:FindFirstChild("Head")
-                if targetHead then
-                    targetHead.Color = obj.Color
-                    for _, child in pairs(obj:GetChildren()) do
-                        if child:IsA("Decal") or child:IsA("SpecialMesh") then
-                            local old = targetHead:FindFirstChildOfClass(child.ClassName)
-                            if old then old:Destroy() end
-                            child:Clone().Parent = targetHead
-                        end
-                    end
-                end
-            end
+        -- Sambungkan ke LowerTorso (untuk R15) atau Torso (untuk R6)
+        local torso = clonedChar:FindFirstChild("LowerTorso") or clonedChar:FindFirstChild("Torso")
+        if torso then
+            hrp.CFrame = torso.CFrame
+            local rootJoint = Instance.new("Motor6D")
+            rootJoint.Name = "Root"
+            rootJoint.Part0 = hrp
+            rootJoint.Part1 = torso
+            rootJoint.Parent = hrp
+            clonedChar.PrimaryPart = hrp
         end
     end
     
@@ -275,7 +240,7 @@ local function SetupMenuHijack()
     clonedChar.Parent = workspace.CurrentCamera
     clonedChar:PivotTo(visualModel:GetPivot())
     
-    -- Setting Fisika
+    -- Setting Fisika (Anchor HRP biar melayang dan nggak jatuh tembus lantai)
     for _, desc in pairs(clonedChar:GetDescendants()) do
         if desc:IsA("BasePart") then
             if desc.Name == "HumanoidRootPart" then

@@ -193,9 +193,6 @@ local function GetRealCharacter()
 end
 
 local function SetupMenuHijack()
-    local realChar = GetRealCharacter()
-    if not realChar then return nil, "Karakter aslimu tidak ditemukan!" end
-    
     -- Cari VisualModel (patung menu palsu) dan sembunyikan
     local visualModel = nil
     for _, obj in pairs(workspace:GetDescendants()) do
@@ -215,19 +212,35 @@ local function SetupMenuHijack()
         return nil, "Buka menu EQUIPMENT dulu (biar patung menunya muncul)!"
     end
     
-    -- Kloning karakter asli kita (supaya aman dan tidak merusak game)
     if clonedChar then clonedChar:Destroy() end
     
-    clonedChar = player.Character.Humanoid.RigType == Enum.HumanoidRigType.R15 
-                 and game:GetObjects("rbxassetid://1664543044")[1] -- R15 Dummy
-                 or game:GetObjects("rbxassetid://1664543044")[1]
+    local realChar = GetRealCharacter()
     
-    -- Wait, daripada kloning yang beresiko, kita teleport langsung karakter aslinya!
-    -- Kita harus matikan archivable dulu
-    realChar.Archivable = true
-    clonedChar = realChar:Clone()
+    if realChar then
+        -- Kita ketemu karakter aslinya, teleport aja
+        realChar.Archivable = true
+        clonedChar = realChar:Clone()
+    else
+        -- GAGAL ketemu karakter asli? NGGAK MASALAH!
+        -- Kita panggil Dummy R15 asli dari Roblox dan pakaikan baju kita sendiri!
+        Notify("⚠️ Info", "Membangun Dummy R15 baru...")
+        local success, dummy = pcall(function()
+            return game:GetObjects("rbxassetid://1664543044")[1]
+        end)
+        
+        if success and dummy then
+            clonedChar = dummy
+            -- Pasang baju dan muka kita
+            pcall(function()
+                local desc = game.Players:GetHumanoidDescriptionFromUserId(player.UserId)
+                clonedChar.Humanoid:ApplyDescription(desc)
+            end)
+        else
+            return nil, "Gagal memanggil Dummy dari Roblox!"
+        end
+    end
     
-    if not clonedChar then return nil, "Gagal mengkloning karakter!" end
+    if not clonedChar then return nil, "Gagal menyiapkan karakter!" end
     
     -- Matikan semua script di kloningan supaya tidak dibajak Evade
     for _, desc in pairs(clonedChar:GetDescendants()) do

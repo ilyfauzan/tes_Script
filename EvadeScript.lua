@@ -558,17 +558,13 @@ PlayEvadeBtn.MouseButton1Click:Connect(function()
     end 
     
     local rs = game:GetService("ReplicatedStorage")
-    local emotesFolder = rs:FindFirstChild("Items") 
-        and rs.Items:FindFirstChild("BaseItems") 
-        and rs.Items.BaseItems:FindFirstChild("Emotes")
-        
-    if not emotesFolder then
-        Notify("❌ Gagal", "Folder Emotes Evade tidak ditemukan!")
-        return
-    end
-    
     local targetModule = nil
-    for _, child in pairs(emotesFolder:GetChildren()) do
+    
+    -- Cari di seluruh ReplicatedStorage (buat jaga-jaga kalau dia di folder Event, misal Halloween2022)
+    local allObjects = {}
+    pcall(function() allObjects = rs:GetDescendants() end)
+    
+    for _, child in pairs(allObjects) do
         if child:IsA("ModuleScript") and string.lower(child.Name) == string.lower(emoteName) then
             targetModule = child
             break

@@ -146,9 +146,10 @@ LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 local StopBtn = CreateButton("⛔ Stop Animasi", ScrollingFrame)
 StopBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
 
-local loopActive = false
+local RunService = game:GetService("RunService")
 local activeTracks = {}
-local loopThread = nil
+local activeAnimId = nil
+local renderConn = nil
 
 local function GetActiveCharacter()
     local bestChar = nil
@@ -181,6 +182,18 @@ local function GetActiveCharacter()
     return player.Character
 end
 
+local function StopAllAnimations()
+    if renderConn then
+        renderConn:Disconnect()
+        renderConn = nil
+    end
+    for _, track in pairs(activeTracks) do
+        pcall(function() track:Stop(0) end)
+    end
+    activeTracks = {}
+    activeAnimId = nil
+end
+
 local function PlayAnimNow(idStr)
     local char = GetActiveCharacter()
     if not char then return false end
@@ -189,12 +202,10 @@ local function PlayAnimNow(idStr)
     if not numId then return false end
     local formattedId = "rbxassetid://" .. numId
 
-    local ok, err = pcall(function()
-        for _, track in pairs(activeTracks) do
-            pcall(function() track:Stop(0) end)
-        end
-        activeTracks = {}
+    StopAllAnimations()
+    activeAnimId = formattedId
 
+    local ok, err = pcall(function()
         local animators = {}
         for _, desc in pairs(char:GetDescendants()) do
             if desc:IsA("Animator") then
@@ -217,29 +228,61 @@ local function PlayAnimNow(idStr)
         local anim = Instance.new("Animation")
         anim.AnimationId = formattedId
 
+        -- Pertama: BUNUH semua animasi yang sedang jalan di karakter ini
         for _, animator in ipairs(animators) do
-            local track = animator:LoadAnimation(anim)
-            track.Priority = Enum.AnimationPriority.Action4
-            track.Looped = loopActive
-            track:Play(0.1, 99, 1)
-            task.delay(0.1, function() pcall(function() track:AdjustWeight(99) end) end)
-            table.insert(activeTracks, track)
-        end
-
-        if loopThread then task.cancel(loopThread) end
-        if loopActive then
-            loopThread = task.spawn(function()
-                while loopActive do
-                    task.wait(0.1)
-                    for _, track in pairs(activeTracks) do
-                        if not track.IsPlaying then
-                            track:Play(0.1, 99, 1)
-                            pcall(function() track:AdjustWeight(99) end)
-                        end
-                    end
+            pcall(function()
+                for _, existingTrack in pairs(animator:GetPlayingAnimationTracks()) do
+                    existingTrack:Stop(0)
+                    existingTrack:AdjustWeight(0)
                 end
             end)
         end
+
+        -- Kedua: Muat dan mainkan animasi kita
+        for _, animator in ipairs(animators) do
+            local track = animator:LoadAnimation(anim)
+            track.Priority = Enum.AnimationPriority.Action4
+            track.Looped = true
+            track:Play(0, 99, 1)
+            pcall(function() track:AdjustWeight(99) end)
+            table.insert(activeTracks, track)
+        end
+
+        -- SENJATA PAMUNGKAS: Jalankan setiap FRAME (60x/detik)
+        -- Ini akan membunuh semua animasi lain dan memaksa animasi kita tetap jalan
+        renderConn = RunService.RenderStepped:Connect(function()
+            if #activeTracks == 0 then return end
+            
+            for _, animator in ipairs(animators) do
+                pcall(function()
+                    for _, existingTrack in pairs(animator:GetPlayingAnimationTracks()) do
+                        -- Cek apakah ini track milik kita
+                        local isOurs = false
+                        for _, ourTrack in pairs(activeTracks) do
+                            if existingTrack == ourTrack then
+                                isOurs = true
+                                break
+                            end
+                        end
+                        -- Kalau bukan milik kita, BUNUH!
+                        if not isOurs then
+                            existingTrack:Stop(0)
+                            existingTrack:AdjustWeight(0)
+                        end
+                    end
+                end)
+            end
+            
+            -- Paksa animasi kita tetap jalan
+            for _, track in pairs(activeTracks) do
+                pcall(function()
+                    if not track.IsPlaying then
+                        track:Play(0, 99, 1)
+                    end
+                    track:AdjustWeight(99)
+                end)
+            end
+        end)
     end)
     
     if not ok then
@@ -253,7 +296,7 @@ PlayByIDBtn.MouseButton1Click:Connect(function()
     if id then
         local ok, charName = PlayAnimNow(id)
         if ok then
-            Notify("✅ Dimainkan di " .. tostring(charName), "Jika diam, nyalakan LOOP MODE!")
+            Notify("✅ NUKLIR AKTIF di " .. tostring(charName), "Animasi dipaksa 60x/detik! Evade tidak bisa menghentikan ini!")
         else
             if not charName then Notify("❌ Gagal", "Karakter tidak ditemukan!") end
         end
@@ -263,48 +306,13 @@ PlayByIDBtn.MouseButton1Click:Connect(function()
 end)
 
 LoopBtn.MouseButton1Click:Connect(function()
-    loopActive = not loopActive
-    if loopActive then
-        LoopBtn.Text = "🔁 Loop Mode: ON (MEMAKSA ANIMASI)"
-        LoopBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
-        for _, track in pairs(activeTracks) do
-            track.Looped = true
-        end
-        if loopThread then task.cancel(loopThread) end
-        loopThread = task.spawn(function()
-            while loopActive do
-                task.wait(0.1)
-                for _, track in pairs(activeTracks) do
-                    if not track.IsPlaying then
-                        track:Play(0.1, 99, 1)
-                        pcall(function() track:AdjustWeight(99) end)
-                    end
-                end
-            end
-        end)
-    else
-        LoopBtn.Text = "🔁 Loop Mode: OFF"
-        LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        if loopThread then
-            task.cancel(loopThread)
-            loopThread = nil
-        end
-        for _, track in pairs(activeTracks) do
-            track.Looped = false
-        end
-    end
+    -- Loop sekarang selalu ON karena RenderStepped sudah menangani semuanya
+    Notify("ℹ️ Info", "Loop otomatis aktif! Animasi akan terus dipaksa jalan oleh sistem NUKLIR.")
 end)
 
 StopBtn.MouseButton1Click:Connect(function()
-    if loopThread then
-        task.cancel(loopThread)
-        loopThread = nil
-    end
-    for _, track in pairs(activeTracks) do
-        pcall(function() track:Stop() end)
-    end
-    activeTracks = {}
-    Notify("⏹️ Dihentikan", "Animasi dihentikan.")
+    StopAllAnimations()
+    Notify("⏹️ Dihentikan", "Animasi dan sistem NUKLIR dihentikan.")
 end)
 
 -- ========================================================

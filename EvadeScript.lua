@@ -168,6 +168,17 @@ local function StopAllAnimations()
     activeTracks = {}
 end
 
+local function GetWhiteDummy()
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        return player.Character
+    end
+    if workspace:FindFirstChild("Players") then
+        local char = workspace.Players:FindFirstChild(player.Name)
+        if char and char:FindFirstChild("HumanoidRootPart") then return char end
+    end
+    return nil
+end
+
 local function GetVisualRig()
     if workspace:FindFirstChild("Rigs") then
         local char = workspace.Rigs:FindFirstChild(player.Name)
@@ -177,8 +188,6 @@ local function GetVisualRig()
     end
     return nil
 end
-
-local lastValidCFrame = CFrame.new()
 
 local function StartMenuHijack()
     local visualModel = nil
@@ -194,28 +203,30 @@ local function StartMenuHijack()
         return false
     end
     
-    if clonedChar then clonedChar:Destroy() end
     pcall(function() game:GetService("RunService"):UnbindFromRenderStep("WayaeHideVisual") end)
     
-    local realChar = GetVisualRig()
-    if not realChar then
-        Notify("❌ Gagal", "Karakter aslimu tidak ditemukan di Rigs! Pastikan kamu ada di menu yang memunculkan karakter.")
+    local whiteDummy = GetWhiteDummy()
+    if not whiteDummy then
+        Notify("❌ Gagal", "Pancing karaktermu dulu! Buka tab EMOTES lalu klik Ganti Avatar lagi.")
         return false
     end
     
-    -- BERSIHKAN SEMUA CLONE LAMA (Penyebab Asura/Tangan Numpuk pas re-execute script!)
+    local visualRig = GetVisualRig()
+    if not visualRig then
+        Notify("❌ Gagal", "Baju aslimu belum di-load oleh game. Pindah-pindah tab dulu!")
+        return false
+    end
+    
     for _, obj in pairs(workspace.CurrentCamera:GetChildren()) do
         if obj:IsA("Model") and string.find(obj.Name, "WayaeClone_") then
             obj:Destroy()
         end
     end
     
-    -- Kloning patung asli dari Rigs (Bajunya udah 100% nempel sempurna)
-    realChar.Archivable = true
-    clonedChar = realChar:Clone()
+    whiteDummy.Archivable = true
+    clonedChar = whiteDummy:Clone()
     clonedChar.Name = "WayaeClone_" .. player.Name
     
-    -- Bersihkan script bawaan Evade
     for _, desc in pairs(clonedChar:GetDescendants()) do
         if desc:IsA("Script") or desc:IsA("LocalScript") then
             desc.Disabled = true
@@ -223,31 +234,44 @@ local function StartMenuHijack()
         end
     end
     
-    -- FIX UTAMA: Buat Tulang Root Baru Secara Paksa
-    local hrp = clonedChar:FindFirstChild("HumanoidRootPart")
-    if not hrp then
-        hrp = Instance.new("Part")
-        hrp.Name = "HumanoidRootPart"
-        hrp.Size = Vector3.new(2, 2, 1)
-        hrp.Transparency = 1
-        hrp.CanCollide = false
-        hrp.Parent = clonedChar
-        
-        local torso = clonedChar:FindFirstChild("LowerTorso") or clonedChar:FindFirstChild("Torso")
-        if torso then
-            hrp.CFrame = torso.CFrame
-            local rootJoint = Instance.new("Motor6D")
-            rootJoint.Name = "Root"
-            rootJoint.Part0 = hrp
-            rootJoint.Part1 = torso
-            rootJoint.Parent = hrp
-            clonedChar.PrimaryPart = hrp
+    for _, obj in pairs(clonedChar:GetChildren()) do
+        if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") then
+            obj:Destroy()
         end
     end
     
-    -- Setting Fisika (Anchor HRP biar melayang dan nggak jatuh tembus lantai)
+    local hum = clonedChar:FindFirstChildOfClass("Humanoid")
+    for _, obj in pairs(visualRig:GetChildren()) do
+        if obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") then
+            obj:Clone().Parent = clonedChar
+        elseif obj:IsA("Accessory") and hum then
+            local acc = obj:Clone()
+            hum:AddAccessory(acc)
+        elseif obj:IsA("MeshPart") then
+            local targetPart = clonedChar:FindFirstChild(obj.Name)
+            if targetPart and targetPart:IsA("MeshPart") then
+                targetPart.MeshId = obj.MeshId
+                targetPart.TextureID = obj.TextureID
+                targetPart.Color = obj.Color
+            end
+        elseif obj.Name == "Head" then
+            local targetHead = clonedChar:FindFirstChild("Head")
+            if targetHead then
+                targetHead.Color = obj.Color
+                for _, child in pairs(obj:GetChildren()) do
+                    if child:IsA("Decal") or child:IsA("SpecialMesh") then
+                        local old = targetHead:FindFirstChildOfClass(child.ClassName)
+                        if old then old:Destroy() end
+                        child:Clone().Parent = targetHead
+                    end
+                end
+            end
+        end
+    end
+    
     for _, desc in pairs(clonedChar:GetDescendants()) do
         if desc:IsA("BasePart") then
+            desc.CanCollide = false
             if desc.Name == "HumanoidRootPart" then
                 desc.Anchored = true
                 desc.Transparency = 1
@@ -261,25 +285,15 @@ local function StartMenuHijack()
     clonedChar.Parent = workspace.CurrentCamera
     
     local pivot = visualModel:GetPivot()
-    if pivot.Y < -1000 then
-        -- Jika CFrame nyangkut di bawah map karena script sebelumnya, reset manual ke origin
-        pivot = CFrame.new(0, 10, 0)
-    end
+    if pivot.Y < -1000 then pivot = CFrame.new(0, 10, 0) end
     clonedChar:PivotTo(pivot)
     
-    -- LOOP HIDE TINGKAT DEWA!
     RunService:BindToRenderStep("WayaeHideVisual", 300, function()
         if not clonedChar or not clonedChar.Parent then return end
-        
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("Model") and obj.Name == "VisualModel" then
-                -- Ambil posisi asli dari Evade
                 local vPivot = obj:GetPivot()
-                if vPivot.Y > -1000 then
-                    clonedChar:PivotTo(vPivot)
-                end
-                
-                -- Bikin patung aslinya hilang (transparan)
+                if vPivot.Y > -1000 then clonedChar:PivotTo(vPivot) end
                 for _, desc in pairs(obj:GetDescendants()) do
                     if desc:IsA("BasePart") or desc:IsA("Decal") then
                         pcall(function() 

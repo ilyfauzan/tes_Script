@@ -304,7 +304,6 @@ local autoCatchActive = false
 local autoCatchThread = nil
 local caughtEmotes = {}
 local caughtEmoteCount = 0
-local baselineIds = {}
 
 local baseAnimIds = {
     ["507770239"] = true, ["507777826"] = true, ["507766388"] = true,
@@ -413,7 +412,7 @@ end
 local function ScanAndCatch()
     local currentIds = GetShopAnimatorIds()
     for id, _ in pairs(currentIds) do
-        if not caughtEmotes[id] and not baselineIds[id] and not baseAnimIds[id] then
+        if not caughtEmotes[id] and not baseAnimIds[id] then
             caughtEmotes[id] = true
             task.spawn(function()
                 AddCaughtEmoteButton(id)
@@ -427,18 +426,9 @@ end
 AutoCatchBtn.MouseButton1Click:Connect(function()
     autoCatchActive = not autoCatchActive
     if autoCatchActive then
-        baselineIds = {}
-        local existing = GetShopAnimatorIds()
-        for id, _ in pairs(existing) do
-            baselineIds[id] = true
-        end
-        for id, _ in pairs(caughtEmotes) do
-            baselineIds[id] = true
-        end
-
         AutoCatchBtn.Text = "🎬 Auto-Catch: ON (Buka Shop Sekarang!)"
         AutoCatchBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 180)
-        Notify("🎬 Auto-Catch Aktif!", "Buka Shop Evade lalu klik/hover emote. Hanya emote BARU yang akan tertangkap!")
+        Notify("🎬 Auto-Catch Aktif!", "Memindai animasi dummy shop dan sekitar secara real-time...")
 
         autoCatchThread = task.spawn(function()
             while autoCatchActive do

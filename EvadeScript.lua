@@ -323,18 +323,21 @@ local function GetShopAnimatorIds()
         if not root then continue end
         for _, obj in pairs(root:GetDescendants()) do
             if obj:IsA("Animator") then
-                local isOwnChar = false
-                if player.Character then
-                    local parent = obj
-                    while parent do
-                        if parent == player.Character then
-                            isOwnChar = true
+                -- Cari tahu apakah Animator ini milik player asli (orang lain atau diri sendiri)
+                local current = obj
+                local isPlayerChar = false
+                while current and current ~= game do
+                    if current:IsA("Model") then
+                        if game:GetService("Players"):GetPlayerFromCharacter(current) then
+                            isPlayerChar = true
                             break
                         end
-                        parent = parent.Parent
                     end
+                    current = current.Parent
                 end
-                if not isOwnChar then
+
+                -- Hanya ambil animasi jika BUKAN dari player asli (yaitu Dummy Shop / NPC)
+                if not isPlayerChar then
                     pcall(function()
                         for _, track in pairs(obj:GetPlayingAnimationTracks()) do
                             if track.Animation and track.Animation.AnimationId then

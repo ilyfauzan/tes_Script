@@ -111,9 +111,9 @@ local function Notify(title, text)
 end
 
 -- ========================================================
--- 👽 GANTI AVATAR (WAJIB KLIK 1X)
+-- 👽 GANTI AVATAR (KHUSUS DI MENU LOBBY)
 -- ========================================================
-local HijackBtn = CreateButton("🚀 Ganti Avatar Sekarang (Wajib 1x)", ScrollingFrame)
+local HijackBtn = CreateButton("🚀 [MENU ONLY] Ganti Avatar (Biar Bisa Joget)", ScrollingFrame)
 HijackBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
 
 -- ========================================================
@@ -457,6 +457,53 @@ RemoteBtn.MouseButton1Click:Connect(function()
     Notify("🔄 Reset", "Patung menu dikembalikan seperti semula.")
 end)
 
+-- ========================================================
+-- 🎸 INTERNAL EVADE EMOTES (ROCKIN STRIDE DLL)
+-- ========================================================
+local function GetInternalEmote(keyword)
+    keyword = string.lower(keyword)
+    local services = {game:GetService("ReplicatedStorage"), workspace, player}
+    for _, service in pairs(services) do
+        local objects = {}
+        pcall(function() objects = service:GetDescendants() end)
+        for _, obj in pairs(objects) do
+            if obj:IsA("Animation") and string.find(string.lower(obj.Name), keyword) then
+                return obj
+            end
+        end
+    end
+    return nil
+end
+
+local InternalEmoteLabel = Instance.new("TextLabel")
+InternalEmoteLabel.Size = UDim2.new(1, 0, 0, 20)
+InternalEmoteLabel.BackgroundTransparency = 1
+InternalEmoteLabel.Text = "🎸 IN-GAME EMOTES (ROCKIN STRIDE DLL)"
+InternalEmoteLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+InternalEmoteLabel.Font = Enum.Font.GothamBold
+InternalEmoteLabel.TextSize = 14
+InternalEmoteLabel.TextXAlignment = Enum.TextXAlignment.Left
+InternalEmoteLabel.Parent = ScrollingFrame
+
+local RockinBtn = CreateButton("🕺 Play Rockin' Stride", ScrollingFrame)
+RockinBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+RockinBtn.MouseButton1Click:Connect(function()
+    local anim = GetInternalEmote("rockin")
+    if not anim then anim = GetInternalEmote("stride") end
+    
+    if anim then
+        local id = anim.AnimationId:match("%d+")
+        if id then
+            if IDInput then IDInput.Text = id end
+            PlayAnimNow(id)
+            Notify("✅ Berhasil!", "Memutar " .. anim.Name .. " (ID: " .. id .. ")")
+        else
+            Notify("❌ Gagal", "AnimationId tidak valid.")
+        end
+    else
+        Notify("❌ Gagal", "Emote Rockin Stride tidak ditemukan di memori Evade. Coba pancing orang lain/bot biar make dulu!")
+    end
+end)
 
 -- ========================================================
 -- 🔍 SMART SCANNER (CARI DUMMY SHOP)

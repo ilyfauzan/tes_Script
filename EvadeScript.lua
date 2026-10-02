@@ -131,6 +131,7 @@ IDInput.Font = Enum.Font.Gotham
 IDInput.TextSize = 14
 IDInput.PlaceholderText = "Ketik/Paste ID Animasi di sini..."
 IDInput.Text = "12686575749"
+IDInput.ClearTextOnFocus = false
 IDInput.Parent = ScrollingFrame
 local cornerID = Instance.new("UICorner")
 cornerID.CornerRadius = UDim.new(0, 6)
@@ -150,6 +151,16 @@ local activeTracks = {}
 local loopThread = nil
 
 local function GetActiveCharacter()
+    local cam = workspace.CurrentCamera
+    if cam and cam.CameraSubject then
+        local subject = cam.CameraSubject
+        if subject:IsA("Humanoid") then
+            return subject.Parent
+        elseif subject:IsA("BasePart") then
+            return subject.Parent
+        end
+    end
+    
     local char = player.Character
     if workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Players") then
         local customChar = workspace.Game.Players:FindFirstChild(player.Name)
@@ -190,6 +201,10 @@ local function PlayAnimNow(idStr)
             end
         end
 
+        if #animators == 0 then
+            error("Tidak ada Animator di karakter: " .. char.Name)
+        end
+
         local anim = Instance.new("Animation")
         anim.AnimationId = formattedId
 
@@ -217,17 +232,21 @@ local function PlayAnimNow(idStr)
             end)
         end
     end)
-    return ok
+    
+    if not ok then
+        Notify("❌ Play Error", tostring(err))
+    end
+    return ok, char.Name
 end
 
 PlayByIDBtn.MouseButton1Click:Connect(function()
     local id = IDInput.Text:match("%d+")
     if id then
-        local ok = PlayAnimNow(id)
+        local ok, charName = PlayAnimNow(id)
         if ok then
-            Notify("✅ Animasi Diputar!", "Jika tidak gerak, nyalakan LOOP MODE!")
+            Notify("✅ Dimainkan di " .. tostring(charName), "Jika diam, nyalakan LOOP MODE!")
         else
-            Notify("❌ Gagal", "Karakter belum siap!")
+            if not charName then Notify("❌ Gagal", "Karakter tidak ditemukan!") end
         end
     else
         Notify("❌ Input Salah", "Masukkan angka ID yang benar!")

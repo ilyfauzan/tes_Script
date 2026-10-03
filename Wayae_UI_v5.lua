@@ -383,6 +383,7 @@ Wayae.UI.Notify = function(title, msg, duration)
     notif.BackgroundColor3 = Colors.Background
     notif.BackgroundTransparency = 0.1
     notif.BorderSizePixel = 0
+    notif.ZIndex = 100
     notif.Parent = notifyGui
 
     local nc = Instance.new("UICorner")
@@ -399,6 +400,7 @@ Wayae.UI.Notify = function(title, msg, duration)
     accentLine.Position = UDim2.new(0, 10, 0, 10)
     accentLine.BackgroundColor3 = Colors.Accent
     accentLine.BorderSizePixel = 0
+    accentLine.ZIndex = 101
     accentLine.Parent = notif
     local alc = Instance.new("UICorner")
     alc.CornerRadius = UDim.new(1, 0)
@@ -413,6 +415,7 @@ Wayae.UI.Notify = function(title, msg, duration)
     nt.TextSize = 13
     nt.Font = Enum.Font.GothamBold
     nt.TextXAlignment = Enum.TextXAlignment.Left
+    nt.ZIndex = 101
     nt.Parent = notif
 
     local nm = Instance.new("TextLabel")
@@ -425,6 +428,7 @@ Wayae.UI.Notify = function(title, msg, duration)
     nm.Font = Enum.Font.Gotham
     nm.TextXAlignment = Enum.TextXAlignment.Left
     nm.TextWrapped = true
+    nm.ZIndex = 101
     nm.Parent = notif
 
     -- Arrange existing notifications

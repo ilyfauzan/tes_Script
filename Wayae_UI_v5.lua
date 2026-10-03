@@ -24,7 +24,7 @@ local Colors = {
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "WayaeHUB"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = playerGui
 
 -- Main Window
@@ -372,7 +372,7 @@ Wayae.UI.Notify = function(title, msg, duration)
         notifyGui = Instance.new("ScreenGui")
         notifyGui.Name = "WayaeNotifyGui"
         notifyGui.ResetOnSpawn = false
-        notifyGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+        notifyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         notifyGui.Parent = playerGui
     end
 
@@ -383,7 +383,6 @@ Wayae.UI.Notify = function(title, msg, duration)
     notif.BackgroundColor3 = Colors.Background
     notif.BackgroundTransparency = 0.1
     notif.BorderSizePixel = 0
-    notif.ZIndex = 100
     notif.Parent = notifyGui
 
     local nc = Instance.new("UICorner")

@@ -449,3 +449,79 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
         Wayae.UI.Notify("🤖 Auto Farm Mati", "Auto Farm dihentikan.", 4)
     end
 end)
+
+Wayae.autoLuckRunning = false
+Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
+    Wayae.autoLuckRunning = not Wayae.autoLuckRunning
+    if Wayae.autoLuckRunning then
+        Wayae.UI.AutoLuckBtn.Text = "🍀 5. Auto Upgrade Luck: ON"
+        Wayae.UI.AutoLuckBtn.BackgroundColor3 = Color3.fromRGB(30, 60, 30)
+        Wayae.UI.Notify("🍀 Auto Luck", "Mencari board Upgrade Luck di sekitar...", 3)
+        
+        task.spawn(function()
+            while Wayae.autoLuckRunning do
+                local char = player.Character
+                if char then
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        for _, desc in pairs(workspace:GetDescendants()) do
+                            if desc:IsA("SurfaceGui") then
+                                local isLuckBoard = false
+                                for _, child in pairs(desc:GetDescendants()) do
+                                    if child:IsA("TextLabel") and (child.Text:lower():find("luck") or child.Text:lower():find("hatch")) then
+                                        isLuckBoard = true
+                                        break
+                                    end
+                                end
+                                if isLuckBoard then
+                                    local dist = 0
+                                    local parentPart = desc.Parent or desc.Adornee
+                                    if parentPart and parentPart:IsA("BasePart") then
+                                        dist = (parentPart.Position - hrp.Position).Magnitude
+                                    end
+                                    if dist < 100 then
+                                        for _, btn in pairs(desc:GetDescendants()) do
+                                            if (btn:IsA("TextButton") or btn:IsA("ImageButton")) then
+                                                local txt = btn:IsA("TextButton") and btn.Text:lower() or ""
+                                                if txt:find("max") or txt:find("upgrade") or txt:find("$") or btn.Name:lower():find("max") or txt:find("luck") then
+                                                    if getconnections then
+                                                        for _, conn in pairs(getconnections(btn.MouseButton1Click)) do pcall(function() conn:Function() end) end
+                                                        for _, conn in pairs(getconnections(btn.Activated)) do pcall(function() conn:Function() end) end
+                                                    end
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            elseif desc:IsA("ProximityPrompt") or desc:IsA("ClickDetector") then
+                                local p = desc.Parent
+                                if p and p:IsA("BasePart") then
+                                    local dist = (p.Position - hrp.Position).Magnitude
+                                    if dist < 100 then
+                                        local name = p.Name:lower()
+                                        local act = desc:IsA("ProximityPrompt") and desc.ActionText:lower() or ""
+                                        local obj = desc:IsA("ProximityPrompt") and desc.ObjectText:lower() or ""
+                                        
+                                        if name:find("luck") or name:find("upgrade") or name:find("max") or act:find("upgrade") or act:find("max") or obj:find("luck") then
+                                            if desc:IsA("ProximityPrompt") and fireproximityprompt then
+                                                fireproximityprompt(desc, 1)
+                                                fireproximityprompt(desc)
+                                            elseif desc:IsA("ClickDetector") and fireclickdetector then
+                                                fireclickdetector(desc)
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                task.wait(1)
+            end
+        end)
+    else
+        Wayae.UI.AutoLuckBtn.Text = "🍀 5. Auto Upgrade Luck: OFF"
+        Wayae.UI.AutoLuckBtn.BackgroundColor3 = Color3.fromRGB(45, 25, 30)
+        Wayae.UI.Notify("🍀 Auto Luck", "Auto Upgrade dihentikan.", 3)
+    end
+end)

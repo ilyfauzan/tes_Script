@@ -478,7 +478,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
     if Wayae.autoLuckRunning then
         Wayae.UI.AutoLuckBtn.Text = "🍀 5. Auto Upgrade Luck: ON"
         Wayae.UI.AutoLuckBtn.BackgroundColor3 = Color3.fromRGB(30, 60, 30)
-        Wayae.UI.Notify("🍀 Auto Luck", "Memindai khusus di area Workspace (Aman dari Screen UI)...", 3)
+        Wayae.UI.Notify("🍀 Auto Luck", "Memindai tombol berlogo $ atau MAX...", 3)
         
         task.spawn(function()
             local vim = game:GetService("VirtualInputManager")
@@ -488,7 +488,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                 if char then
                     local hrp = char:FindFirstChild("HumanoidRootPart")
                     if hrp then
-                        local areas = {workspace} -- HANYA WORKSPACE, jangan sentuh PlayerGui agar UI layar tidak rusak
+                        local areas = {workspace}
                         
                         for _, area in ipairs(areas) do
                             for _, desc in pairs(area:GetDescendants()) do
@@ -504,25 +504,24 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                         dist = (parentPart.Position - hrp.Position).Magnitude
                                     end
                                     
-                                    -- Hanya scan jarak dekat
                                     if dist > 0 and dist < 60 then
                                         for _, btn in pairs(desc:GetDescendants()) do
                                             if btn:IsA("TextButton") or btn:IsA("ImageButton") or btn:IsA("GuiButton") then
                                                 local hasKeyword = false
-                                                local n = btn.Name:lower()
-                                                if n:find("max") or n:find("upgrade") or n:find("buy") then hasKeyword = true end
                                                 
                                                 if btn:IsA("TextButton") then
                                                     local t = btn.Text:lower()
-                                                    if t:find("max") or t:find("%$") or t:find("luck") or t:find("upgrade") then hasKeyword = true end
+                                                    if t:find("max") or t:find("%$") then hasKeyword = true end
                                                 end
                                                 
-                                                -- Cek semua anak di dalamnya
+                                                -- Cek semua anak di dalamnya (biasanya ImageButton punya TextLabel)
                                                 if not hasKeyword then
                                                     for _, child in pairs(btn:GetDescendants()) do
                                                         if child:IsA("TextLabel") or child:IsA("TextButton") then
                                                             local t = child.Text:lower()
-                                                            if t:find("max") or t:find("%$") or t:find("luck") or t:find("upgrade") then
+                                                            -- HANYA klik jika teksnya mengandung "max" atau "$"
+                                                            -- Ini mencegah klik tombol Robux
+                                                            if t:find("max") or t:find("%$") then
                                                                 hasKeyword = true
                                                                 break
                                                             end
@@ -570,7 +569,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                     if p and p:IsA("BasePart") then
                                         if (p.Position - hrp.Position).Magnitude < 60 then
                                             local n = p.Name:lower()
-                                            if n:find("max") or n:find("luck") or n:find("upgrade") or n:find("button") or n:find("buy") then
+                                            if n:find("max") or n:find("upgrade") then
                                                 if fireclickdetector then pcall(function() fireclickdetector(desc) end) end
                                             end
                                         end
@@ -584,7 +583,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                         if (p.Position - hrp.Position).Magnitude < 60 then
                                             local n = desc.Name:lower()
                                             local a = desc.ActionText:lower()
-                                            if n:find("max") or n:find("luck") or a:find("max") or a:find("upgrade") or a:find("buy") then
+                                            if n:find("max") or a:find("max") or a:find("upgrade") then
                                                 if fireproximityprompt then 
                                                     pcall(function() 
                                                         fireproximityprompt(desc, 1)

@@ -478,45 +478,39 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
     if Wayae.autoLuckRunning then
         Wayae.UI.AutoLuckBtn.Text = "🍀 5. Auto Upgrade Luck: ON"
         Wayae.UI.AutoLuckBtn.BackgroundColor3 = Color3.fromRGB(30, 60, 30)
-        Wayae.UI.Notify("🍀 Auto Luck", "Memulai brute-force klik untuk Upgrade Board...", 3)
+        Wayae.UI.Notify("🍀 Auto Luck", "Metode Bypass GUI (SelectedObject) Aktif...", 3)
         
         task.spawn(function()
             local vim = game:GetService("VirtualInputManager")
+            local guiService = game:GetService("GuiService")
             while Wayae.autoLuckRunning do
                 local char = player.Character
                 if char then
                     local hrp = char:FindFirstChild("HumanoidRootPart")
                     if hrp then
                         for _, desc in pairs(workspace:GetDescendants()) do
-                            -- Cek semua Gui Buttons (TextButton/ImageButton) di SurfaceGui/BillboardGui dekat pemain
+                            -- 1. Metode GuiService.SelectedObject untuk SurfaceGui/BillboardGui
                             if desc:IsA("SurfaceGui") or desc:IsA("BillboardGui") then
                                 local parentPart = desc.Parent or desc.Adornee
                                 if parentPart and parentPart:IsA("BasePart") then
                                     local dist = (parentPart.Position - hrp.Position).Magnitude
-                                    if dist < 40 then -- Harus berada dekat papan
+                                    if dist < 40 then
                                         for _, btn in pairs(desc:GetDescendants()) do
                                             if btn:IsA("TextButton") or btn:IsA("ImageButton") or btn:IsA("GuiButton") then
                                                 local t = ""
                                                 if btn:IsA("TextButton") then t = btn.Text:lower() end
                                                 local n = btn.Name:lower()
-                                                -- Cek apakah tombol ini mengandung max, harga ($), atau B/T/M
                                                 if t:find("max") or n:find("max") or t:find("%$") or t:find("luck") or n:find("upgrade") or t:find("b") or t:find("t") or t:find("m") or t:find("qa") or n:find("buy") then
-                                                    -- 1. getconnections
-                                                    if getconnections then
-                                                        for _, conn in pairs(getconnections(btn.MouseButton1Click)) do pcall(function() conn:Function() end) end
-                                                        for _, conn in pairs(getconnections(btn.MouseButton1Down)) do pcall(function() conn:Function() end) end
-                                                        for _, conn in pairs(getconnections(btn.Activated)) do pcall(function() conn:Function() end) end
-                                                    end
-                                                    -- 2. VirtualInputManager fallback
                                                     pcall(function()
-                                                        local absSize = btn.AbsoluteSize
-                                                        if absSize.X > 0 and absSize.Y > 0 then
-                                                            local cx = btn.AbsolutePosition.X + (absSize.X / 2)
-                                                            local cy = btn.AbsolutePosition.Y + (absSize.Y / 2)
-                                                            vim:SendMouseButtonEvent(cx, cy, 0, true, btn, 1)
-                                                            task.wait(0.01)
-                                                            vim:SendMouseButtonEvent(cx, cy, 0, false, btn, 1)
-                                                        end
+                                                        -- Bypass executor click limitations by using Roblox's built-in gamepad/keyboard UI navigation
+                                                        local oldSelect = guiService.SelectedObject
+                                                        guiService.SelectedObject = btn
+                                                        task.wait(0.01)
+                                                        vim:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                                                        task.wait(0.01)
+                                                        vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                                                        -- Kembalikan seleksi agar tidak mengganggu UI pemain
+                                                        guiService.SelectedObject = oldSelect
                                                     end)
                                                 end
                                             end
@@ -525,55 +519,26 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                 end
                             end
                             
-                            -- Cek semua ClickDetector dekat pemain
+                            -- 2. Fallback ClickDetector
                             if desc:IsA("ClickDetector") then
                                 local p = desc.Parent
                                 if p and p:IsA("BasePart") then
-                                    local dist = (p.Position - hrp.Position).Magnitude
-                                    if dist < 40 then
-                                        local isUpgrade = false
-                                        local n = p.Name:lower()
-                                        if n:find("max") or n:find("luck") or n:find("upgrade") or n:find("button") or n:find("buy") or n:find("purchase") then
-                                            isUpgrade = true
-                                        end
-                                        -- Cek isi SurfaceGui di parentnya siapa tau namanya ga jelas
-                                        for _, child in pairs(p:GetDescendants()) do
-                                            if child:IsA("TextLabel") or child:IsA("TextButton") then
-                                                local t = ""
-                                                if child:IsA("TextLabel") or child:IsA("TextButton") then t = child.Text:lower() end
-                                                if t:find("max") or t:find("%$") or t:find("luck") or t:find("hatch") then
-                                                    isUpgrade = true
-                                                    break
-                                                end
-                                            end
-                                        end
-                                        
-                                        if isUpgrade then
-                                            if fireclickdetector then fireclickdetector(desc) end
-                                        end
+                                    if (p.Position - hrp.Position).Magnitude < 40 then
+                                        if fireclickdetector then pcall(function() fireclickdetector(desc) end) end
                                     end
                                 end
                             end
                             
-                            -- Cek semua ProximityPrompt dekat pemain
+                            -- 3. Fallback ProximityPrompt
                             if desc:IsA("ProximityPrompt") then
                                 local p = desc.Parent
                                 if p and p:IsA("BasePart") then
-                                    local dist = (p.Position - hrp.Position).Magnitude
-                                    if dist < 40 then
-                                        local isUpgrade = false
-                                        local act = desc.ActionText:lower()
-                                        local obj = desc.ObjectText:lower()
-                                        local n = desc.Name:lower()
-                                        if act:find("max") or act:find("upgrade") or obj:find("luck") or n:find("max") or n:find("buy") then
-                                            isUpgrade = true
-                                        end
-                                        
-                                        if isUpgrade then
-                                            if fireproximityprompt then
+                                    if (p.Position - hrp.Position).Magnitude < 40 then
+                                        if fireproximityprompt then 
+                                            pcall(function() 
                                                 fireproximityprompt(desc, 1)
                                                 fireproximityprompt(desc)
-                                            end
+                                            end)
                                         end
                                     end
                                 end

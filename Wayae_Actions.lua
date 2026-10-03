@@ -263,11 +263,26 @@ Wayae.UI.VolcanicTestBtn.MouseButton1Click:Connect(function()
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-    local targetPos = Vector3.new(-5332, 40912, -3542)
+    
+    -- Noclip sementara agar tembus asset gua
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then part.CanCollide = false end
+    end
+    
     hrp.AssemblyLinearVelocity = Vector3.zero
     hrp.AssemblyAngularVelocity = Vector3.zero
-    hrp.CFrame = CFrame.new(targetPos) * hrp.CFrame.Rotation
-    Wayae.UI.Notify("🌋 Volcanic Teleport", "Berhasil teleport dengan aman!", 4)
+    hrp.CFrame = CFrame.new(-5336, 40912, -3542) * hrp.CFrame.Rotation
+    
+    -- Tunggu 1 detik baru aktifkan collision lagi
+    task.delay(1, function()
+        if player.Character then
+            for _, part in pairs(player.Character:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = true end
+            end
+        end
+    end)
+    
+    Wayae.UI.Notify("🌋 Volcanic Teleport", "Berhasil tembus ke dalam gua!", 4)
 end)
 Wayae.UI.GetPosBtn.MouseButton1Click:Connect(function()
     local char = player.Character

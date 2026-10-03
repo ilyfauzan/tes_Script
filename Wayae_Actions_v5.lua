@@ -510,12 +510,31 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                     if dist < 60 or (area == pGui and dist == 0) then
                                         for _, btn in pairs(desc:GetDescendants()) do
                                             if btn:IsA("TextButton") or btn:IsA("ImageButton") or btn:IsA("GuiButton") then
-                                                local t = ""
-                                                if btn:IsA("TextButton") then t = btn.Text:lower() end
+                                                local hasKeyword = false
                                                 local n = btn.Name:lower()
+                                                if n:find("max") or n:find("upgrade") or n:find("buy") then hasKeyword = true end
                                                 
-                                                if t:find("max") or n:find("max") or t:find("%$") or t:find("luck") or n:find("upgrade") or t:find("b") or t:find("t") or t:find("m") or t:find("qa") or n:find("buy") then
-                                                    print("[WayaeHUB] Mencoba mengeklik:", btn:GetFullName())
+                                                if btn:IsA("TextButton") then
+                                                    local t = btn.Text:lower()
+                                                    if t:find("max") or t:find("%$") or t:find("luck") or t:find("upgrade") then hasKeyword = true end
+                                                end
+                                                
+                                                -- Cek semua anak di dalamnya (biasanya ImageButton punya TextLabel di dalamnya)
+                                                if not hasKeyword then
+                                                    for _, child in pairs(btn:GetDescendants()) do
+                                                        if child:IsA("TextLabel") or child:IsA("TextButton") then
+                                                            local t = child.Text:lower()
+                                                            if t:find("max") or t:find("%$") or t:find("luck") or t:find("upgrade") then
+                                                                hasKeyword = true
+                                                                break
+                                                            end
+                                                        end
+                                                    end
+                                                end
+                                                
+                                                if hasKeyword then
+                                                    -- Log untuk F9
+                                                    -- print("[WayaeHUB] Klik Tombol:", btn.Name, "di", btn:GetFullName())
                                                     
                                                     if getconnections then
                                                         pcall(function()

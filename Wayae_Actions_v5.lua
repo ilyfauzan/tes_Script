@@ -471,4 +471,40 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
         Wayae.UI.Notify("🤖 Auto Farm Mati", "Auto Farm dihentikan.", 4)
     end
 end)
+
+Wayae.antiAfkRunning = false
+local antiAfkConnection = nil
+
+Wayae.UI.AntiAfkBtn.MouseButton1Click:Connect(function()
+    Wayae.antiAfkRunning = not Wayae.antiAfkRunning
+    if Wayae.antiAfkRunning then
+        Wayae.UI.AntiAfkBtn.Text = "🛡️ 5. Anti-AFK: ON"
+        Wayae.UI.AntiAfkBtn.BackgroundColor3 = Color3.fromRGB(30, 60, 30)
+        Wayae.UI.Notify("🛡️ Anti-AFK Aktif", "Anda tidak akan ditendang karena idle 20 menit.", 3)
+        
+        local VirtualUser = game:GetService("VirtualUser")
+        antiAfkConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
+            -- Metode klasik (paling aman & tersembunyi)
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+            
+            -- Fallback jika VirtualUser diblokir oleh eksekutor (Simulasi tekan spasi/lompat)
+            pcall(function()
+                local vim = game:GetService("VirtualInputManager")
+                vim:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                task.wait(0.1)
+                vim:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+            end)
+        end)
+    else
+        Wayae.UI.AntiAfkBtn.Text = "🛡️ 5. Anti-AFK: OFF"
+        Wayae.UI.AntiAfkBtn.BackgroundColor3 = Color3.fromRGB(45, 25, 30)
+        Wayae.UI.Notify("🛡️ Anti-AFK Mati", "Fitur Anti-AFK dinonaktifkan.", 3)
+        
+        if antiAfkConnection then
+            antiAfkConnection:Disconnect()
+            antiAfkConnection = nil
+        end
+    end
+end)
 

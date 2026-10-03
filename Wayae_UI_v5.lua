@@ -364,7 +364,7 @@ Wayae.UI.GetPosBtn = MakeButton(ExtraMenu, "📍 Ambil Posisi Saya Sekarang", 1)
 Wayae.UI.SaveLocBtn = MakeButton(ExtraMenu, "💾 Save Last Location", 2)
 Wayae.UI.TpLocBtn = MakeButton(ExtraMenu, "🔙 Teleport Last Location", 3)
 Wayae.UI.VolcanicTestBtn = MakeButton(ExtraMenu, "🌋 Test Teleport Volcanic", 4)
-
+Wayae.UI.AntiAfkBtn = MakeButton(ExtraMenu, "🛡️ 5. Anti-AFK: OFF", 5, Color3.fromRGB(45, 25, 30))
 
 -- Elegant Notifications
 Wayae.UI.Notify = function(title, msg, duration)

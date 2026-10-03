@@ -478,7 +478,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
     if Wayae.autoLuckRunning then
         Wayae.UI.AutoLuckBtn.Text = "🍀 5. Auto Upgrade Luck: ON"
         Wayae.UI.AutoLuckBtn.BackgroundColor3 = Color3.fromRGB(30, 60, 30)
-        Wayae.UI.Notify("🍀 Auto Luck", "Metode Bypass GUI (SelectedObject) Aktif...", 3)
+        Wayae.UI.Notify("🍀 Auto Luck", "Universal Method Aktif! Support semua Executor (PC & HP)...", 3)
         
         task.spawn(function()
             local vim = game:GetService("VirtualInputManager")
@@ -489,7 +489,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                     local hrp = char:FindFirstChild("HumanoidRootPart")
                     if hrp then
                         for _, desc in pairs(workspace:GetDescendants()) do
-                            -- 1. Metode GuiService.SelectedObject untuk SurfaceGui/BillboardGui
+                            -- 1. Metode untuk SurfaceGui / BillboardGui (UI di dalam game)
                             if desc:IsA("SurfaceGui") or desc:IsA("BillboardGui") then
                                 local parentPart = desc.Parent or desc.Adornee
                                 if parentPart and parentPart:IsA("BasePart") then
@@ -500,18 +500,40 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                                 local t = ""
                                                 if btn:IsA("TextButton") then t = btn.Text:lower() end
                                                 local n = btn.Name:lower()
+                                                
                                                 if t:find("max") or n:find("max") or t:find("%$") or t:find("luck") or n:find("upgrade") or t:find("b") or t:find("t") or t:find("m") or t:find("qa") or n:find("buy") then
+                                                    
+                                                    -- METODE 1: getconnections (Paling Ampuh di HP / Executor Premium spt Delta, Arceus, dll)
+                                                    if getconnections then
+                                                        pcall(function()
+                                                            for _, conn in pairs(getconnections(btn.MouseButton1Click)) do conn:Function() end
+                                                            for _, conn in pairs(getconnections(btn.Activated)) do conn:Function() end
+                                                        end)
+                                                    end
+                                                    
+                                                    -- METODE 2: Mouse Simulation (Ampuh di PC)
                                                     pcall(function()
-                                                        -- Bypass executor click limitations by using Roblox's built-in gamepad/keyboard UI navigation
+                                                        local absSize = btn.AbsoluteSize
+                                                        if absSize.X > 0 and absSize.Y > 0 then
+                                                            local cx = btn.AbsolutePosition.X + (absSize.X / 2)
+                                                            local cy = btn.AbsolutePosition.Y + (absSize.Y / 2)
+                                                            vim:SendMouseButtonEvent(cx, cy, 0, true, btn, 1)
+                                                            task.wait(0.01)
+                                                            vim:SendMouseButtonEvent(cx, cy, 0, false, btn, 1)
+                                                        end
+                                                    end)
+                                                    
+                                                    -- METODE 3: GuiService SelectedObject Bypass (Sangat Ampuh di Solara)
+                                                    pcall(function()
                                                         local oldSelect = guiService.SelectedObject
                                                         guiService.SelectedObject = btn
                                                         task.wait(0.01)
                                                         vim:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
                                                         task.wait(0.01)
                                                         vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                                                        -- Kembalikan seleksi agar tidak mengganggu UI pemain
                                                         guiService.SelectedObject = oldSelect
                                                     end)
+                                                    
                                                 end
                                             end
                                         end
@@ -519,7 +541,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                 end
                             end
                             
-                            -- 2. Fallback ClickDetector
+                            -- 2. Fallback ClickDetector (Untuk semua tipe)
                             if desc:IsA("ClickDetector") then
                                 local p = desc.Parent
                                 if p and p:IsA("BasePart") then
@@ -529,7 +551,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                 end
                             end
                             
-                            -- 3. Fallback ProximityPrompt
+                            -- 3. Fallback ProximityPrompt (Untuk semua tipe)
                             if desc:IsA("ProximityPrompt") then
                                 local p = desc.Parent
                                 if p and p:IsA("BasePart") then

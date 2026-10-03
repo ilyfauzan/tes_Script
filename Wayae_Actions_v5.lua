@@ -478,69 +478,101 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
     if Wayae.autoLuckRunning then
         Wayae.UI.AutoLuckBtn.Text = "🍀 5. Auto Upgrade Luck: ON"
         Wayae.UI.AutoLuckBtn.BackgroundColor3 = Color3.fromRGB(30, 60, 30)
-        Wayae.UI.Notify("🍀 Auto Luck", "Mencari board Upgrade Luck di sekitar...", 3)
+        Wayae.UI.Notify("🍀 Auto Luck", "Memulai brute-force klik untuk Upgrade Board...", 3)
         
         task.spawn(function()
+            local vim = game:GetService("VirtualInputManager")
             while Wayae.autoLuckRunning do
                 local char = player.Character
                 if char then
                     local hrp = char:FindFirstChild("HumanoidRootPart")
                     if hrp then
                         for _, desc in pairs(workspace:GetDescendants()) do
+                            -- Cek semua Gui Buttons (TextButton/ImageButton) di SurfaceGui/BillboardGui dekat pemain
                             if desc:IsA("SurfaceGui") or desc:IsA("BillboardGui") then
-                                local isLuckBoard = false
-                                for _, child in pairs(desc:GetDescendants()) do
-                                    if child:IsA("TextLabel") and (child.Text:lower():find("luck") or child.Text:lower():find("hatch")) then
-                                        isLuckBoard = true
-                                        break
-                                    end
-                                end
-                                if isLuckBoard then
-                                    local dist = 0
-                                    local parentPart = desc.Parent or desc.Adornee
-                                    if parentPart and parentPart:IsA("BasePart") then
-                                        dist = (parentPart.Position - hrp.Position).Magnitude
-                                    end
-                                    if dist < 100 then
+                                local parentPart = desc.Parent or desc.Adornee
+                                if parentPart and parentPart:IsA("BasePart") then
+                                    local dist = (parentPart.Position - hrp.Position).Magnitude
+                                    if dist < 40 then -- Harus berada dekat papan
                                         for _, btn in pairs(desc:GetDescendants()) do
                                             if btn:IsA("TextButton") or btn:IsA("ImageButton") or btn:IsA("GuiButton") then
-                                                local txt = btn:IsA("TextButton") and btn.Text:lower() or ""
-                                                if txt:find("max") or txt:find("upgrade") or txt:find("$") or btn.Name:lower():find("max") or txt:find("luck") then
+                                                local t = ""
+                                                if btn:IsA("TextButton") then t = btn.Text:lower() end
+                                                local n = btn.Name:lower()
+                                                -- Cek apakah tombol ini mengandung max, harga ($), atau B/T/M
+                                                if t:find("max") or n:find("max") or t:find("%$") or t:find("luck") or n:find("upgrade") or t:find("b") or t:find("t") or t:find("m") or t:find("qa") or n:find("buy") then
+                                                    -- 1. getconnections
+                                                    if getconnections then
+                                                        for _, conn in pairs(getconnections(btn.MouseButton1Click)) do pcall(function() conn:Function() end) end
+                                                        for _, conn in pairs(getconnections(btn.MouseButton1Down)) do pcall(function() conn:Function() end) end
+                                                        for _, conn in pairs(getconnections(btn.Activated)) do pcall(function() conn:Function() end) end
+                                                    end
+                                                    -- 2. VirtualInputManager fallback
                                                     pcall(function()
-                                                        local vim = game:GetService("VirtualInputManager")
                                                         local absSize = btn.AbsoluteSize
                                                         if absSize.X > 0 and absSize.Y > 0 then
                                                             local cx = btn.AbsolutePosition.X + (absSize.X / 2)
                                                             local cy = btn.AbsolutePosition.Y + (absSize.Y / 2)
                                                             vim:SendMouseButtonEvent(cx, cy, 0, true, btn, 1)
-                                                            task.wait(0.05)
+                                                            task.wait(0.01)
                                                             vim:SendMouseButtonEvent(cx, cy, 0, false, btn, 1)
                                                         end
                                                     end)
-                                                    if getconnections then
-                                                        for _, conn in pairs(getconnections(btn.MouseButton1Click)) do pcall(function() conn:Function() end) end
-                                                        for _, conn in pairs(getconnections(btn.Activated)) do pcall(function() conn:Function() end) end
-                                                    end
                                                 end
                                             end
                                         end
                                     end
                                 end
-                            elseif desc:IsA("ProximityPrompt") or desc:IsA("ClickDetector") then
+                            end
+                            
+                            -- Cek semua ClickDetector dekat pemain
+                            if desc:IsA("ClickDetector") then
                                 local p = desc.Parent
                                 if p and p:IsA("BasePart") then
                                     local dist = (p.Position - hrp.Position).Magnitude
-                                    if dist < 100 then
-                                        local name = p.Name:lower()
-                                        local act = desc:IsA("ProximityPrompt") and desc.ActionText:lower() or ""
-                                        local obj = desc:IsA("ProximityPrompt") and desc.ObjectText:lower() or ""
+                                    if dist < 40 then
+                                        local isUpgrade = false
+                                        local n = p.Name:lower()
+                                        if n:find("max") or n:find("luck") or n:find("upgrade") or n:find("button") or n:find("buy") or n:find("purchase") then
+                                            isUpgrade = true
+                                        end
+                                        -- Cek isi SurfaceGui di parentnya siapa tau namanya ga jelas
+                                        for _, child in pairs(p:GetDescendants()) do
+                                            if child:IsA("TextLabel") or child:IsA("TextButton") then
+                                                local t = ""
+                                                if child:IsA("TextLabel") or child:IsA("TextButton") then t = child.Text:lower() end
+                                                if t:find("max") or t:find("%$") or t:find("luck") or t:find("hatch") then
+                                                    isUpgrade = true
+                                                    break
+                                                end
+                                            end
+                                        end
                                         
-                                        if name:find("luck") or name:find("upgrade") or name:find("max") or act:find("upgrade") or act:find("max") or obj:find("luck") then
-                                            if desc:IsA("ProximityPrompt") and fireproximityprompt then
+                                        if isUpgrade then
+                                            if fireclickdetector then fireclickdetector(desc) end
+                                        end
+                                    end
+                                end
+                            end
+                            
+                            -- Cek semua ProximityPrompt dekat pemain
+                            if desc:IsA("ProximityPrompt") then
+                                local p = desc.Parent
+                                if p and p:IsA("BasePart") then
+                                    local dist = (p.Position - hrp.Position).Magnitude
+                                    if dist < 40 then
+                                        local isUpgrade = false
+                                        local act = desc.ActionText:lower()
+                                        local obj = desc.ObjectText:lower()
+                                        local n = desc.Name:lower()
+                                        if act:find("max") or act:find("upgrade") or obj:find("luck") or n:find("max") or n:find("buy") then
+                                            isUpgrade = true
+                                        end
+                                        
+                                        if isUpgrade then
+                                            if fireproximityprompt then
                                                 fireproximityprompt(desc, 1)
                                                 fireproximityprompt(desc)
-                                            elseif desc:IsA("ClickDetector") and fireclickdetector then
-                                                fireclickdetector(desc)
                                             end
                                         end
                                     end

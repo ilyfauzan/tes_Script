@@ -478,7 +478,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
     if Wayae.autoLuckRunning then
         Wayae.UI.AutoLuckBtn.Text = "🍀 5. Auto Upgrade Luck: ON"
         Wayae.UI.AutoLuckBtn.BackgroundColor3 = Color3.fromRGB(30, 60, 30)
-        Wayae.UI.Notify("🍀 Auto Luck", "Universal Method Aktif! Support semua Executor (PC & HP)...", 3)
+        Wayae.UI.Notify("🍀 Auto Luck", "Memindai Workspace & PlayerGui secara total...", 3)
         
         task.spawn(function()
             local vim = game:GetService("VirtualInputManager")
@@ -488,13 +488,26 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                 if char then
                     local hrp = char:FindFirstChild("HumanoidRootPart")
                     if hrp then
-                        for _, desc in pairs(workspace:GetDescendants()) do
-                            -- 1. Metode untuk SurfaceGui / BillboardGui (UI di dalam game)
-                            if desc:IsA("SurfaceGui") or desc:IsA("BillboardGui") then
-                                local parentPart = desc.Parent or desc.Adornee
-                                if parentPart and parentPart:IsA("BasePart") then
-                                    local dist = (parentPart.Position - hrp.Position).Magnitude
-                                    if dist < 40 then
+                        local pGui = player:FindFirstChild("PlayerGui")
+                        local areas = {workspace}
+                        if pGui then table.insert(areas, pGui) end
+                        
+                        for _, area in ipairs(areas) do
+                            for _, desc in pairs(area:GetDescendants()) do
+                                -- 1. SurfaceGui / BillboardGui / ScreenGui
+                                if desc:IsA("SurfaceGui") or desc:IsA("BillboardGui") then
+                                    local parentPart = desc.Parent
+                                    if desc:IsA("BillboardGui") and desc.Adornee then
+                                        parentPart = desc.Adornee
+                                    end
+                                    
+                                    local dist = 0
+                                    if parentPart and parentPart:IsA("BasePart") then
+                                        dist = (parentPart.Position - hrp.Position).Magnitude
+                                    end
+                                    
+                                    -- Jika UI ini menempel di part (Adornee/Parent) dan partnya dekat, ATAU jika tidak punya part tapi berada di PlayerGui
+                                    if dist < 60 or (area == pGui and dist == 0) then
                                         for _, btn in pairs(desc:GetDescendants()) do
                                             if btn:IsA("TextButton") or btn:IsA("ImageButton") or btn:IsA("GuiButton") then
                                                 local t = ""
@@ -502,8 +515,8 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                                 local n = btn.Name:lower()
                                                 
                                                 if t:find("max") or n:find("max") or t:find("%$") or t:find("luck") or n:find("upgrade") or t:find("b") or t:find("t") or t:find("m") or t:find("qa") or n:find("buy") then
+                                                    print("[WayaeHUB] Mencoba mengeklik:", btn:GetFullName())
                                                     
-                                                    -- METODE 1: getconnections (Paling Ampuh di HP / Executor Premium spt Delta, Arceus, dll)
                                                     if getconnections then
                                                         pcall(function()
                                                             for _, conn in pairs(getconnections(btn.MouseButton1Click)) do conn:Function() end
@@ -511,7 +524,6 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                                         end)
                                                     end
                                                     
-                                                    -- METODE 2: Mouse Simulation (Ampuh di PC)
                                                     pcall(function()
                                                         local absSize = btn.AbsoluteSize
                                                         if absSize.X > 0 and absSize.Y > 0 then
@@ -523,7 +535,6 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                                         end
                                                     end)
                                                     
-                                                    -- METODE 3: GuiService SelectedObject Bypass (Sangat Ampuh di Solara)
                                                     pcall(function()
                                                         local oldSelect = guiService.SelectedObject
                                                         guiService.SelectedObject = btn
@@ -533,34 +544,40 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                                         vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
                                                         guiService.SelectedObject = oldSelect
                                                     end)
-                                                    
                                                 end
                                             end
                                         end
                                     end
                                 end
-                            end
-                            
-                            -- 2. Fallback ClickDetector (Untuk semua tipe)
-                            if desc:IsA("ClickDetector") then
-                                local p = desc.Parent
-                                if p and p:IsA("BasePart") then
-                                    if (p.Position - hrp.Position).Magnitude < 40 then
-                                        if fireclickdetector then pcall(function() fireclickdetector(desc) end) end
+                                
+                                -- 2. ClickDetector
+                                if desc:IsA("ClickDetector") then
+                                    local p = desc.Parent
+                                    if p and p:IsA("BasePart") then
+                                        if (p.Position - hrp.Position).Magnitude < 60 then
+                                            local n = p.Name:lower()
+                                            if n:find("max") or n:find("luck") or n:find("upgrade") or n:find("button") or n:find("buy") then
+                                                if fireclickdetector then pcall(function() fireclickdetector(desc) end) end
+                                            end
+                                        end
                                     end
                                 end
-                            end
-                            
-                            -- 3. Fallback ProximityPrompt (Untuk semua tipe)
-                            if desc:IsA("ProximityPrompt") then
-                                local p = desc.Parent
-                                if p and p:IsA("BasePart") then
-                                    if (p.Position - hrp.Position).Magnitude < 40 then
-                                        if fireproximityprompt then 
-                                            pcall(function() 
-                                                fireproximityprompt(desc, 1)
-                                                fireproximityprompt(desc)
-                                            end)
+                                
+                                -- 3. ProximityPrompt
+                                if desc:IsA("ProximityPrompt") then
+                                    local p = desc.Parent
+                                    if p and p:IsA("BasePart") then
+                                        if (p.Position - hrp.Position).Magnitude < 60 then
+                                            local n = desc.Name:lower()
+                                            local a = desc.ActionText:lower()
+                                            if n:find("max") or n:find("luck") or a:find("max") or a:find("upgrade") or a:find("buy") then
+                                                if fireproximityprompt then 
+                                                    pcall(function() 
+                                                        fireproximityprompt(desc, 1)
+                                                        fireproximityprompt(desc)
+                                                    end)
+                                                end
+                                            end
                                         end
                                     end
                                 end
@@ -568,7 +585,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                         end
                     end
                 end
-                task.wait(0.2)
+                task.wait(0.5)
             end
         end)
     else

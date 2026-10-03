@@ -1,5 +1,49 @@
 local Wayae = getgenv().Wayae
 local player = Wayae.player
+local RunService = game:GetService("RunService")
+
+-- Safe teleport ke lokasi dalam gua/area tertutup (anti-fling via velocity guardian)
+Wayae.SafeCaveTeleport = function(targetCFrame)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    -- Aktifkan noclip
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then part.CanCollide = false end
+    end
+    
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.AssemblyAngularVelocity = Vector3.zero
+    char:PivotTo(targetCFrame)
+    
+    -- Velocity Guardian: pantau selama 3 detik
+    -- Setiap frame, jika physics mencoba melempar karakter → bunuh velocity-nya seketika
+    local guardTime = 3
+    local guardConn
+    guardConn = RunService.Stepped:Connect(function(_, dt)
+        guardTime = guardTime - dt
+        if guardTime <= 0 then
+            -- Waktu habis, restore collision dan hentikan monitoring
+            guardConn:Disconnect()
+            if player.Character then
+                for _, part in pairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = true end
+                end
+            end
+            return
+        end
+        
+        local h = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if h then
+            -- Jika velocity tiba-tiba melonjak besar (tanda di-fling physics), bunuh langsung
+            if h.AssemblyLinearVelocity.Magnitude > 8 then
+                h.AssemblyLinearVelocity = Vector3.zero
+                h.AssemblyAngularVelocity = Vector3.zero
+            end
+        end
+    end)
+end
 
 Wayae.TeleportToPlot = function()
     local char = player.Character or player.CharacterAdded:Wait()
@@ -260,28 +304,7 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
     end
 end)
 Wayae.UI.VolcanicTestBtn.MouseButton1Click:Connect(function()
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    -- Noclip sementara agar tembus asset gua
-    for _, part in pairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then part.CanCollide = false end
-    end
-    
-    hrp.AssemblyLinearVelocity = Vector3.zero
-    hrp.AssemblyAngularVelocity = Vector3.zero
-    hrp.CFrame = CFrame.new(-5336, 40912, -3542) * hrp.CFrame.Rotation
-    
-    -- Tunggu 1 detik baru aktifkan collision lagi
-    task.delay(1, function()
-        if player.Character then
-            for _, part in pairs(player.Character:GetDescendants()) do
-                if part:IsA("BasePart") then part.CanCollide = true end
-            end
-        end
-    end)
-    
+    Wayae.SafeCaveTeleport(CFrame.new(-5336, 40912, -3542))
     Wayae.UI.Notify("🌋 Volcanic Teleport", "Berhasil tembus ke dalam gua!", 4)
 end)
 Wayae.UI.GetPosBtn.MouseButton1Click:Connect(function()
@@ -313,29 +336,7 @@ Wayae.UI.TpLocBtn.MouseButton1Click:Connect(function()
         Wayae.UI.Notify("⚠️ Gagal", "Kamu belum menyimpan lokasi apapun! Klik Save Last Location dulu.", 4)
         return
     end
-    local char = player.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    -- Noclip sementara agar bisa tembus asset apapun (termasuk dalam gua)
-    for _, part in pairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then part.CanCollide = false end
-    end
-    
-    hrp.AssemblyLinearVelocity = Vector3.zero
-    hrp.AssemblyAngularVelocity = Vector3.zero
-    char:PivotTo(Wayae.savedLocation)
-    
-    -- Aktifkan collision kembali setelah 1 detik
-    task.delay(1, function()
-        if player.Character then
-            for _, part in pairs(player.Character:GetDescendants()) do
-                if part:IsA("BasePart") then part.CanCollide = true end
-            end
-        end
-    end)
-    
+    Wayae.SafeCaveTeleport(Wayae.savedLocation)
     Wayae.UI.Notify("🔙 Teleport Berhasil", "Berhasil kembali ke lokasi yang disimpan!", 3)
 end)
 

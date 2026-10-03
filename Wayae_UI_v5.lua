@@ -13,13 +13,19 @@ ScreenGui.Parent = playerGui
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 320, 0, 360)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -180)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.Size = UDim2.new(0.85, 0, 0.75, 0)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 15, 45)
+MainFrame.BackgroundTransparency = 0.05
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
+
+local UIConstraint = Instance.new("UISizeConstraint")
+UIConstraint.MaxSize = Vector2.new(340, 380)
+UIConstraint.Parent = MainFrame
 
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 12)
@@ -34,6 +40,7 @@ local TitleBar = Instance.new("Frame")
 TitleBar.Name = "TitleBar"
 TitleBar.Size = UDim2.new(1, 0, 0, 40)
 TitleBar.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
+TitleBar.BackgroundTransparency = 0.05
 TitleBar.BorderSizePixel = 0
 TitleBar.Parent = MainFrame
 
@@ -45,6 +52,7 @@ local TitleBlocker = Instance.new("Frame")
 TitleBlocker.Size = UDim2.new(1, 0, 0, 10)
 TitleBlocker.Position = UDim2.new(0, 0, 1, -10)
 TitleBlocker.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
+TitleBlocker.BackgroundTransparency = 0.05
 TitleBlocker.BorderSizePixel = 0
 TitleBlocker.Parent = TitleBar
 
@@ -175,13 +183,18 @@ local function MakeContainer(name)
     frame.ScrollBarThickness = 2
     frame.BorderSizePixel = 0
     frame.Visible = false
-    frame.CanvasSize = UDim2.new(0, 0, 0, 350)
+    frame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    frame.CanvasSize = UDim2.new(0, 0, 0, 0)
     frame.Parent = MainFrame
 
     local layout = Instance.new("UIListLayout")
     layout.SortOrder = Enum.SortOrder.LayoutOrder
     layout.Padding = UDim.new(0, 8)
     layout.Parent = frame
+    
+    local pad = Instance.new("UIPadding")
+    pad.PaddingBottom = UDim.new(0, 10)
+    pad.Parent = frame
     return frame
 end
 
@@ -192,11 +205,11 @@ MainMenu.Visible = true
 
 local function MakeButton(parent, text, order, bgColor)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 42)
+    btn.Size = UDim2.new(1, 0, 0, 36)
     btn.BackgroundColor3 = bgColor or Color3.fromRGB(40, 30, 80)
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(210, 190, 255)
-    btn.TextSize = 14
+    btn.TextSize = 13
     btn.Font = Enum.Font.Gotham
     btn.BorderSizePixel = 0
     btn.LayoutOrder = order
@@ -249,7 +262,7 @@ DropLabel.LayoutOrder = 2
 DropLabel.Parent = EggMenu
 
 Wayae.UI.DropBtn = Instance.new("TextButton")
-Wayae.UI.DropBtn.Size = UDim2.new(1, 0, 0, 38)
+Wayae.UI.DropBtn.Size = UDim2.new(1, 0, 0, 34)
 Wayae.UI.DropBtn.BackgroundColor3 = Color3.fromRGB(35, 25, 70)
 Wayae.UI.DropBtn.Text = "▾  " .. Wayae.UI.dropdownOptions[1]
 Wayae.UI.DropBtn.TextColor3 = Color3.fromRGB(200, 180, 255)
@@ -296,7 +309,7 @@ Wayae.UI.RefreshDropdown = function(options)
     end
     for i, opt in ipairs(options) do
         local item = Instance.new("TextButton")
-        item.Size = UDim2.new(1, 0, 0, 34)
+        item.Size = UDim2.new(1, 0, 0, 30)
         item.BackgroundColor3 = Color3.fromRGB(35, 25, 70)
         item.Text = "  " .. opt
         item.TextColor3 = Color3.fromRGB(200, 180, 255)
@@ -316,15 +329,15 @@ Wayae.UI.RefreshDropdown = function(options)
             DropList.Size = UDim2.new(1, 0, 0, 0)
         end)
     end
-    local totalH = math.min(#options * 34, 136)
-    DropList.CanvasSize = UDim2.new(0, 0, 0, #options * 34)
+    local totalH = math.min(#options * 30, 120)
+    DropList.CanvasSize = UDim2.new(0, 0, 0, #options * 30)
     if DropList.Visible then DropList.Size = UDim2.new(1, 0, 0, totalH) end
 end
 
 Wayae.UI.DropBtn.MouseButton1Click:Connect(function()
     DropList.Visible = not DropList.Visible
     if DropList.Visible then
-        local totalH = math.min(#Wayae.UI.dropdownOptions * 34, 136)
+        local totalH = math.min(#Wayae.UI.dropdownOptions * 30, 120)
         DropList.Size = UDim2.new(1, 0, 0, totalH)
     else
         DropList.Size = UDim2.new(1, 0, 0, 0)

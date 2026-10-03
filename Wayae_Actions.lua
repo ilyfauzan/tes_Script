@@ -382,23 +382,18 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                             -- Gunakan CFrame yang sudah dihitung oleh scanner
                             local eggCFrame = eggData.CFrame
                             if eggCFrame then
-                                -- Noclip sementara agar bisa tembus asset gua (tanpa Anchored agar tidak stuck)
-                                local function setNoclip(enabled)
-                                    for _, part in pairs(char:GetDescendants()) do
-                                        if part:IsA("BasePart") then
-                                            part.CanCollide = not enabled
-                                        end
-                                    end
+                                if eggData.Name:find("Volcanic") then
+                                    -- Step 1 khusus telur vulkanik: masuk pintu gua dulu untuk trigger zone
+                                    hrp.AssemblyLinearVelocity = Vector3.zero
+                                    hrp.AssemblyAngularVelocity = Vector3.zero
+                                    char:PivotTo(CFrame.new(-4967, 41275, -3542))
+                                    task.wait(1.5)
                                 end
                                 
-                                setNoclip(true)
-                                hrp.AssemblyLinearVelocity = Vector3.zero
-                                hrp.AssemblyAngularVelocity = Vector3.zero
-                                
                                 local targetPos = eggCFrame.Position + Vector3.new(0, 1.5, 0)
-                                char:PivotTo(CFrame.new(targetPos) * eggCFrame.Rotation)
+                                Wayae.SafeCaveTeleport(CFrame.new(targetPos) * eggCFrame.Rotation)
                                 
-                                -- Tunggu sebentar (tanpa Anchored, jadi tidak stuck)
+                                -- Tunggu sebentar agar posisi stabil sebelum pickup
                                 task.wait(0.4)
                                 
                                 -- Ambil telur
@@ -425,9 +420,6 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                 end
                                 
                                 task.wait(1.5)
-                                
-                                -- SELALU kembalikan collision dulu sebelum apapun
-                                setNoclip(false)
                                 
                                 -- Langsung pulang ke plot
                                 if Wayae.autoFarmRunning then

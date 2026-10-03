@@ -454,7 +454,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                         end
                     end
                 else
-                    Wayae.UI.Notify("🤖 Auto Farm", "Mencari telur... (Belum ada yang cocok)", 2)
+                    -- Tidak ada notifikasi agar tidak spam saat menunggu telur respawn
                 end
                 
                 -- Tunggu 3 Detik lalu scan lagi

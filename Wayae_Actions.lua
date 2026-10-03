@@ -318,9 +318,24 @@ Wayae.UI.TpLocBtn.MouseButton1Click:Connect(function()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     
+    -- Noclip sementara agar bisa tembus asset apapun (termasuk dalam gua)
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then part.CanCollide = false end
+    end
+    
     hrp.AssemblyLinearVelocity = Vector3.zero
     hrp.AssemblyAngularVelocity = Vector3.zero
     char:PivotTo(Wayae.savedLocation)
+    
+    -- Aktifkan collision kembali setelah 1 detik
+    task.delay(1, function()
+        if player.Character then
+            for _, part in pairs(player.Character:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = true end
+            end
+        end
+    end)
+    
     Wayae.UI.Notify("🔙 Teleport Berhasil", "Berhasil kembali ke lokasi yang disimpan!", 3)
 end)
 

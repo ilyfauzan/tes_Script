@@ -80,7 +80,18 @@ Wayae.TeleportToPlot = function()
                     local text = ""
                     if obj:IsA("TextButton") then text = obj.Text:lower() end
                     if obj.Name:lower():find("teleport") or obj.Name:lower():find("home") or obj.Name:lower():find("ranch") or text:find("ranch") or text:find("plot") then
-                        if getconnections then
+                        pcall(function()
+                                                        local vim = game:GetService("VirtualInputManager")
+                                                        local absSize = btn.AbsoluteSize
+                                                        if absSize.X > 0 and absSize.Y > 0 then
+                                                            local cx = btn.AbsolutePosition.X + (absSize.X / 2)
+                                                            local cy = btn.AbsolutePosition.Y + (absSize.Y / 2)
+                                                            vim:SendMouseButtonEvent(cx, cy, 0, true, btn, 1)
+                                                            task.wait(0.05)
+                                                            vim:SendMouseButtonEvent(cx, cy, 0, false, btn, 1)
+                                                        end
+                                                    end)
+                                                    if getconnections then
                             for _, conn in pairs(getconnections(obj.MouseButton1Click)) do
                                 pcall(function() conn:Function() end)
                             end
@@ -213,7 +224,18 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
                     local text = ""
                     if obj:IsA("TextButton") then text = obj.Text:lower() end
                     if obj.Name:lower():find("teleport") or obj.Name:lower():find("home") or obj.Name:lower():find("ranch") or text:find("ranch") or text:find("plot") then
-                        if getconnections then
+                        pcall(function()
+                                                        local vim = game:GetService("VirtualInputManager")
+                                                        local absSize = btn.AbsoluteSize
+                                                        if absSize.X > 0 and absSize.Y > 0 then
+                                                            local cx = btn.AbsolutePosition.X + (absSize.X / 2)
+                                                            local cy = btn.AbsolutePosition.Y + (absSize.Y / 2)
+                                                            vim:SendMouseButtonEvent(cx, cy, 0, true, btn, 1)
+                                                            task.wait(0.05)
+                                                            vim:SendMouseButtonEvent(cx, cy, 0, false, btn, 1)
+                                                        end
+                                                    end)
+                                                    if getconnections then
                             for _, conn in pairs(getconnections(obj.MouseButton1Click)) do
                                 pcall(function() conn:Function() end)
                             end
@@ -423,7 +445,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         end
                                         
                                         -- Tunggu sebentar lagi biar animasinya selesai
-                                        task.wait(1)
+                                        task.wait(0.2)
                                     else
                                         Wayae.UI.Notify("⚠️ Auto Farm", "Gagal teleport ke Plot!", 3)
                                     end
@@ -438,7 +460,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                 -- Tunggu 3 Detik lalu scan lagi
                 local waitTime = 3
                 while waitTime > 0 and Wayae.autoFarmRunning do
-                    task.wait(1)
+                    task.wait(0.2)
                     waitTime = waitTime - 1
                 end
             end
@@ -465,7 +487,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                     local hrp = char:FindFirstChild("HumanoidRootPart")
                     if hrp then
                         for _, desc in pairs(workspace:GetDescendants()) do
-                            if desc:IsA("SurfaceGui") then
+                            if desc:IsA("SurfaceGui") or desc:IsA("BillboardGui") then
                                 local isLuckBoard = false
                                 for _, child in pairs(desc:GetDescendants()) do
                                     if child:IsA("TextLabel") and (child.Text:lower():find("luck") or child.Text:lower():find("hatch")) then
@@ -481,9 +503,20 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                     end
                                     if dist < 100 then
                                         for _, btn in pairs(desc:GetDescendants()) do
-                                            if (btn:IsA("TextButton") or btn:IsA("ImageButton")) then
+                                            if btn:IsA("TextButton") or btn:IsA("ImageButton") or btn:IsA("GuiButton") then
                                                 local txt = btn:IsA("TextButton") and btn.Text:lower() or ""
                                                 if txt:find("max") or txt:find("upgrade") or txt:find("$") or btn.Name:lower():find("max") or txt:find("luck") then
+                                                    pcall(function()
+                                                        local vim = game:GetService("VirtualInputManager")
+                                                        local absSize = btn.AbsoluteSize
+                                                        if absSize.X > 0 and absSize.Y > 0 then
+                                                            local cx = btn.AbsolutePosition.X + (absSize.X / 2)
+                                                            local cy = btn.AbsolutePosition.Y + (absSize.Y / 2)
+                                                            vim:SendMouseButtonEvent(cx, cy, 0, true, btn, 1)
+                                                            task.wait(0.05)
+                                                            vim:SendMouseButtonEvent(cx, cy, 0, false, btn, 1)
+                                                        end
+                                                    end)
                                                     if getconnections then
                                                         for _, conn in pairs(getconnections(btn.MouseButton1Click)) do pcall(function() conn:Function() end) end
                                                         for _, conn in pairs(getconnections(btn.Activated)) do pcall(function() conn:Function() end) end
@@ -516,7 +549,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                         end
                     end
                 end
-                task.wait(1)
+                task.wait(0.2)
             end
         end)
     else

@@ -308,8 +308,21 @@ Wayae.UI.SellBtn.MouseButton1Click:Connect(function()
     end
 end)
 Wayae.UI.VolcanicTestBtn.MouseButton1Click:Connect(function()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    -- Step 1: Teleport ke PINTU MASUK gua dulu (trigger zone server-side)
+    Wayae.UI.Notify("🌋 Volcanic", "Masuk zona gua...", 2)
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.CFrame = CFrame.new(-4967, 41275, -3542)
+    
+    -- Tunggu sebentar agar server mendeteksi player sudah masuk zona
+    task.wait(1.5)
+    
+    -- Step 2: Baru noclip ke posisi telur
     Wayae.SafeCaveTeleport(CFrame.new(-5336, 40912, -3542))
-    Wayae.UI.Notify("🌋 Volcanic Teleport", "Berhasil tembus ke dalam gua!", 4)
+    Wayae.UI.Notify("🌋 Volcanic Teleport", "Berhasil! Silakan ambil telurnya.", 5)
 end)
 Wayae.UI.GetPosBtn.MouseButton1Click:Connect(function()
     local char = player.Character

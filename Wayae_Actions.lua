@@ -334,28 +334,31 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                             -- Gunakan CFrame yang sudah dihitung oleh scanner
                             local eggCFrame = eggData.CFrame
                             if eggCFrame then
-                                -- Anti-Fling: Matikan Collision & Paku Karakter (Anchored)
-                                for _, part in pairs(char:GetDescendants()) do
-                                    if part:IsA("BasePart") then
-                                        part.CanCollide = false
+                                -- Noclip sementara agar bisa tembus asset gua (tanpa Anchored agar tidak stuck)
+                                local function setNoclip(enabled)
+                                    for _, part in pairs(char:GetDescendants()) do
+                                        if part:IsA("BasePart") then
+                                            part.CanCollide = not enabled
+                                        end
                                     end
                                 end
-                                hrp.Anchored = true
+                                
+                                setNoclip(true)
                                 hrp.AssemblyLinearVelocity = Vector3.zero
                                 hrp.AssemblyAngularVelocity = Vector3.zero
                                 
                                 local targetPos = eggCFrame.Position + Vector3.new(0, 1.5, 0)
                                 char:PivotTo(CFrame.new(targetPos) * eggCFrame.Rotation)
                                 
-                                -- Tunggu karakter stabil (dalam posisi terikat/Anchored)
-                                task.wait(0.3)
+                                -- Tunggu sebentar (tanpa Anchored, jadi tidak stuck)
+                                task.wait(0.4)
                                 
-                                -- Ambil telur dengan cara Trigger / Klik
+                                -- Ambil telur
                                 local fired = false
                                 for _, desc in pairs(realEgg:GetDescendants()) do
                                     if desc:IsA("ProximityPrompt") then
                                         if fireproximityprompt then
-                                            fireproximityprompt(desc, 1) -- angka 1 untuk bypass hold duration kadang diperlukan
+                                            fireproximityprompt(desc, 1)
                                             fireproximityprompt(desc)
                                             fired = true
                                         end
@@ -367,22 +370,20 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     end
                                 end
                                 
-                                -- Kalau cuma bisa disentuh, goyangin karakter dikit
                                 if not fired then
                                     hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, 1)
                                     task.wait(0.2)
                                     hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, -1)
                                 end
                                 
-                                -- Tunggu 1.5 detik untuk animasi ambil/pickup
                                 task.wait(1.5)
                                 
-                                -- Langsung pulang ke plot setelah ambil 1 telur agar bisa disetorkan
+                                -- SELALU kembalikan collision dulu sebelum apapun
+                                setNoclip(false)
+                                
+                                -- Langsung pulang ke plot
                                 if Wayae.autoFarmRunning then
                                     local tpSuccess = Wayae.TeleportToPlot()
-                                    
-                                    -- Kembalikan physics normal setelah berhasil pulang ke plot
-                                    hrp.Anchored = false
                                     
                                     if tpSuccess then
                                         -- Tunggu 1.5 detik biar char stabil di plot

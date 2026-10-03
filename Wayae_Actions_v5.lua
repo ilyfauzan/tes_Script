@@ -393,7 +393,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                                     local name = prompt.Name:lower()
                                                     local parentName = prompt.Parent.Name:lower()
                                                     
-                                                    if actionText:find("deposit") or actionText:find("incubate") or actionText:find("hatch") or actionText:find("place") or actionText:find("put") or objectText:find("nest") or parentName:find("incubator") or parentName:find("nest") then
+                                                    if actionText:find("deposit") or actionText:find("incubate") or actionText:find("place") or actionText:find("put") or objectText:find("nest") or parentName:find("incubator") or parentName:find("nest") then
                                                         if fireproximityprompt then
                                                             fireproximityprompt(prompt, 1)
                                                             fireproximityprompt(prompt)

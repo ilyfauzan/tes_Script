@@ -2,47 +2,50 @@ local Wayae = getgenv().Wayae
 local player = Wayae.player
 local RunService = game:GetService("RunService")
 
--- Safe teleport ke lokasi dalam gua/area tertutup (anti-fling via velocity guardian)
+-- State noclip permanen (aktif saat dalam gua, mati saat keluar)
+Wayae.noclipActive = false
+local noclipConn = nil
+
+Wayae.StartNoclip = function()
+    Wayae.noclipActive = true
+    if noclipConn then noclipConn:Disconnect() end
+    -- Setiap frame: paksa CanCollide = false selama noclip aktif
+    -- Physics engine tidak punya kesempatan untuk fling sama sekali
+    noclipConn = RunService.Stepped:Connect(function()
+        if not Wayae.noclipActive then
+            noclipConn:Disconnect()
+            noclipConn = nil
+            -- Restore collision saat noclip dimatikan
+            if player.Character then
+                for _, p in pairs(player.Character:GetDescendants()) do
+                    if p:IsA("BasePart") then p.CanCollide = true end
+                end
+            end
+            return
+        end
+        if player.Character then
+            for _, p in pairs(player.Character:GetDescendants()) do
+                if p:IsA("BasePart") then p.CanCollide = false end
+            end
+        end
+    end)
+end
+
+Wayae.StopNoclip = function()
+    Wayae.noclipActive = false
+    -- noclipConn akan cleanup sendiri di Stepped berikutnya
+end
+
+-- Safe teleport ke lokasi dalam gua (noclip permanen hingga teleport keluar)
 Wayae.SafeCaveTeleport = function(targetCFrame)
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     
-    -- Aktifkan noclip
-    for _, part in pairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then part.CanCollide = false end
-    end
-    
+    Wayae.StartNoclip() -- Nyalakan noclip permanen
     hrp.AssemblyLinearVelocity = Vector3.zero
     hrp.AssemblyAngularVelocity = Vector3.zero
     char:PivotTo(targetCFrame)
-    
-    -- Velocity Guardian: pantau selama 3 detik
-    -- Setiap frame, jika physics mencoba melempar karakter → bunuh velocity-nya seketika
-    local guardTime = 3
-    local guardConn
-    guardConn = RunService.Stepped:Connect(function(_, dt)
-        guardTime = guardTime - dt
-        if guardTime <= 0 then
-            -- Waktu habis, restore collision dan hentikan monitoring
-            guardConn:Disconnect()
-            if player.Character then
-                for _, part in pairs(player.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then part.CanCollide = true end
-                end
-            end
-            return
-        end
-        
-        local h = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-        if h then
-            -- Jika velocity tiba-tiba melonjak besar (tanda di-fling physics), bunuh langsung
-            if h.AssemblyLinearVelocity.Magnitude > 8 then
-                h.AssemblyLinearVelocity = Vector3.zero
-                h.AssemblyAngularVelocity = Vector3.zero
-            end
-        end
-    end)
 end
 
 Wayae.TeleportToPlot = function()
@@ -150,6 +153,7 @@ Wayae.TeleportToPlot = function()
         end
     end
     if plotTarget then
+        Wayae.StopNoclip() -- Matikan noclip saat sudah sampai di plot
         hrp.AssemblyLinearVelocity = Vector3.zero
         hrp.AssemblyAngularVelocity = Vector3.zero
         char:PivotTo(plotTarget)

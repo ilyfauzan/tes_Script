@@ -478,7 +478,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
     if Wayae.autoLuckRunning then
         Wayae.UI.AutoLuckBtn.Text = "🍀 5. Auto Upgrade Luck: ON"
         Wayae.UI.AutoLuckBtn.BackgroundColor3 = Color3.fromRGB(30, 60, 30)
-        Wayae.UI.Notify("🍀 Auto Luck", "Memindai Workspace & PlayerGui secara total...", 3)
+        Wayae.UI.Notify("🍀 Auto Luck", "Memindai khusus di area Workspace (Aman dari Screen UI)...", 3)
         
         task.spawn(function()
             local vim = game:GetService("VirtualInputManager")
@@ -488,13 +488,11 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                 if char then
                     local hrp = char:FindFirstChild("HumanoidRootPart")
                     if hrp then
-                        local pGui = player:FindFirstChild("PlayerGui")
-                        local areas = {workspace}
-                        if pGui then table.insert(areas, pGui) end
+                        local areas = {workspace} -- HANYA WORKSPACE, jangan sentuh PlayerGui agar UI layar tidak rusak
                         
                         for _, area in ipairs(areas) do
                             for _, desc in pairs(area:GetDescendants()) do
-                                -- 1. SurfaceGui / BillboardGui / ScreenGui
+                                -- 1. SurfaceGui / BillboardGui
                                 if desc:IsA("SurfaceGui") or desc:IsA("BillboardGui") then
                                     local parentPart = desc.Parent
                                     if desc:IsA("BillboardGui") and desc.Adornee then
@@ -506,8 +504,8 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                         dist = (parentPart.Position - hrp.Position).Magnitude
                                     end
                                     
-                                    -- Jika UI ini menempel di part (Adornee/Parent) dan partnya dekat, ATAU jika tidak punya part tapi berada di PlayerGui
-                                    if dist < 60 or (area == pGui and dist == 0) then
+                                    -- Hanya scan jarak dekat
+                                    if dist > 0 and dist < 60 then
                                         for _, btn in pairs(desc:GetDescendants()) do
                                             if btn:IsA("TextButton") or btn:IsA("ImageButton") or btn:IsA("GuiButton") then
                                                 local hasKeyword = false
@@ -519,7 +517,7 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                                     if t:find("max") or t:find("%$") or t:find("luck") or t:find("upgrade") then hasKeyword = true end
                                                 end
                                                 
-                                                -- Cek semua anak di dalamnya (biasanya ImageButton punya TextLabel di dalamnya)
+                                                -- Cek semua anak di dalamnya
                                                 if not hasKeyword then
                                                     for _, child in pairs(btn:GetDescendants()) do
                                                         if child:IsA("TextLabel") or child:IsA("TextButton") then
@@ -533,9 +531,6 @@ Wayae.UI.AutoLuckBtn.MouseButton1Click:Connect(function()
                                                 end
                                                 
                                                 if hasKeyword then
-                                                    -- Log untuk F9
-                                                    -- print("[WayaeHUB] Klik Tombol:", btn.Name, "di", btn:GetFullName())
-                                                    
                                                     if getconnections then
                                                         pcall(function()
                                                             for _, conn in pairs(getconnections(btn.MouseButton1Click)) do conn:Function() end

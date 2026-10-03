@@ -334,13 +334,20 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                             -- Gunakan CFrame yang sudah dihitung oleh scanner
                             local eggCFrame = eggData.CFrame
                             if eggCFrame then
-                                -- Teleport ke Telur
+                                -- Anti-Fling: Matikan Collision & Paku Karakter (Anchored)
+                                for _, part in pairs(char:GetDescendants()) do
+                                    if part:IsA("BasePart") then
+                                        part.CanCollide = false
+                                    end
+                                end
+                                hrp.Anchored = true
                                 hrp.AssemblyLinearVelocity = Vector3.zero
                                 hrp.AssemblyAngularVelocity = Vector3.zero
+                                
                                 local targetPos = eggCFrame.Position + Vector3.new(0, 1.5, 0)
                                 char:PivotTo(CFrame.new(targetPos) * eggCFrame.Rotation)
                                 
-                                -- Tunggu karakter stabil
+                                -- Tunggu karakter stabil (dalam posisi terikat/Anchored)
                                 task.wait(0.3)
                                 
                                 -- Ambil telur dengan cara Trigger / Klik
@@ -373,6 +380,10 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                 -- Langsung pulang ke plot setelah ambil 1 telur agar bisa disetorkan
                                 if Wayae.autoFarmRunning then
                                     local tpSuccess = Wayae.TeleportToPlot()
+                                    
+                                    -- Kembalikan physics normal setelah berhasil pulang ke plot
+                                    hrp.Anchored = false
+                                    
                                     if tpSuccess then
                                         -- Tunggu 1.5 detik biar char stabil di plot
                                         task.wait(1.5)

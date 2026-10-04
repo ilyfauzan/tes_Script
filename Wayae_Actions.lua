@@ -464,16 +464,22 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     hrp.AssemblyLinearVelocity = Vector3.zero
                                     task.wait(0.5)
                                     
-                                    -- 2. Berdiam di luar base selama beberapa detik sambil lompat-lompat (Anti-Cheat bypass)
+                                    -- 2. Berdiam di luar base selama 10 detik sambil lompat-lompat (Anti-Cheat bypass)
                                     local vim = game:GetService("VirtualInputManager")
-                                    for i = 1, 8 do
-                                        if not Wayae.autoFarmRunning then break end
+                                    local waitTimeOutside = 10
+                                    local elapsedOutside = 0
+                                    
+                                    while Wayae.autoFarmRunning and elapsedOutside < waitTimeOutside do
                                         -- Tekan spasi untuk lompat (berfungsi juga untuk pet)
                                         vim:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
                                         task.wait(0.1)
                                         vim:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
                                         
-                                        task.wait(math.random(4, 8) / 10) -- Tunggu 0.4 - 0.8 detik secara acak
+                                        -- Jeda antar lompatan
+                                        local delay = math.random(5, 10) / 10
+                                        task.wait(delay)
+                                        
+                                        elapsedOutside = elapsedOutside + 0.1 + delay
                                     end
                                     
                                     -- 3. Gerak bertahap (jalan kaki) dari luar base ke dalam base

@@ -511,7 +511,19 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         elapsedTime = elapsedTime + 0.5
                                     end
                                     
-                                    -- Masuk ke dalam zona base
+                                    -- Masuk ke dalam zona base secara bertahap agar tidak terdeteksi teleport (Anti-Cheat)
+                                    local stepSize = 15
+                                    local stepInterval = 0.05
+                                    while (hrp.Position - insideBasePos).Magnitude > 5 and Wayae.autoFarmRunning do
+                                        local dir = (insideBasePos - hrp.Position).Unit
+                                        local dist = (hrp.Position - insideBasePos).Magnitude
+                                        local move = math.min(stepSize, dist)
+                                        char:PivotTo(CFrame.new(hrp.Position + dir * move))
+                                        hrp.AssemblyLinearVelocity = Vector3.zero
+                                        task.wait(stepInterval)
+                                    end
+                                    
+                                    -- Pastikan persis di titik akhir
                                     char:PivotTo(CFrame.new(insideBasePos))
                                     hrp.AssemblyLinearVelocity = Vector3.zero
                                     

@@ -476,6 +476,8 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         local delay = math.random(5, 10) / 10
                                         task.wait(delay)
                                         
+                                        if hum then hum.Jump = false end
+                                        
                                         elapsedOutside = elapsedOutside + delay
                                     end
                                     
@@ -495,9 +497,15 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         -- Kadang-kadang lompat sambil jalan ke dalam
                                         if math.random() > 0.8 and hum then
                                             hum.Jump = true
+                                            task.wait(stepInterval / 2)
+                                            hum.Jump = false
+                                            task.wait(stepInterval / 2)
+                                        else
+                                            task.wait(stepInterval)
                                         end
-                                        task.wait(stepInterval)
                                     end
+                                    
+                                    if hum then hum.Jump = false end
                                     
                                     -- Pastikan persis di titik akhir
                                     char:PivotTo(CFrame.new(insideBasePos))

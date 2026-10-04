@@ -455,97 +455,26 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     
                                     Wayae.StartNoclip()
                                     
-                                    -- Hitung posisi luar dan dalam base
+                                    -- Hitung posisi dalam base
                                     local insideBasePos = Vector3.new(9, 40316, 870)
-                                    local outsideBasePos = Vector3.new(69, 40316, 895)
                                     
-                                    -- Teleport cepat ke DEPAN pagar base (belum masuk zona)
-                                    char:PivotTo(CFrame.new(outsideBasePos))
+                                    -- Gerak bertahap dari tempat telur langsung ke dalam base
+                                    -- 100 studs / 0.1s = 1000 studs/detik (Cukup lambat untuk menipu Anti-Cheat, tapi cepat sampai)
+                                    local stepSize = 100
+                                    local stepInterval = 0.1
+                                    
+                                    while (hrp.Position - insideBasePos).Magnitude > 5 and Wayae.autoFarmRunning do
+                                        local dir = (insideBasePos - hrp.Position).Unit
+                                        local dist = (hrp.Position - insideBasePos).Magnitude
+                                        local move = math.min(stepSize, dist)
+                                        char:PivotTo(CFrame.new(hrp.Position + dir * move))
+                                        hrp.AssemblyLinearVelocity = Vector3.zero
+                                        task.wait(stepInterval)
+                                    end
+                                    
+                                    -- Pastikan persis di titik akhir
+                                    char:PivotTo(CFrame.new(insideBasePos))
                                     hrp.AssemblyLinearVelocity = Vector3.zero
-                                    
-                                    -- Fungsi membaca timer dari UI
-                                    local function getEggTimer()
-                                        local playerGui = player:FindFirstChild("PlayerGui")
-                                        if not playerGui then return nil end
-                                        
-                                        for _, desc in pairs(playerGui:GetDescendants()) do
-                                            if desc:IsA("TextLabel") and desc.Visible then
-                                                local text = desc.Text:lower()
-                                                -- Deteksi format angka+s seperti "10.6s" atau "20s"
-                                                if text:match("^%d+%.?%d*%s*s$") then
-                                                    local num = tonumber(text:gsub("s", ""):gsub("%s", ""))
-                                                    if num then return num end
-                                                end
-                                            end
-                                        end
-                                        return nil
-                                    end
-                                    
-                                    -- Tunggu di luar base sampai timer < 2 detik
-                                    local maxWait = 45 -- Maksimal tunggu 45 detik agar tidak stuck selamanya
-                                    local elapsedTime = 0
-                                    
-                                    local hasEgg = true
-                                    local notFoundCounter = 0
-                                    
-                                    while Wayae.autoFarmRunning and elapsedTime < maxWait do
-                                        -- Jalan-jalan melingkar di luar base agar Anti-Cheat tidak mendeteksi AFK/Teleport
-                                        local circleRadius = 20 -- Jarak putaran keliling
-                                        local circleRate = 1.5 -- Kecepatan rotasi putaran (bukan WalkSpeed karakter)
-                                        
-                                        local targetOffset = Vector3.new(
-                                            math.sin(elapsedTime * circleRate) * circleRadius,
-                                            0,
-                                            math.cos(elapsedTime * circleRate) * circleRadius
-                                        )
-                                        
-                                        local targetPos = outsideBasePos + targetOffset
-                                        
-                                        -- Karena naik pet terkadang mengabaikan hum:Move, kita paksa geser (langkah kecil) agar pasti bergerak
-                                        local dir = (targetPos - hrp.Position).Unit
-                                        local stepSize = 2.5 -- Besar langkah per tick
-                                        char:PivotTo(CFrame.new(hrp.Position + dir * stepSize))
-                                        hrp.AssemblyLinearVelocity = Vector3.zero
-                                        
-                                        -- Cek timer tiap 0.5 detik (meskipun loop jalan tiap 0.05 detik)
-                                        if math.floor(elapsedTime * 10) % 5 == 0 then
-                                            local timeRemaining = getEggTimer()
-                                            if timeRemaining then
-                                                notFoundCounter = 0
-                                                if timeRemaining <= 2 then
-                                                    break
-                                                end
-                                            else
-                                                notFoundCounter = notFoundCounter + 1
-                                                if notFoundCounter >= 10 then
-                                                    -- Sudah 5 detik tapi UI timer tidak muncul, artinya telur gagal diambil!
-                                                    hasEgg = false
-                                                    break
-                                                end
-                                            end
-                                        end
-                                        
-                                        task.wait(0.05)
-                                        elapsedTime = elapsedTime + 0.05
-                                    end
-                                    
-                                    if hasEgg and Wayae.autoFarmRunning then
-                                        -- Masuk ke dalam zona base secara bertahap agar tidak terdeteksi teleport (Anti-Cheat)
-                                        local stepSize = 15
-                                        local stepInterval = 0.05
-                                        while (hrp.Position - insideBasePos).Magnitude > 5 and Wayae.autoFarmRunning do
-                                            local dir = (insideBasePos - hrp.Position).Unit
-                                            local dist = (hrp.Position - insideBasePos).Magnitude
-                                            local move = math.min(stepSize, dist)
-                                            char:PivotTo(CFrame.new(hrp.Position + dir * move))
-                                            hrp.AssemblyLinearVelocity = Vector3.zero
-                                            task.wait(stepInterval)
-                                        end
-                                        
-                                        -- Pastikan persis di titik akhir
-                                        char:PivotTo(CFrame.new(insideBasePos))
-                                        hrp.AssemblyLinearVelocity = Vector3.zero
-                                    end
                                     
                                     Wayae.StopNoclip()
                                     task.wait(1.0)

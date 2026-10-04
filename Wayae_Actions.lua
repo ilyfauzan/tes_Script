@@ -446,103 +446,37 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                 
                                 task.wait(1.5)
                                 
-                                -- FIX AT-2785: LEPAS TELUR DULU SEBELUM TELEPORT!
-                                -- Server mendeteksi Tool (telur) berpindah jarak jauh secara instan.
-                                -- Solusi: Unequip dulu, teleport tanpa telur, baru ambil telurnya lagi.
-                                local hum = char:FindFirstChildOfClass("Humanoid")
-                                
-                                -- Simpan tool yang sedang dipegang sebelum dilepas
-                                local heldTool = nil
-                                if char then
-                                    for _, item in pairs(char:GetChildren()) do
-                                        if item:IsA("Tool") then
-                                            heldTool = item
-                                            break
-                                        end
-                                    end
-                                end
-                                
-                                -- Lepas telur dari tangan SEBELUM teleport
-                                if hum then hum:UnequipTools() end
-                                task.wait(0.3) -- Beri jeda sebentar agar server meregistrasi Tool sudah lepas
-                                
-                                -- Langsung pulang ke plot (Gunakan Blink Teleport agar tidak terlalu instan)
                                 if Wayae.autoFarmRunning then
-                                    local tpSuccess = Wayae.TeleportToPlot(true)
+                                    -- STRATEGI WALK-INTO-BASE (Fix AT-4788)
+                                    -- Teleport ke DEPAN PINTU base dulu, lalu jalan masuk pelan-pelan.
+                                    -- Ini mensimulasikan pemain berjalan masuk secara alami sehingga
+                                    -- zone trigger server aktif dan telur diterima tanpa AT error.
                                     
-                                    if tpSuccess then
-                                        -- Tunggu 1.5 detik biar char stabil di plot
-                                        task.wait(1.5)
-                                        
-                                        -- Re-equip telur setelah sampai di base
-                                        if heldTool and heldTool.Parent then
-                                            hum:EquipTool(heldTool)
-                                            task.wait(0.5)
-                                        end
-                                        
-                                        -- Coba cari Nest / Incubator di sekitar plot dan tembak otomatis
-                                        for _, prompt in pairs(workspace:GetDescendants()) do
-                                            if prompt:IsA("ProximityPrompt") and prompt.Parent and prompt.Parent:IsA("BasePart") then
-                                                local dist = (prompt.Parent.Position - hrp.Position).Magnitude
-                                                if dist < 60 then
-                                                    local actionText = prompt.ActionText:lower()
-                                                    local objectText = prompt.ObjectText:lower()
-                                                    local name = prompt.Name:lower()
-                                                    local parentName = prompt.Parent.Name:lower()
-                                                    
-                                                    if actionText:find("deposit") or actionText:find("incubate") or actionText:find("place") or actionText:find("put") or objectText:find("nest") or parentName:find("incubator") or parentName:find("nest") then
-                                                        if fireproximityprompt then
-                                                            fireproximityprompt(prompt, 1)
-                                                            fireproximityprompt(prompt)
-                                                        end
-                                                    end
-                                                end
-                                            end
-                                        end
-                                        
-                                        -- Auto-Tap tombol UI Hotbar (Bypass Custom Inventory)
-                                        local playerGui = player:FindFirstChild("PlayerGui")
-                                        if playerGui and getconnections then
-                                            for _, obj in pairs(playerGui:GetDescendants()) do
-                                                if obj:IsA("GuiButton") then
-                                                    local isSlot = false
-                                                    for _, child in pairs(obj:GetDescendants()) do
-                                                        if child:IsA("TextLabel") and child.Text:upper():find("KG") then
-                                                            isSlot = true
-                                                            break
-                                                        end
-                                                    end
-                                                    if isSlot then
-                                                        local isEquipped = false
-                                                        if obj.BorderSizePixel > 0 and obj.BorderColor3.R > 0.8 and obj.BorderColor3.G > 0.8 and obj.BorderColor3.B > 0.8 then
-                                                            isEquipped = true
-                                                        end
-                                                        for _, child in pairs(obj:GetDescendants()) do
-                                                            if child:IsA("UIStroke") and child.Enabled and child.Color.R > 0.8 and child.Color.G > 0.8 and child.Color.B > 0.8 then
-                                                                isEquipped = true
-                                                            end
-                                                            if (child:IsA("Frame") or child:IsA("ImageLabel")) and child.Visible and (child.Name:lower():find("select") or child.Name:lower():find("equip") or child.Name:lower():find("highlight") or child.Name:lower():find("border")) then
-                                                                isEquipped = true
-                                                            end
-                                                        end
-                                                        if isEquipped then
-                                                            for _, conn in pairs(getconnections(obj.MouseButton1Click)) do
-                                                                pcall(function() conn:Function() end)
-                                                            end
-                                                            for _, conn in pairs(getconnections(obj.Activated)) do
-                                                                pcall(function() conn:Function() end)
-                                                            end
-                                                            break
-                                                        end
-                                                    end
-                                                end
-                                            end
-                                        end
-                                        
-                                        task.wait(0.2)
-                                    else
-                                        Wayae.UI.Notify("⚠️ Auto Farm", "Gagal teleport ke Plot!", 3)
+                                    Wayae.StartNoclip()
+                                    
+                                    -- Step 1: Teleport instan ke depan pintu base (luar zona)
+                                    char:PivotTo(CFrame.new(170, 40316, 850))
+                                    hrp.AssemblyLinearVelocity = Vector3.zero
+                                    task.wait(0.5) -- Beri jeda agar server registrasi posisi baru
+                                    
+                                    -- Step 2: Jalan masuk ke dalam base pelan-pelan (simulasi berjalan)
+                                    -- Server akan mendeteksi karakter "masuk" ke zona dan otomatis menerima telur
+                                    local outsidePos = Vector3.new(170, 40316, 850)
+                                    local insidePos  = Vector3.new(248, 40316, 817)
+                                    local walkSteps = 10
+                                    for i = 1, walkSteps do
+                                        local alpha = i / walkSteps
+                                        local stepPos = outsidePos:Lerp(insidePos, alpha)
+                                        char:PivotTo(CFrame.new(stepPos))
+                                        hrp.AssemblyLinearVelocity = Vector3.zero
+                                        task.wait(0.1) -- Total ~1 detik untuk masuk, terasa seperti berjalan
                                     end
+                                    
+                                    Wayae.StopNoclip()
+                                    
+                                    -- Tunggu sebentar agar server memproses zone trigger
+                                    task.wait(1.0)
+                                    Wayae.UI.Notify("🏠 Kembali ke Base", "Telur seharusnya sudah diterima!", 3)
                                 end
                             end
                         end

@@ -501,10 +501,11 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         
                                         local targetPos = outsideBasePos + targetOffset
                                         
-                                        -- Gunakan perintah jalan fisik agar pet benar-benar berjalan keliling
-                                        if hum then
-                                            hum:Move((targetPos - hrp.Position).Unit)
-                                        end
+                                        -- Karena naik pet terkadang mengabaikan hum:Move, kita paksa geser (langkah kecil) agar pasti bergerak
+                                        local dir = (targetPos - hrp.Position).Unit
+                                        local stepSize = 2.5 -- Besar langkah per tick
+                                        char:PivotTo(CFrame.new(hrp.Position + dir * stepSize))
+                                        hrp.AssemblyLinearVelocity = Vector3.zero
                                         
                                         -- Cek timer tiap 0.5 detik (meskipun loop jalan tiap 0.05 detik)
                                         if math.floor(elapsedTime * 10) % 5 == 0 then
@@ -526,10 +527,6 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         
                                         task.wait(0.05)
                                         elapsedTime = elapsedTime + 0.05
-                                    end
-                                    
-                                    if hum then
-                                        hum:Move(Vector3.zero)
                                     end
                                     
                                     if hasEgg and Wayae.autoFarmRunning then

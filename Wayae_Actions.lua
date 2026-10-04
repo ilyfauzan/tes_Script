@@ -48,7 +48,7 @@ Wayae.SafeCaveTeleport = function(targetCFrame)
     char:PivotTo(targetCFrame)
 end
 
-Wayae.TeleportToPlot = function()
+Wayae.TeleportToPlot = function(useBlink)
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return false end
@@ -153,10 +153,31 @@ Wayae.TeleportToPlot = function()
         end
     end
     if plotTarget then
-        Wayae.StopNoclip() -- Matikan noclip saat sudah sampai di plot
-        hrp.AssemblyLinearVelocity = Vector3.zero
-        hrp.AssemblyAngularVelocity = Vector3.zero
-        char:PivotTo(plotTarget)
+        if useBlink then
+            Wayae.StartNoclip()
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            local currentPos = hrp.Position
+            local targetPos = plotTarget.Position
+            local distance = (currentPos - targetPos).Magnitude
+            local stepDistance = 120
+            local steps = math.ceil(distance / stepDistance)
+            for i = 1, steps do
+                local alpha = i / steps
+                local nextPos = currentPos:Lerp(targetPos, alpha)
+                char:PivotTo(CFrame.new(nextPos))
+                hrp.AssemblyLinearVelocity = Vector3.zero
+                hrp.AssemblyAngularVelocity = Vector3.zero
+                task.wait(0.1)
+            end
+            char:PivotTo(plotTarget)
+            Wayae.StopNoclip()
+            hrp.AssemblyLinearVelocity = Vector3.zero
+        else
+            Wayae.StopNoclip() -- Matikan noclip saat sudah sampai di plot
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+            char:PivotTo(plotTarget)
+        end
         return true
     end
     return false
@@ -421,9 +442,9 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                 
                                 task.wait(1.5)
                                 
-                                -- Langsung pulang ke plot
+                                -- Langsung pulang ke plot (Gunakan Blink Teleport untuk AutoFarm agar lolos AT-2785)
                                 if Wayae.autoFarmRunning then
-                                    local tpSuccess = Wayae.TeleportToPlot()
+                                    local tpSuccess = Wayae.TeleportToPlot(true)
                                     
                                     if tpSuccess then
                                         -- Tunggu 1.5 detik biar char stabil di plot

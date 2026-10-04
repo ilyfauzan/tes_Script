@@ -455,8 +455,8 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     
                                     Wayae.StartNoclip()
                                     
-                                    -- Hitung posisi dalam base
-                                    local insideBasePos = Vector3.new(9, 40316, 870)
+                                    -- Hitung posisi dalam base sesuai screenshot terbaru
+                                    local insideBasePos = Vector3.new(164, 40322, 1059)
                                     
                                     -- Gerak bertahap dari tempat telur langsung ke dalam base
                                     -- 100 studs / 0.1s = 1000 studs/detik (Cukup lambat untuk menipu Anti-Cheat, tapi cepat sampai)

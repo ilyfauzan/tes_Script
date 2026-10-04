@@ -482,9 +482,9 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         elapsedOutside = elapsedOutside + 0.1 + delay
                                     end
                                     
-                                    -- 3. Gerak bertahap (jalan kaki) dari luar base ke dalam base
-                                    -- Kecepatan normal jalan kaki sekitar 16-30 stud per detik. Kita pakai 20 stud/detik
-                                    local stepSize = 2
+                                    -- 3. Gerak bertahap (jalan kaki cepat) dari luar base ke dalam base
+                                    -- Kecepatan dipercepat agar telur tidak keburu pecah (100 stud/detik)
+                                    local stepSize = 10
                                     local stepInterval = 0.1
                                     
                                     while (hrp.Position - insideBasePos).Magnitude > 5 and Wayae.autoFarmRunning do

@@ -472,50 +472,15 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     char:PivotTo(CFrame.new(outsideBasePos))
                                     hrp.AssemblyLinearVelocity = Vector3.zero
                                     
-                                    -- Fungsi untuk membaca sisa waktu telur dari UI layar
-                                    local function getEggTimer()
-                                        local playerGui = player:FindFirstChild("PlayerGui")
-                                        if not playerGui then return nil end
-                                        
-                                        for _, desc in pairs(playerGui:GetDescendants()) do
-                                            if desc:IsA("TextLabel") and desc.Visible then
-                                                local text = desc.Text:lower()
-                                                -- Cari teks yang berformat angka diikuti huruf 's' (contoh: "12.4s")
-                                                if text:match("^%d+%.?%d*%s*s$") then
-                                                    local numStr = text:gsub("s", ""):gsub("%s", "")
-                                                    local num = tonumber(numStr)
-                                                    if num then return num end
-                                                end
-                                            end
-                                        end
-                                        return nil
-                                    end
-                                    
-                                    -- Tunggu di luar base sampai timer telur < 2 detik
-                                    local notFoundCounter = 0
-                                    while Wayae.autoFarmRunning do
-                                        local timeRemaining = getEggTimer()
-                                        
-                                        if timeRemaining then
-                                            notFoundCounter = 0
-                                            if timeRemaining > 2 then
-                                                -- Waktu masih lama, diam di tempat
-                                                char:PivotTo(CFrame.new(outsideBasePos))
-                                                hrp.AssemblyLinearVelocity = Vector3.zero
-                                                task.wait(0.2)
-                                            else
-                                                -- Waktu sisa <= 2 detik, saatnya masuk!
-                                                break
-                                            end
-                                        else
-                                            -- Jika timer tidak terdeteksi (mungkin belum muncul atau UI beda)
-                                            notFoundCounter = notFoundCounter + 1
-                                            task.wait(0.5)
-                                            if notFoundCounter >= 10 then
-                                                -- Jika 5 detik (10x0.5) tidak ketemu timernya, masuk paksa saja
-                                                break
-                                            end
-                                        end
+                                    -- Tunggu 25 detik di luar base
+                                    local waitTime = 25
+                                    local elapsedTime = 0
+                                    while Wayae.autoFarmRunning and elapsedTime < waitTime do
+                                        -- Pastikan karakter tetap di luar base
+                                        char:PivotTo(CFrame.new(outsideBasePos))
+                                        hrp.AssemblyLinearVelocity = Vector3.zero
+                                        task.wait(0.5)
+                                        elapsedTime = elapsedTime + 0.5
                                     end
                                     
                                     -- Masuk ke dalam zona base

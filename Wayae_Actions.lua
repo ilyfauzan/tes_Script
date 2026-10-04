@@ -453,10 +453,6 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     
                                     local hum = char:FindFirstChildOfClass("Humanoid")
                                     
-                                    if hum then
-                                        hum.JumpPower = 0    -- Jangan sampai lompat
-                                    end
-                                    
                                     Wayae.StartNoclip()
                                     
                                     -- Hitung posisi luar dan dalam base
@@ -495,12 +491,12 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     while Wayae.autoFarmRunning and elapsedTime < maxWait do
                                         -- Jalan-jalan melingkar di luar base agar Anti-Cheat tidak mendeteksi AFK/Teleport
                                         local circleRadius = 20 -- Jarak putaran keliling
-                                        local walkSpeedSim = 1.5 -- Kecepatan putaran
+                                        local circleRate = 1.5 -- Kecepatan rotasi putaran (bukan WalkSpeed karakter)
                                         
                                         local targetOffset = Vector3.new(
-                                            math.sin(elapsedTime * walkSpeedSim) * circleRadius,
+                                            math.sin(elapsedTime * circleRate) * circleRadius,
                                             0,
-                                            math.cos(elapsedTime * walkSpeedSim) * circleRadius
+                                            math.cos(elapsedTime * circleRate) * circleRadius
                                         )
                                         
                                         local targetPos = outsideBasePos + targetOffset
@@ -552,11 +548,6 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         -- Pastikan persis di titik akhir
                                         char:PivotTo(CFrame.new(insideBasePos))
                                         hrp.AssemblyLinearVelocity = Vector3.zero
-                                    end
-                                    
-                                    -- Restore JumpPower (karena tadi di set ke 0 agar tidak lompat)
-                                    if hum then
-                                        hum.JumpPower = 50
                                     end
                                     
                                     Wayae.StopNoclip()

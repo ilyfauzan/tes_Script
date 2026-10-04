@@ -421,30 +421,56 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                 -- Tunggu sebentar agar posisi stabil sebelum pickup
                                 task.wait(0.4)
                                 
-                                -- Ambil telur
-                                local fired = false
-                                for _, desc in pairs(realEgg:GetDescendants()) do
-                                    if desc:IsA("ProximityPrompt") then
-                                        if fireproximityprompt then
-                                            fireproximityprompt(desc, 1)
-                                            fireproximityprompt(desc)
-                                            fired = true
+                                -- Ambil telur dengan sistem retry jika gagal (karena lag)
+                                local pickupAttempts = 0
+                                local eggPickedUp = false
+                                
+                                while not eggPickedUp and pickupAttempts < 10 and Wayae.autoFarmRunning do
+                                    pickupAttempts = pickupAttempts + 1
+                                    
+                                    local fired = false
+                                    if realEgg.Parent ~= nil then
+                                        for _, desc in pairs(realEgg:GetDescendants()) do
+                                            if desc:IsA("ProximityPrompt") then
+                                                if fireproximityprompt then
+                                                    fireproximityprompt(desc, 1)
+                                                    fireproximityprompt(desc)
+                                                    fired = true
+                                                end
+                                            elseif desc:IsA("ClickDetector") then
+                                                if fireclickdetector then
+                                                    fireclickdetector(desc)
+                                                    fired = true
+                                                end
+                                            end
                                         end
-                                    elseif desc:IsA("ClickDetector") then
-                                        if fireclickdetector then
-                                            fireclickdetector(desc)
-                                            fired = true
+                                    end
+                                    
+                                    if not fired then
+                                        hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, 1)
+                                        task.wait(0.2)
+                                        hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, -1)
+                                    end
+                                    
+                                    task.wait(1.0)
+                                    
+                                    -- Cek UI Timer untuk memastikan telur beneran keambil
+                                    local playerGui = player:FindFirstChild("PlayerGui")
+                                    if playerGui then
+                                        for _, desc in pairs(playerGui:GetDescendants()) do
+                                            if desc:IsA("TextLabel") and desc.Visible then
+                                                local text = desc.Text:lower()
+                                                if text:match("^%d+%.?%d*%s*s$") then
+                                                    eggPickedUp = true
+                                                    break
+                                                end
+                                            end
                                         end
                                     end
                                 end
                                 
-                                if not fired then
-                                    hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, 1)
-                                    task.wait(0.2)
-                                    hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, -1)
-                                end
-                                
-                                task.wait(1.5)
+                                -- Jika sudah diulang 10x tapi tidak dapat, lewati telur ini
+                                if not eggPickedUp then continue end
                                 
                                 if Wayae.autoFarmRunning then
                                     -- STRATEGI VELOCITY PUSH (Fix AT - server deteksi CFrame teleport)

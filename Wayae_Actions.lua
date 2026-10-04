@@ -484,7 +484,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     
                                     -- 3. Gerak bertahap (jalan kaki cepat) dari luar base ke dalam base
                                     -- Kecepatan dipercepat agar telur tidak keburu pecah (100 stud/detik)
-                                    local stepSize = 10
+                                    local stepSize = 20
                                     local stepInterval = 0.1
                                     
                                     while (hrp.Position - insideBasePos).Magnitude > 5 and Wayae.autoFarmRunning do

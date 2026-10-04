@@ -453,12 +453,12 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     
                                     local hum = char:FindFirstChildOfClass("Humanoid")
                                     
-                                    -- Simpan WalkSpeed asli lalu naikkan drastis
+                                    -- Simpan WalkSpeed asli
                                     local originalSpeed = hum and hum.WalkSpeed or 16
                                     local originalJumpPower = hum and hum.JumpPower or 50
                                     
                                     if hum then
-                                        hum.WalkSpeed = 150  -- Kecepatan realistis pet terbang (bukan teleport)
+                                        hum.WalkSpeed = originalSpeed  -- Kecepatan normal
                                         hum.JumpPower = 0    -- Jangan sampai lompat
                                     end
                                     

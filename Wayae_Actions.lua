@@ -491,8 +491,8 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     hrp.AssemblyLinearVelocity = Vector3.zero
                                     task.wait(0.5)
                                     
-                                    -- 2. Lompat 3 kali di luar base (Anti-Cheat bypass)
-                                    for i = 1, 3 do
+                                    -- 2. Lompat 7 kali di luar base (Anti-Cheat bypass)
+                                    for i = 1, 7 do
                                         if not Wayae.autoFarmRunning then break end
                                         if hum then hum.Jump = true end
                                         task.wait(0.5)

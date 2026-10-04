@@ -494,6 +494,9 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     local maxWait = 45 -- Maksimal tunggu 45 detik agar tidak stuck selamanya
                                     local elapsedTime = 0
                                     
+                                    local hasEgg = true
+                                    local notFoundCounter = 0
+                                    
                                     while Wayae.autoFarmRunning and elapsedTime < maxWait do
                                         -- Jalan-jalan melingkar di luar base agar Anti-Cheat tidak mendeteksi AFK/Teleport
                                         local circleRadius = 20 -- Jarak putaran keliling
@@ -515,8 +518,18 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         -- Cek timer tiap 0.5 detik (meskipun loop jalan tiap 0.05 detik)
                                         if math.floor(elapsedTime * 10) % 5 == 0 then
                                             local timeRemaining = getEggTimer()
-                                            if timeRemaining and timeRemaining <= 2 then
-                                                break
+                                            if timeRemaining then
+                                                notFoundCounter = 0
+                                                if timeRemaining <= 2 then
+                                                    break
+                                                end
+                                            else
+                                                notFoundCounter = notFoundCounter + 1
+                                                if notFoundCounter >= 10 then
+                                                    -- Sudah 5 detik tapi UI timer tidak muncul, artinya telur gagal diambil!
+                                                    hasEgg = false
+                                                    break
+                                                end
                                             end
                                         end
                                         
@@ -528,21 +541,23 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         hum:Move(Vector3.zero)
                                     end
                                     
-                                    -- Masuk ke dalam zona base secara bertahap agar tidak terdeteksi teleport (Anti-Cheat)
-                                    local stepSize = 15
-                                    local stepInterval = 0.05
-                                    while (hrp.Position - insideBasePos).Magnitude > 5 and Wayae.autoFarmRunning do
-                                        local dir = (insideBasePos - hrp.Position).Unit
-                                        local dist = (hrp.Position - insideBasePos).Magnitude
-                                        local move = math.min(stepSize, dist)
-                                        char:PivotTo(CFrame.new(hrp.Position + dir * move))
+                                    if hasEgg and Wayae.autoFarmRunning then
+                                        -- Masuk ke dalam zona base secara bertahap agar tidak terdeteksi teleport (Anti-Cheat)
+                                        local stepSize = 15
+                                        local stepInterval = 0.05
+                                        while (hrp.Position - insideBasePos).Magnitude > 5 and Wayae.autoFarmRunning do
+                                            local dir = (insideBasePos - hrp.Position).Unit
+                                            local dist = (hrp.Position - insideBasePos).Magnitude
+                                            local move = math.min(stepSize, dist)
+                                            char:PivotTo(CFrame.new(hrp.Position + dir * move))
+                                            hrp.AssemblyLinearVelocity = Vector3.zero
+                                            task.wait(stepInterval)
+                                        end
+                                        
+                                        -- Pastikan persis di titik akhir
+                                        char:PivotTo(CFrame.new(insideBasePos))
                                         hrp.AssemblyLinearVelocity = Vector3.zero
-                                        task.wait(stepInterval)
                                     end
-                                    
-                                    -- Pastikan persis di titik akhir
-                                    char:PivotTo(CFrame.new(insideBasePos))
-                                    hrp.AssemblyLinearVelocity = Vector3.zero
                                     
                                     -- Restore WalkSpeed
                                     if hum then

@@ -472,13 +472,41 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     char:PivotTo(CFrame.new(outsideBasePos))
                                     hrp.AssemblyLinearVelocity = Vector3.zero
                                     
-                                    -- Tunggu 25 detik di luar base
-                                    local waitTime = 25
+                                    -- Fungsi membaca timer dari UI
+                                    local function getEggTimer()
+                                        local playerGui = player:FindFirstChild("PlayerGui")
+                                        if not playerGui then return nil end
+                                        
+                                        for _, desc in pairs(playerGui:GetDescendants()) do
+                                            if desc:IsA("TextLabel") and desc.Visible then
+                                                local text = desc.Text:lower()
+                                                -- Deteksi format angka+s seperti "10.6s" atau "20s"
+                                                if text:match("^%d+%.?%d*%s*s$") then
+                                                    local num = tonumber(text:gsub("s", ""):gsub("%s", ""))
+                                                    if num then return num end
+                                                end
+                                            end
+                                        end
+                                        return nil
+                                    end
+                                    
+                                    -- Tunggu di luar base sampai timer < 2 detik
+                                    local maxWait = 45 -- Maksimal tunggu 45 detik agar tidak stuck selamanya
                                     local elapsedTime = 0
-                                    while Wayae.autoFarmRunning and elapsedTime < waitTime do
-                                        -- Pastikan karakter tetap di luar base
+                                    
+                                    while Wayae.autoFarmRunning and elapsedTime < maxWait do
                                         char:PivotTo(CFrame.new(outsideBasePos))
                                         hrp.AssemblyLinearVelocity = Vector3.zero
+                                        
+                                        local timeRemaining = getEggTimer()
+                                        
+                                        if timeRemaining then
+                                            -- Jika timer sudah muncul dan sisa waktunya <= 2 detik, masuk base!
+                                            if timeRemaining <= 2 then
+                                                break
+                                            end
+                                        end
+                                        
                                         task.wait(0.5)
                                         elapsedTime = elapsedTime + 0.5
                                     end

@@ -458,7 +458,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     local originalJumpPower = hum and hum.JumpPower or 50
                                     
                                     if hum then
-                                        hum.WalkSpeed = 500  -- Kecepatan super tinggi
+                                        hum.WalkSpeed = 150  -- Kecepatan realistis pet terbang (bukan teleport)
                                         hum.JumpPower = 0    -- Jangan sampai lompat
                                     end
                                     
@@ -468,27 +468,12 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     local basePos = Vector3.new(248, 40316, 817)
                                     local outsideBasePos = Vector3.new(170, 40316, 850)
                                     
-                                    -- Pertama geser ke depan pintu base
-                                    local dirToOutside = (outsideBasePos - hrp.Position).Unit
-                                    local distToOutside = (outsideBasePos - hrp.Position).Magnitude
-                                    
-                                    -- Pakai MoveTo agar humanoid yang bergerak (lebih natural)
-                                    if hum then
-                                        hum:MoveTo(outsideBasePos)
-                                        local t = 0
-                                        while t < 3 and (hrp.Position - outsideBasePos).Magnitude > 20 and Wayae.autoFarmRunning do
-                                            task.wait(0.1)
-                                            t = t + 0.1
-                                        end
-                                    end
-                                    
-                                    task.wait(0.3)
-                                    
-                                    -- Lalu masuk ke dalam base
+                                    -- Langsung MoveTo ke base dari posisi manapun (simulasi pet terbang)
+                                    -- TIDAK ada teleport awal - pergerakan murni physics dari titik A ke B
                                     if hum then
                                         hum:MoveTo(basePos)
                                         local t = 0
-                                        while t < 3 and (hrp.Position - basePos).Magnitude > 10 and Wayae.autoFarmRunning do
+                                        while t < 10 and (hrp.Position - basePos).Magnitude > 15 and Wayae.autoFarmRunning do
                                             task.wait(0.1)
                                             t = t + 0.1
                                         end

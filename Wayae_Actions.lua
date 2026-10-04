@@ -495,20 +495,32 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     local elapsedTime = 0
                                     
                                     while Wayae.autoFarmRunning and elapsedTime < maxWait do
-                                        char:PivotTo(CFrame.new(outsideBasePos))
+                                        -- Jalan-jalan melingkar di luar base agar Anti-Cheat tidak mendeteksi AFK/Teleport
+                                        local circleRadius = 20 -- Jarak putaran keliling
+                                        local walkSpeedSim = 1.5 -- Kecepatan putaran
+                                        
+                                        local targetOffset = Vector3.new(
+                                            math.sin(elapsedTime * walkSpeedSim) * circleRadius,
+                                            0,
+                                            math.cos(elapsedTime * walkSpeedSim) * circleRadius
+                                        )
+                                        
+                                        local targetPos = outsideBasePos + targetOffset
+                                        
+                                        -- Gerakkan karakter ke posisi putaran
+                                        char:PivotTo(CFrame.new(targetPos))
                                         hrp.AssemblyLinearVelocity = Vector3.zero
                                         
-                                        local timeRemaining = getEggTimer()
-                                        
-                                        if timeRemaining then
-                                            -- Jika timer sudah muncul dan sisa waktunya <= 2 detik, masuk base!
-                                            if timeRemaining <= 2 then
+                                        -- Cek timer tiap 0.5 detik (meskipun loop jalan tiap 0.05 detik)
+                                        if math.floor(elapsedTime * 10) % 5 == 0 then
+                                            local timeRemaining = getEggTimer()
+                                            if timeRemaining and timeRemaining <= 2 then
                                                 break
                                             end
                                         end
                                         
-                                        task.wait(0.5)
-                                        elapsedTime = elapsedTime + 0.5
+                                        task.wait(0.05)
+                                        elapsedTime = elapsedTime + 0.05
                                     end
                                     
                                     -- Masuk ke dalam zona base secara bertahap agar tidak terdeteksi teleport (Anti-Cheat)

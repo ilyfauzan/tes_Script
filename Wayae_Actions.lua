@@ -453,12 +453,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     
                                     local hum = char:FindFirstChildOfClass("Humanoid")
                                     
-                                    -- Explicitly set default speed
-                                    local normalSpeed = 16
-                                    local normalJump = 50
-                                    
                                     if hum then
-                                        hum.WalkSpeed = normalSpeed  -- Paksa jadi 16 agar tidak nge-bug cepat
                                         hum.JumpPower = 0    -- Jangan sampai lompat
                                     end
                                     
@@ -559,10 +554,9 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         hrp.AssemblyLinearVelocity = Vector3.zero
                                     end
                                     
-                                    -- Restore WalkSpeed
+                                    -- Restore JumpPower (karena tadi di set ke 0 agar tidak lompat)
                                     if hum then
-                                        hum.WalkSpeed = normalSpeed
-                                        hum.JumpPower = normalJump
+                                        hum.JumpPower = 50
                                     end
                                     
                                     Wayae.StopNoclip()

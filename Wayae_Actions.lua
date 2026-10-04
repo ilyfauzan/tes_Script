@@ -465,8 +465,8 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     Wayae.StartNoclip()
                                     
                                     -- Hitung posisi luar dan dalam base
-                                    local insideBasePos = Vector3.new(248, 40316, 817)
-                                    local outsideBasePos = Vector3.new(170, 40316, 850)
+                                    local insideBasePos = Vector3.new(9, 40316, 870)
+                                    local outsideBasePos = Vector3.new(69, 40316, 895)
                                     
                                     -- Teleport cepat ke DEPAN pagar base (belum masuk zona)
                                     char:PivotTo(CFrame.new(outsideBasePos))
@@ -491,20 +491,20 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         return nil
                                     end
                                     
-                                    -- Tunggu di luar base sampai timer telur < 2.5 detik
+                                    -- Tunggu di luar base sampai timer telur < 2 detik
                                     local notFoundCounter = 0
                                     while Wayae.autoFarmRunning do
                                         local timeRemaining = getEggTimer()
                                         
                                         if timeRemaining then
                                             notFoundCounter = 0
-                                            if timeRemaining > 2.5 then
+                                            if timeRemaining > 2 then
                                                 -- Waktu masih lama, diam di tempat
                                                 char:PivotTo(CFrame.new(outsideBasePos))
                                                 hrp.AssemblyLinearVelocity = Vector3.zero
                                                 task.wait(0.2)
                                             else
-                                                -- Waktu sisa <= 2.5 detik, saatnya masuk!
+                                                -- Waktu sisa <= 2 detik, saatnya masuk!
                                                 break
                                             end
                                         else
@@ -589,4 +589,4 @@ Wayae.UI.AntiAfkBtn.MouseButton1Click:Connect(function()
         end
     end
 end)
-
+

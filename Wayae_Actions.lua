@@ -464,19 +464,60 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     
                                     Wayae.StartNoclip()
                                     
-                                    -- Hitung arah menuju base dan dorong menggunakan velocity
+                                    -- Hitung arah menuju base
                                     local basePos = Vector3.new(248, 40316, 817)
-                                    local outsideBasePos = Vector3.new(170, 40316, 850)
                                     
-                                    -- Langsung MoveTo ke base dari posisi manapun (simulasi pet terbang)
-                                    -- TIDAK ada teleport awal - pergerakan murni physics dari titik A ke B
-                                    if hum then
-                                        hum:MoveTo(basePos)
-                                        local t = 0
-                                        while t < 10 and (hrp.Position - basePos).Magnitude > 15 and Wayae.autoFarmRunning do
-                                            task.wait(0.1)
-                                            t = t + 0.1
+                                    -- Noclip diperluas: termasuk Pet yang sedang ditunggangi
+                                    local function disableCollisionAll()
+                                        if player.Character then
+                                            for _, p in pairs(player.Character:GetDescendants()) do
+                                                if p:IsA("BasePart") then p.CanCollide = false end
+                                            end
                                         end
+                                        -- Cari pet yang mungkin sedang ditunggangi
+                                        for _, obj in pairs(workspace:GetDescendants()) do
+                                            if obj:IsA("Model") and obj ~= player.Character then
+                                                local hasSeat = obj:FindFirstChildOfClass("Seat") or obj:FindFirstChildOfClass("VehicleSeat")
+                                                if hasSeat then
+                                                    for _, p in pairs(obj:GetDescendants()) do
+                                                        if p:IsA("BasePart") then p.CanCollide = false end
+                                                    end
+                                                end
+                                            end
+                                        end
+                                    end
+                                    
+                                    -- Gerak bertahap menggunakan CFrame (menembus semua rintangan)
+                                    -- dengan kecepatan realistis pet terbang dan anti-stuck
+                                    local stepSize = 15        -- Jarak per step (studs)
+                                    local stepInterval = 0.1   -- Interval antar step (detik)
+                                    -- speed = stepSize / stepInterval = 150 studs/s (≈ pet terbang cepat)
+                                    
+                                    local lastPos = hrp.Position
+                                    local stuckTimer = 0
+                                    
+                                    while (hrp.Position - basePos).Magnitude > 10 and Wayae.autoFarmRunning do
+                                        disableCollisionAll() -- Noclip setiap frame termasuk pet
+                                        
+                                        local dir = (basePos - hrp.Position).Unit
+                                        local nextPos = hrp.Position + dir * stepSize
+                                        char:PivotTo(CFrame.new(nextPos) * (hrp.CFrame - hrp.CFrame.Position))
+                                        hrp.AssemblyLinearVelocity = Vector3.zero
+                                        
+                                        -- Stuck detection: kalau posisi tidak berubah selama 0.5 detik
+                                        if (hrp.Position - lastPos).Magnitude < 1 then
+                                            stuckTimer = stuckTimer + stepInterval
+                                            if stuckTimer > 0.5 then
+                                                -- Auto-unstick: loncat sedikit ke atas lalu lanjut
+                                                char:PivotTo(CFrame.new(hrp.Position + Vector3.new(0, 10, 0)))
+                                                stuckTimer = 0
+                                            end
+                                        else
+                                            stuckTimer = 0
+                                        end
+                                        lastPos = hrp.Position
+                                        
+                                        task.wait(stepInterval)
                                     end
                                     
                                     -- Restore WalkSpeed

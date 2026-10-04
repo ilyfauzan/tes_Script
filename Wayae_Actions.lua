@@ -351,11 +351,15 @@ Wayae.UI.GetPosBtn.MouseButton1Click:Connect(function()
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     local p = hrp.Position
+    -- Tampilkan dalam satu baris agar tidak terpotong
+    local posText = string.format("X:%.0f Y:%.0f Z:%.0f", p.X, p.Y, p.Z)
     Wayae.UI.Notify(
         "📍 Posisi Kamu Sekarang",
-        string.format("X: %.0f\nY: %.0f\nZ: %.0f", p.X, p.Y, p.Z),
-        10
+        posText,
+        15 -- Durasi lebih lama biar sempat dicatat
     )
+    -- Juga print ke console executor sebagai backup
+    print("[WAYAE] Posisi: " .. posText)
 end)
 
 Wayae.savedLocation = nil

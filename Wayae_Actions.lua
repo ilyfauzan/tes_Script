@@ -464,21 +464,13 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     hrp.AssemblyLinearVelocity = Vector3.zero
                                     task.wait(0.5)
                                     
-                                    -- 2. Berdiam di luar base selama 10 detik sambil lompat-lompat (Anti-Cheat bypass)
-                                    -- 2. Berdiam di luar base selama 10 detik sambil lompat-lompat (Anti-Cheat bypass)
-                                    local waitTimeOutside = 10
-                                    local elapsedOutside = 0
-                                    
-                                    while Wayae.autoFarmRunning and elapsedOutside < waitTimeOutside do
+                                    -- 2. Lompat 3 kali di luar base (Anti-Cheat bypass)
+                                    for i = 1, 3 do
+                                        if not Wayae.autoFarmRunning then break end
                                         if hum then hum.Jump = true end
-                                        
-                                        -- Jeda antar lompatan
-                                        local delay = math.random(5, 10) / 10
-                                        task.wait(delay)
-                                        
+                                        task.wait(0.5)
                                         if hum then hum.Jump = false end
-                                        
-                                        elapsedOutside = elapsedOutside + delay
+                                        task.wait(1.5)
                                     end
                                     
                                     -- 3. Gerak bertahap (jalan kaki cepat) dari luar base ke dalam base
@@ -494,15 +486,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         char:PivotTo(CFrame.new(hrp.Position + dir * move))
                                         hrp.AssemblyLinearVelocity = Vector3.zero
                                         
-                                        -- Kadang-kadang lompat sambil jalan ke dalam
-                                        if math.random() > 0.8 and hum then
-                                            hum.Jump = true
-                                            task.wait(stepInterval / 2)
-                                            hum.Jump = false
-                                            task.wait(stepInterval / 2)
-                                        else
-                                            task.wait(stepInterval)
-                                        end
+                                        task.wait(stepInterval)
                                     end
                                     
                                     if hum then hum.Jump = false end

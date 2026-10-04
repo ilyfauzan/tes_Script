@@ -507,9 +507,10 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         
                                         local targetPos = outsideBasePos + targetOffset
                                         
-                                        -- Gerakkan karakter ke posisi putaran
-                                        char:PivotTo(CFrame.new(targetPos))
-                                        hrp.AssemblyLinearVelocity = Vector3.zero
+                                        -- Gunakan perintah jalan fisik agar pet benar-benar berjalan keliling
+                                        if hum then
+                                            hum:Move((targetPos - hrp.Position).Unit)
+                                        end
                                         
                                         -- Cek timer tiap 0.5 detik (meskipun loop jalan tiap 0.05 detik)
                                         if math.floor(elapsedTime * 10) % 5 == 0 then
@@ -521,6 +522,10 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         
                                         task.wait(0.05)
                                         elapsedTime = elapsedTime + 0.05
+                                    end
+                                    
+                                    if hum then
+                                        hum:Move(Vector3.zero)
                                     end
                                     
                                     -- Masuk ke dalam zona base secara bertahap agar tidak terdeteksi teleport (Anti-Cheat)

@@ -487,36 +487,18 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         end
                                     end
                                     
-                                    -- Gerak bertahap menggunakan CFrame (menembus semua rintangan)
-                                    -- dengan kecepatan realistis pet terbang dan anti-stuck
-                                    local stepSize = 15        -- Jarak per step (studs)
-                                    local stepInterval = 0.1   -- Interval antar step (detik)
-                                    -- speed = stepSize / stepInterval = 150 studs/s (≈ pet terbang cepat)
-                                    
-                                    local lastPos = hrp.Position
-                                    local stuckTimer = 0
+                                    -- Gerak bertahap ke base dengan kecepatan pet terbang tercepat
+                                    -- 100 studs / 0.1s = 1000 studs/detik
+                                    local stepSize = 100
+                                    local stepInterval = 0.1
                                     
                                     while (hrp.Position - basePos).Magnitude > 10 and Wayae.autoFarmRunning do
-                                        disableCollisionAll() -- Noclip setiap frame termasuk pet
-                                        
+                                        disableCollisionAll()
                                         local dir = (basePos - hrp.Position).Unit
-                                        local nextPos = hrp.Position + dir * stepSize
-                                        char:PivotTo(CFrame.new(nextPos) * (hrp.CFrame - hrp.CFrame.Position))
+                                        local dist = (hrp.Position - basePos).Magnitude
+                                        local move = math.min(stepSize, dist)
+                                        char:PivotTo(CFrame.new(hrp.Position + dir * move))
                                         hrp.AssemblyLinearVelocity = Vector3.zero
-                                        
-                                        -- Stuck detection: kalau posisi tidak berubah selama 0.5 detik
-                                        if (hrp.Position - lastPos).Magnitude < 1 then
-                                            stuckTimer = stuckTimer + stepInterval
-                                            if stuckTimer > 0.5 then
-                                                -- Auto-unstick: loncat sedikit ke atas lalu lanjut
-                                                char:PivotTo(CFrame.new(hrp.Position + Vector3.new(0, 10, 0)))
-                                                stuckTimer = 0
-                                            end
-                                        else
-                                            stuckTimer = 0
-                                        end
-                                        lastPos = hrp.Position
-                                        
                                         task.wait(stepInterval)
                                     end
                                     

@@ -457,7 +457,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     
                                     -- Hitung posisi dalam base dan luar base
                                     local insideBasePos = Vector3.new(164, 40322, 1059)
-                                    local outsideBasePos = Vector3.new(164, 40322, 1090) -- Sekitar 30 stud di depan base
+                                    local outsideBasePos = Vector3.new(71, 40326, 915) -- Sesuai screenshot dari user
                                     
                                     -- 1. Teleport cepat ke luar base terlebih dahulu
                                     char:PivotTo(CFrame.new(outsideBasePos))

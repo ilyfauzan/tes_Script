@@ -447,34 +447,60 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                 task.wait(1.5)
                                 
                                 if Wayae.autoFarmRunning then
-                                    -- STRATEGI WALK-INTO-BASE (Fix AT-4788)
-                                    -- Teleport ke DEPAN PINTU base dulu, lalu jalan masuk pelan-pelan.
-                                    -- Ini mensimulasikan pemain berjalan masuk secara alami sehingga
-                                    -- zone trigger server aktif dan telur diterima tanpa AT error.
+                                    -- STRATEGI VELOCITY PUSH (Fix AT - server deteksi CFrame teleport)
+                                    -- Kita dorong karakter menggunakan physics (Velocity) bukan CFrame
+                                    -- Server tidak bisa membedakan ini dari berlari sangat cepat
+                                    
+                                    local hum = char:FindFirstChildOfClass("Humanoid")
+                                    
+                                    -- Simpan WalkSpeed asli lalu naikkan drastis
+                                    local originalSpeed = hum and hum.WalkSpeed or 16
+                                    local originalJumpPower = hum and hum.JumpPower or 50
+                                    
+                                    if hum then
+                                        hum.WalkSpeed = 500  -- Kecepatan super tinggi
+                                        hum.JumpPower = 0    -- Jangan sampai lompat
+                                    end
                                     
                                     Wayae.StartNoclip()
                                     
-                                    -- Step 1: Teleport instan ke depan pintu base (luar zona)
-                                    char:PivotTo(CFrame.new(170, 40316, 850))
-                                    hrp.AssemblyLinearVelocity = Vector3.zero
-                                    task.wait(0.5) -- Beri jeda agar server registrasi posisi baru
+                                    -- Hitung arah menuju base dan dorong menggunakan velocity
+                                    local basePos = Vector3.new(248, 40316, 817)
+                                    local outsideBasePos = Vector3.new(170, 40316, 850)
                                     
-                                    -- Step 2: Jalan masuk ke dalam base pelan-pelan (simulasi berjalan)
-                                    -- Server akan mendeteksi karakter "masuk" ke zona dan otomatis menerima telur
-                                    local outsidePos = Vector3.new(170, 40316, 850)
-                                    local insidePos  = Vector3.new(248, 40316, 817)
-                                    local walkSteps = 10
-                                    for i = 1, walkSteps do
-                                        local alpha = i / walkSteps
-                                        local stepPos = outsidePos:Lerp(insidePos, alpha)
-                                        char:PivotTo(CFrame.new(stepPos))
-                                        hrp.AssemblyLinearVelocity = Vector3.zero
-                                        task.wait(0.1) -- Total ~1 detik untuk masuk, terasa seperti berjalan
+                                    -- Pertama geser ke depan pintu base
+                                    local dirToOutside = (outsideBasePos - hrp.Position).Unit
+                                    local distToOutside = (outsideBasePos - hrp.Position).Magnitude
+                                    
+                                    -- Pakai MoveTo agar humanoid yang bergerak (lebih natural)
+                                    if hum then
+                                        hum:MoveTo(outsideBasePos)
+                                        local t = 0
+                                        while t < 3 and (hrp.Position - outsideBasePos).Magnitude > 20 and Wayae.autoFarmRunning do
+                                            task.wait(0.1)
+                                            t = t + 0.1
+                                        end
+                                    end
+                                    
+                                    task.wait(0.3)
+                                    
+                                    -- Lalu masuk ke dalam base
+                                    if hum then
+                                        hum:MoveTo(basePos)
+                                        local t = 0
+                                        while t < 3 and (hrp.Position - basePos).Magnitude > 10 and Wayae.autoFarmRunning do
+                                            task.wait(0.1)
+                                            t = t + 0.1
+                                        end
+                                    end
+                                    
+                                    -- Restore WalkSpeed
+                                    if hum then
+                                        hum.WalkSpeed = originalSpeed
+                                        hum.JumpPower = originalJumpPower
                                     end
                                     
                                     Wayae.StopNoclip()
-                                    
-                                    -- Tunggu sebentar agar server memproses zone trigger
                                     task.wait(1.0)
                                     Wayae.UI.Notify("🏠 Kembali ke Base", "Telur seharusnya sudah diterima!", 3)
                                 end

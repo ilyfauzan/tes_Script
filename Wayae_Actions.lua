@@ -464,43 +464,63 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     
                                     Wayae.StartNoclip()
                                     
-                                    -- Hitung arah menuju base
-                                    local basePos = Vector3.new(248, 40316, 817)
+                                    -- Hitung posisi luar dan dalam base
+                                    local insideBasePos = Vector3.new(248, 40316, 817)
+                                    local outsideBasePos = Vector3.new(170, 40316, 850)
                                     
-                                    -- Noclip diperluas: termasuk Pet yang sedang ditunggangi
-                                    local function disableCollisionAll()
-                                        if player.Character then
-                                            for _, p in pairs(player.Character:GetDescendants()) do
-                                                if p:IsA("BasePart") then p.CanCollide = false end
-                                            end
-                                        end
-                                        -- Cari pet yang mungkin sedang ditunggangi
-                                        for _, obj in pairs(workspace:GetDescendants()) do
-                                            if obj:IsA("Model") and obj ~= player.Character then
-                                                local hasSeat = obj:FindFirstChildOfClass("Seat") or obj:FindFirstChildOfClass("VehicleSeat")
-                                                if hasSeat then
-                                                    for _, p in pairs(obj:GetDescendants()) do
-                                                        if p:IsA("BasePart") then p.CanCollide = false end
-                                                    end
+                                    -- Teleport cepat ke DEPAN pagar base (belum masuk zona)
+                                    char:PivotTo(CFrame.new(outsideBasePos))
+                                    hrp.AssemblyLinearVelocity = Vector3.zero
+                                    
+                                    -- Fungsi untuk membaca sisa waktu telur dari UI layar
+                                    local function getEggTimer()
+                                        local playerGui = player:FindFirstChild("PlayerGui")
+                                        if not playerGui then return nil end
+                                        
+                                        for _, desc in pairs(playerGui:GetDescendants()) do
+                                            if desc:IsA("TextLabel") and desc.Visible then
+                                                local text = desc.Text:lower()
+                                                -- Cari teks yang berformat angka diikuti huruf 's' (contoh: "12.4s")
+                                                if text:match("^%d+%.?%d*%s*s$") then
+                                                    local numStr = text:gsub("s", ""):gsub("%s", "")
+                                                    local num = tonumber(numStr)
+                                                    if num then return num end
                                                 end
                                             end
                                         end
+                                        return nil
                                     end
                                     
-                                    -- Gerak bertahap ke base dengan kecepatan pet terbang tercepat
-                                    -- 100 studs / 0.1s = 1000 studs/detik
-                                    local stepSize = 100
-                                    local stepInterval = 0.1
-                                    
-                                    while (hrp.Position - basePos).Magnitude > 10 and Wayae.autoFarmRunning do
-                                        disableCollisionAll()
-                                        local dir = (basePos - hrp.Position).Unit
-                                        local dist = (hrp.Position - basePos).Magnitude
-                                        local move = math.min(stepSize, dist)
-                                        char:PivotTo(CFrame.new(hrp.Position + dir * move))
-                                        hrp.AssemblyLinearVelocity = Vector3.zero
-                                        task.wait(stepInterval)
+                                    -- Tunggu di luar base sampai timer telur < 2.5 detik
+                                    local notFoundCounter = 0
+                                    while Wayae.autoFarmRunning do
+                                        local timeRemaining = getEggTimer()
+                                        
+                                        if timeRemaining then
+                                            notFoundCounter = 0
+                                            if timeRemaining > 2.5 then
+                                                -- Waktu masih lama, diam di tempat
+                                                char:PivotTo(CFrame.new(outsideBasePos))
+                                                hrp.AssemblyLinearVelocity = Vector3.zero
+                                                task.wait(0.2)
+                                            else
+                                                -- Waktu sisa <= 2.5 detik, saatnya masuk!
+                                                break
+                                            end
+                                        else
+                                            -- Jika timer tidak terdeteksi (mungkin belum muncul atau UI beda)
+                                            notFoundCounter = notFoundCounter + 1
+                                            task.wait(0.5)
+                                            if notFoundCounter >= 10 then
+                                                -- Jika 5 detik (10x0.5) tidak ketemu timernya, masuk paksa saja
+                                                break
+                                            end
+                                        end
                                     end
+                                    
+                                    -- Masuk ke dalam zona base
+                                    char:PivotTo(CFrame.new(insideBasePos))
+                                    hrp.AssemblyLinearVelocity = Vector3.zero
                                     
                                     -- Restore WalkSpeed
                                     if hum then

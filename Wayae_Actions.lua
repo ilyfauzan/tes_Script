@@ -442,7 +442,27 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                 
                                 task.wait(1.5)
                                 
-                                -- Langsung pulang ke plot (Gunakan Blink Teleport untuk AutoFarm agar lolos AT-2785)
+                                -- FIX AT-2785: LEPAS TELUR DULU SEBELUM TELEPORT!
+                                -- Server mendeteksi Tool (telur) berpindah jarak jauh secara instan.
+                                -- Solusi: Unequip dulu, teleport tanpa telur, baru ambil telurnya lagi.
+                                local hum = char:FindFirstChildOfClass("Humanoid")
+                                
+                                -- Simpan tool yang sedang dipegang sebelum dilepas
+                                local heldTool = nil
+                                if char then
+                                    for _, item in pairs(char:GetChildren()) do
+                                        if item:IsA("Tool") then
+                                            heldTool = item
+                                            break
+                                        end
+                                    end
+                                end
+                                
+                                -- Lepas telur dari tangan SEBELUM teleport
+                                if hum then hum:UnequipTools() end
+                                task.wait(0.3) -- Beri jeda sebentar agar server meregistrasi Tool sudah lepas
+                                
+                                -- Langsung pulang ke plot (Gunakan Blink Teleport agar tidak terlalu instan)
                                 if Wayae.autoFarmRunning then
                                     local tpSuccess = Wayae.TeleportToPlot(true)
                                     
@@ -450,13 +470,13 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         -- Tunggu 1.5 detik biar char stabil di plot
                                         task.wait(1.5)
                                         
-                                        -- 1. Lepas telur dari tangan biar kosong
-                                        local hum = char:FindFirstChildOfClass("Humanoid")
-                                        if hum then
-                                            hum:UnequipTools()
+                                        -- Re-equip telur setelah sampai di base
+                                        if heldTool and heldTool.Parent then
+                                            hum:EquipTool(heldTool)
+                                            task.wait(0.5)
                                         end
                                         
-                                        -- 2. Coba cari Nest / Incubator di sekitar plot dan tembak otomatis biar telur beneran disetor
+                                        -- Coba cari Nest / Incubator di sekitar plot dan tembak otomatis
                                         for _, prompt in pairs(workspace:GetDescendants()) do
                                             if prompt:IsA("ProximityPrompt") and prompt.Parent and prompt.Parent:IsA("BasePart") then
                                                 local dist = (prompt.Parent.Position - hrp.Position).Magnitude
@@ -476,7 +496,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                             end
                                         end
                                         
-                                        -- 3. Auto-Tap tombol UI Hotbar (Bypass Custom Inventory)
+                                        -- Auto-Tap tombol UI Hotbar (Bypass Custom Inventory)
                                         local playerGui = player:FindFirstChild("PlayerGui")
                                         if playerGui and getconnections then
                                             for _, obj in pairs(playerGui:GetDescendants()) do
@@ -490,7 +510,6 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                                     end
                                                     if isSlot then
                                                         local isEquipped = false
-                                                        -- Deteksi apakah slot sedang dipilih (border putih/terang)
                                                         if obj.BorderSizePixel > 0 and obj.BorderColor3.R > 0.8 and obj.BorderColor3.G > 0.8 and obj.BorderColor3.B > 0.8 then
                                                             isEquipped = true
                                                         end
@@ -509,7 +528,6 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                                             for _, conn in pairs(getconnections(obj.Activated)) do
                                                                 pcall(function() conn:Function() end)
                                                             end
-                                                            -- Berhasil tap slot, lanjut
                                                             break
                                                         end
                                                     end
@@ -517,7 +535,6 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                             end
                                         end
                                         
-                                        -- Tunggu sebentar lagi biar animasinya selesai
                                         task.wait(0.2)
                                     else
                                         Wayae.UI.Notify("⚠️ Auto Farm", "Gagal teleport ke Plot!", 3)

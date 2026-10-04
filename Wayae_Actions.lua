@@ -465,21 +465,18 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     task.wait(0.5)
                                     
                                     -- 2. Berdiam di luar base selama 10 detik sambil lompat-lompat (Anti-Cheat bypass)
-                                    local vim = game:GetService("VirtualInputManager")
+                                    -- 2. Berdiam di luar base selama 10 detik sambil lompat-lompat (Anti-Cheat bypass)
                                     local waitTimeOutside = 10
                                     local elapsedOutside = 0
                                     
                                     while Wayae.autoFarmRunning and elapsedOutside < waitTimeOutside do
-                                        -- Tekan spasi untuk lompat (berfungsi juga untuk pet)
-                                        vim:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                                        task.wait(0.1)
-                                        vim:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                                        if hum then hum.Jump = true end
                                         
                                         -- Jeda antar lompatan
                                         local delay = math.random(5, 10) / 10
                                         task.wait(delay)
                                         
-                                        elapsedOutside = elapsedOutside + 0.1 + delay
+                                        elapsedOutside = elapsedOutside + delay
                                     end
                                     
                                     -- 3. Gerak bertahap (jalan kaki cepat) dari luar base ke dalam base
@@ -496,14 +493,10 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                         hrp.AssemblyLinearVelocity = Vector3.zero
                                         
                                         -- Kadang-kadang lompat sambil jalan ke dalam
-                                        if math.random() > 0.8 then
-                                            vim:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                                            task.wait(0.05)
-                                            vim:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-                                            task.wait(0.05)
-                                        else
-                                            task.wait(stepInterval)
+                                        if math.random() > 0.8 and hum then
+                                            hum.Jump = true
                                         end
+                                        task.wait(stepInterval)
                                     end
                                     
                                     -- Pastikan persis di titik akhir

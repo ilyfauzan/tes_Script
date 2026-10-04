@@ -455,21 +455,49 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     
                                     Wayae.StartNoclip()
                                     
-                                    -- Hitung posisi dalam base sesuai screenshot terbaru
+                                    -- Hitung posisi dalam base dan luar base
                                     local insideBasePos = Vector3.new(164, 40322, 1059)
+                                    local outsideBasePos = Vector3.new(164, 40322, 1090) -- Sekitar 30 stud di depan base
                                     
-                                    -- Gerak bertahap dari tempat telur langsung ke dalam base
-                                    -- 100 studs / 0.1s = 1000 studs/detik (Cukup lambat untuk menipu Anti-Cheat, tapi cepat sampai)
-                                    local stepSize = 100
+                                    -- 1. Teleport cepat ke luar base terlebih dahulu
+                                    char:PivotTo(CFrame.new(outsideBasePos))
+                                    hrp.AssemblyLinearVelocity = Vector3.zero
+                                    task.wait(0.5)
+                                    
+                                    -- 2. Berdiam di luar base selama beberapa detik sambil lompat-lompat (Anti-Cheat bypass)
+                                    local vim = game:GetService("VirtualInputManager")
+                                    for i = 1, 8 do
+                                        if not Wayae.autoFarmRunning then break end
+                                        -- Tekan spasi untuk lompat (berfungsi juga untuk pet)
+                                        vim:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                                        task.wait(0.1)
+                                        vim:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                                        
+                                        task.wait(math.random(4, 8) / 10) -- Tunggu 0.4 - 0.8 detik secara acak
+                                    end
+                                    
+                                    -- 3. Gerak bertahap (jalan kaki) dari luar base ke dalam base
+                                    -- Kecepatan normal jalan kaki sekitar 16-30 stud per detik. Kita pakai 20 stud/detik
+                                    local stepSize = 2
                                     local stepInterval = 0.1
                                     
                                     while (hrp.Position - insideBasePos).Magnitude > 5 and Wayae.autoFarmRunning do
                                         local dir = (insideBasePos - hrp.Position).Unit
                                         local dist = (hrp.Position - insideBasePos).Magnitude
                                         local move = math.min(stepSize, dist)
+                                        
                                         char:PivotTo(CFrame.new(hrp.Position + dir * move))
                                         hrp.AssemblyLinearVelocity = Vector3.zero
-                                        task.wait(stepInterval)
+                                        
+                                        -- Kadang-kadang lompat sambil jalan ke dalam
+                                        if math.random() > 0.8 then
+                                            vim:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                                            task.wait(0.05)
+                                            vim:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                                            task.wait(0.05)
+                                        else
+                                            task.wait(stepInterval)
+                                        end
                                     end
                                     
                                     -- Pastikan persis di titik akhir

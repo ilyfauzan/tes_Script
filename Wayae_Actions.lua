@@ -483,7 +483,7 @@ Wayae.UI.AutoFarmBtn.MouseButton1Click:Connect(function()
                                     
                                     -- Hitung posisi dalam base dan luar base
                                     -- Tambahkan +3 pada Y (40322 -> 40325) supaya saat kembali ke base tidak nyangkut lantai dan bergetar
-                                    local insideBasePos = Vector3.new(164, 40325, 1059)
+                                    local insideBasePos = Vector3.new(31, 40327, 1027)
                                     local outsideBasePos = Vector3.new(71, 40326, 915) -- Sesuai screenshot dari user
                                     
                                     -- 1. Teleport cepat ke luar base terlebih dahulu
